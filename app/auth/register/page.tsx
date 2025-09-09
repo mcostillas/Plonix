@@ -1,14 +1,20 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { signUp } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { PiggyBank, Eye, EyeOff, ArrowLeft, Users, CheckCircle, Star } from 'lucide-react'
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -16,6 +22,56 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: ''
   })
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
+    setMessage('')
+
+    // Validation
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      setIsLoading(false)
+      return
+    }
+
+    if (!formData.firstName || !formData.lastName) {
+      setError('Please fill in all fields')
+      setIsLoading(false)
+      return
+    }
+
+    try {
+      const fullName = `${formData.firstName} ${formData.lastName}`
+      const { user, error: signUpError } = await signUp(
+        formData.email,
+        formData.password,
+        { full_name: fullName }
+      )
+
+      if (signUpError) {
+        setError(signUpError.message)
+      } else if (user) {
+        setMessage('Account created successfully! Please check your email to verify your account.')
+        // Redirect to login after 3 seconds
+        setTimeout(() => {
+          router.push('/auth/login?message=Please verify your email before logging in')
+        }, 3000)
+      }
+    } catch (err) {
+      setError('An unexpected error occurred. Please try again.')
+      console.error('Registration error:', err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-blue-50/30 to-green-50/30">
@@ -91,105 +147,130 @@ export default function RegisterPage() {
               </CardHeader>
               
               <CardContent className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                {error && (
+                  <div className="rounded-md bg-red-50 p-4">
+                    <div className="text-sm text-red-700">{error}</div>
+                  </div>
+                )}
+
+                {message && (
+                  <div className="rounded-md bg-green-50 p-4">
+                    <div className="text-sm text-green-700">{message}</div>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        First Name
+                      </label>
+                      <Input
+                        placeholder="Juan"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                        className="h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Last Name
+                      </label>
+                      <Input
+                        placeholder="Dela Cruz"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        className="h-11"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name
+                      Email Address
                     </label>
                     <Input
-                      placeholder="Juan"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                      type="email"
+                      placeholder="juan@example.com"
+                      value={formData.email}
+                      onChange={(e) => setFormData({...formData, email: e.target.value})}
                       className="h-11"
+                      required
+                      disabled={isLoading}
                     />
                   </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Create a strong password"
+                        value={formData.password}
+                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        className="h-11 pr-12"
+                        required
+                        disabled={isLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                        disabled={isLoading}
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Confirm Password
                     </label>
                     <Input
-                      placeholder="Dela Cruz"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                      type="password"
+                      placeholder="Confirm your password"
+                      value={formData.confirmPassword}
+                      onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                       className="h-11"
+                      required
+                      disabled={isLoading}
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <Input
-                    type="email"
-                    placeholder="juan@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="h-11"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Create a strong password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({...formData, password: e.target.value})}
-                      className="h-11 pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
+                  <div className="flex items-start space-x-2">
+                    <input type="checkbox" className="mt-1" required disabled={isLoading} />
+                    <span className="text-sm text-gray-600">
+                      I agree to the{' '}
+                      <Link href="/terms" className="text-primary hover:text-primary/80">
+                        Terms of Service
+                      </Link>{' '}
+                      and{' '}
+                      <Link href="/privacy" className="text-primary hover:text-primary/80">
+                        Privacy Policy
+                      </Link>
+                    </span>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Confirm Password
-                  </label>
-                  <Input
-                    type="password"
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-                    className="h-11"
-                  />
-                </div>
+                  <Button type="submit" className="w-full h-12 text-lg" disabled={isLoading}>
+                    {isLoading ? 'Creating Account...' : 'Create Free Account'}
+                  </Button>
 
-                <div className="flex items-start space-x-2">
-                  <input type="checkbox" className="mt-1" required />
-                  <span className="text-sm text-gray-600">
-                    I agree to the{' '}
-                    <Link href="/terms" className="text-primary hover:text-primary/80">
-                      Terms of Service
-                    </Link>{' '}
-                    and{' '}
-                    <Link href="/privacy" className="text-primary hover:text-primary/80">
-                      Privacy Policy
-                    </Link>
-                  </span>
-                </div>
-
-                <Button className="w-full h-12 text-lg">
-                  Create Free Account
-                </Button>
-
-                <div className="text-center">
-                  <p className="text-gray-600">
-                    Already have an account?{' '}
-                    <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium">
-                      Log in here
-                    </Link>
-                  </p>
-                </div>
+                  <div className="text-center">
+                    <p className="text-gray-600">
+                      Already have an account?{' '}
+                      <Link href="/auth/login" className="text-primary hover:text-primary/80 font-medium">
+                        Log in here
+                      </Link>
+                    </p>
+                  </div>
+                </form>
               </CardContent>
             </Card>
           </div>

@@ -1,23 +1,26 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { Send, User, Bot, PlusCircle, Calculator, TrendingUp, PieChart, Target, FileText, Paperclip, Camera, Upload, Search, Globe, ArrowRight, Shield } from 'lucide-react'
+import { Send, User as UserIcon, Bot, PlusCircle, Calculator, TrendingUp, PieChart, Target, FileText, Paperclip, Camera, Upload, Search, Globe, ArrowRight, Shield, LogIn } from 'lucide-react'
 import { goalManager } from '@/lib/goal-manager'
 import { WebSearchService } from '@/lib/web-search'
 import { FinancialDataService } from '@/lib/financial-apis'
 import { missionTracker } from '@/lib/mission-tracker'
+import { auth, onAuthStateChange, type User } from '@/lib/auth'
 
 export default function AIAssistantPage() {
+  const [user, setUser] = useState<User | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [messages, setMessages] = useState([
     {
       id: 1,
       type: 'bot',
-      content: 'Kumusta! I\'m your financial kuya/ate AI assistant. Ano ang gusto mong malaman about money management today? I can also help you analyze your financial data using our tools!',
+      content: 'Kumusta! I\'m your AI-powered financial kuya/ate assistant! 🤖 I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
       timestamp: new Date()
     }
   ])
@@ -25,6 +28,35 @@ export default function AIAssistantPage() {
   const [showTools, setShowTools] = useState(false)
   const [webSearchService] = useState(() => new WebSearchService())
   const [financialDataService] = useState(() => new FinancialDataService())
+
+  // Authentication effect
+  useEffect(() => {
+    // Check initial auth state
+    auth.getCurrentUser().then((result) => {
+      setUser(result.user)
+      setIsLoading(false)
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = onAuthStateChange((user) => {
+      setUser(user)
+      setIsLoading(false)
+      
+      // Update welcome message based on auth status
+      if (user) {
+        setMessages(prev => [
+          {
+            id: 1,
+            type: 'bot',
+            content: `Welcome back, ${user.name}! 🤖 I remember our previous conversations and your financial goals. How can I help you today with your financial journey?`,
+            timestamp: new Date()
+          }
+        ])
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
 
   const financialTools = [
     {
@@ -65,6 +97,44 @@ export default function AIAssistantPage() {
     }
   ]
 
+  // Force logout and clear all cached data
+  const handleForceLogout = async () => {
+    try {
+      // Clear Supabase session
+      await auth.signOut()
+      
+      // Clear all browser storage
+      if (typeof window !== 'undefined') {
+        // Clear localStorage
+        localStorage.clear()
+        
+        // Clear sessionStorage
+        sessionStorage.clear()
+        
+        // Clear cookies for this domain
+        document.cookie.split(";").forEach(function(c) {
+          document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/")
+        })
+      }
+      
+      // Reset component state
+      setUser(null)
+      setMessages([{
+        id: 1,
+        type: 'bot',
+        content: 'All cached data cleared! You\'re now completely logged out. Feel free to create a new account or log in with different credentials.',
+        timestamp: new Date()
+      }])
+      
+      // Force page reload to clear any remaining state
+      window.location.reload()
+    } catch (error) {
+      console.error('Error during force logout:', error)
+      // Force reload anyway
+      window.location.reload()
+    }
+  }
+
   const sendMessage = async () => {
     if (!inputMessage.trim()) return
     
@@ -75,27 +145,57 @@ export default function AIAssistantPage() {
       timestamp: new Date()
     }
     
-    setMessages([...messages, newMessage])
+    setMessages(prev => [...prev, newMessage])
     
     // Show loading message
     const loadingMessage = {
-      id: messages.length + 1.5,
+      id: Date.now(),
       type: 'bot',
-      content: '🔍 Searching the web for current information...',
+      content: '� AI is thinking... Generating your personalized financial advice...',
       timestamp: new Date()
     }
     setMessages(prev => [...prev, loadingMessage])
     
-    // Enhanced AI with Google Custom Search
-    setTimeout(async () => {
-      let aiResponse = ''
+    try {
+      // Call the simple AI API (direct OpenAI, no LangChain)
+      const response = await fetch('/api/simple-ai', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: inputMessage,
+          // userId is handled by authentication in the API
+        })
+      })
+      
+      const data = await response.json()
+      
+      if (data.success) {
+        // Remove loading message and add AI response
+        const aiMessage = {
+          id: Date.now() + 1,
+          type: 'bot',
+          content: data.response,
+          timestamp: new Date()
+        }
+        setMessages(prev => [...prev.filter(msg => msg.id !== loadingMessage.id), aiMessage])
+      } else {
+        throw new Error(data.error || 'AI request failed')
+      }
+      
+    } catch (error) {
+      console.error('AI Chat Error:', error)
+      
+      // Enhanced fallback with web search integration
+      let fallbackResponse = ''
       
       // Check for mission-related updates first
       const missionUpdates = missionTracker.updateMissionFromAI(inputMessage, '')
       const missionResponse = missionTracker.generateAIResponse(missionUpdates)
       
       if (missionResponse) {
-        aiResponse = missionResponse + '\n\n'
+        fallbackResponse = missionResponse + '\n\n'
       }
       
       // Check if user wants to search a specific website
@@ -108,9 +208,9 @@ export default function AIAssistantPage() {
             const results = await webSearchService.searchSpecificSite(siteMatch[1], queryMatch)
             
             if (results.length > 0) {
-              aiResponse += `🔍 **Search Results from ${siteMatch[1]}:**
+              fallbackResponse += `🔍 **Search Results from ${siteMatch[1]}:**
 
-${results.slice(0, 3).map((result, index) => `
+${results.slice(0, 3).map((result: any, index: number) => `
 **${index + 1}. ${result.title}**
 ${result.snippet}
 🔗 Source: ${result.displayLink}
@@ -119,23 +219,23 @@ ${result.snippet}
 
 Based on this information, how can I help you with your financial planning? 💡`
             } else {
-              aiResponse += `I searched ${siteMatch[1]} but couldn't find specific results for "${queryMatch}". Try a different search term or let me help with general financial advice!`
+              fallbackResponse += `I searched ${siteMatch[1]} but couldn't find specific results for "${queryMatch}". Try a different search term or let me help with general financial advice!`
             }
           }
-        } catch (error) {
-          aiResponse += 'I had trouble searching that specific site. Google Custom Search might be at its daily limit. Let me help you with my financial knowledge instead!'
+        } catch (searchError) {
+          fallbackResponse += 'I had trouble searching that specific site. Google Custom Search might be at its daily limit. Let me help you with my financial knowledge instead!'
         }
       }
       
-      // Check for price searches with better results
+      // Check for price searches
       else if (inputMessage.toLowerCase().includes('price') || inputMessage.toLowerCase().includes('cost') || inputMessage.toLowerCase().includes('how much')) {
         try {
           const priceResults = await webSearchService.getCurrentPrice(inputMessage)
           
           if (priceResults.length > 0) {
-            aiResponse += `💰 **Current Price Information (via Google Search):**
+            fallbackResponse += `💰 **Current Price Information (via Google Search):**
 
-${priceResults.map((result, index) => `
+${priceResults.map((result: any, index: number) => `
 **${index + 1}. ${result.title}**
 ${result.snippet}
 📍 Source: ${result.displayLink}
@@ -150,166 +250,38 @@ ${result.snippet}
 
 Ready to create a savings plan for this purchase? Just tell me your target timeline! 🎯`
           } else {
-            aiResponse += `I searched for current prices but didn't find specific results. This might be because:
+            fallbackResponse += `I searched for current prices but didn't find specific results. This might be because:
 • Google Custom Search daily limit reached (100 searches/day)
 • The item might be too specific
 • Try rephrasing your search
 
 I can still help you create a savings plan! What's your estimated target amount and timeline? 💡`
           }
-        } catch (error) {
-          aiResponse += 'Google Search is temporarily unavailable (might have reached daily limit). However, I can still help you with budgeting and savings strategies! What\'s your target amount?'
+        } catch (searchError) {
+          fallbackResponse += 'Google Search is temporarily unavailable (might have reached daily limit). However, I can still help you with budgeting and savings strategies! What\'s your target amount?'
         }
       }
       
-      // Financial news search
-      else if (inputMessage.toLowerCase().includes('news') || inputMessage.toLowerCase().includes('latest') || inputMessage.toLowerCase().includes('current')) {
-        try {
-          const newsResults = await webSearchService.searchFinancialNews()
-          
-          if (newsResults.length > 0) {
-            aiResponse += `📰 **Latest Philippine Financial News:**
-
-${newsResults.map((result, index) => `
-**${index + 1}. ${result.title}**
-${result.snippet}
-📍 ${result.displayLink}
-🔗 [Read full article](${result.link})
-`).join('\n')}
-
-How does this news affect your financial planning? I can help you adjust your strategy based on current events! 📈`
-          } else {
-            aiResponse += 'I couldn\'t fetch the latest financial news right now. Google Search might be at its daily limit. Let me help you with timeless financial strategies instead!'
-          }
-        } catch (error) {
-          aiResponse += 'Financial news search is temporarily unavailable. Let me help you with proven financial strategies that work regardless of current events!'
-        }
-      }
-      
-      // Bank rates with real search
-      else if (inputMessage.toLowerCase().includes('bank') || inputMessage.toLowerCase().includes('savings account') || inputMessage.toLowerCase().includes('interest')) {
-        try {
-          const bankResults = await webSearchService.getBankRates()
-          
-          if (bankResults.length > 0) {
-            aiResponse += `🏦 **Latest Bank Rates (via Google Search):**
-
-${bankResults.map((result, index) => `
-**${index + 1}. ${result.title}**
-${result.snippet}
-📍 ${result.displayLink}
-🔗 [View current rates](${result.link})
-`).join('\n')}
-
-**Quick Comparison (General Ranges):**
-• Digital Banks: 4-6% annually (CIMB, ING, Tonik)
-• Traditional Banks: 0.25-0.5% annually (BPI, BDO)
-• All are PDIC-insured up to ₱500,000
-
-Want me to help you choose the best bank for your needs? 💰`
-          } else {
-            aiResponse += `I searched for current bank rates but didn't get specific results. Here's what I generally know:
-
-**Digital Banks (Higher Rates):**
-• CIMB Bank: Up to 4% annually
-• ING Bank: Up to 2.5% annually  
-• Tonik Bank: Up to 6% annually
-
-**Traditional Banks (Lower Rates):**
-• BPI, BDO, Metrobank: 0.25-0.5%
-
-All are PDIC-insured. Want me to help you compare features? 🏦`
-          }
-        } catch (error) {
-          aiResponse += 'Bank rate search is temporarily unavailable, but I can share general rate information and help you choose the right bank for your needs!'
-        }
-      }
-      
-      // General web search for financial topics
-      else if (inputMessage.toLowerCase().includes('search') || inputMessage.toLowerCase().includes('find') || inputMessage.toLowerCase().includes('latest')) {
-        try {
-          const searchResults = await webSearchService.searchWeb(`${inputMessage} Philippines financial`)
-          
-          if (searchResults.length > 0) {
-            aiResponse += `🔍 **Web Search Results:**
-
-Here's the latest information I found:
-
-${searchResults.slice(0, 3).map((result, index) => `
-**${index + 1}. ${result.title}**
-${result.snippet}
-🔗 [Read more](${result.link})
-`).join('\n')}
-
-Based on this information, how can I help you with your financial planning? I can create budgets, savings goals, or investment strategies! 💼`
-          } else {
-            aiResponse += 'I searched the web but couldn\'t find specific results. Let me help you with my financial knowledge instead!'
-          }
-        } catch (error) {
-          aiResponse += 'Web search is temporarily unavailable, but I can still help with financial advice using my knowledge base!'
-        }
-      }
-      
-      // Check for investment queries with real data
-      else if (inputMessage.toLowerCase().includes('invest') || inputMessage.toLowerCase().includes('stock')) {
-        try {
-          const marketData = await financialDataService.getPSEData()
-          const exchangeRate = await financialDataService.getExchangeRates()
-          
-          aiResponse += `📈 **Latest Investment Information:**
-
-**Philippine Stock Exchange (PSE):**
-• Current index: ${marketData.index}
-• Market trend: ${marketData.trend}
-• USD to PHP: ₱${exchangeRate.usdToPhp}
-
-**Best Investment Options for Beginners:**
-• **Mutual Funds:** BPI, BDO (₱1,000 minimum)
-• **UITFs:** Bank-managed, lower fees
-• **COL Financial:** Direct stock trading
-• **GInvest (GCash):** Micro-investing, ₱50 minimum
-
-**Current Market Context:**
-• Treasury Bills: ~5.75% annually
-• Inflation Rate: ~3.2%
-• Digital Bank Savings: 4-6% annually
-
-Want me to create a personalized investment plan based on your income and risk tolerance? 🎯`
-        } catch (error) {
-          aiResponse += 'I\'m having trouble getting live market data, but here\'s what I know about investing for Filipino youth...'
-        }
-      }
-      
-      // Default responses with enhanced context
+      // Default fallback responses
       else {
         const enhancedResponses = [
-          'Ay, good question yan! For budgeting, I suggest the 50-30-20 rule. With your income, allocate 50% for needs, 30% for wants, and 20% for savings. I can search for current bank rates to help you choose the best savings account!',
-          'Uy, I can help you with that! I have access to current financial data and can search the web for the latest information. What specific topic would you like me to research?',
-          'Perfect timing to ask! I can search for current prices, bank rates, investment options, or any financial topic. Just say "search for [topic]" and I\'ll find the latest information!',
-          'Talaga! I can help you find current information about any financial topic. Try asking me to "search for current CIMB bank rates" or "find iPhone 15 prices in Philippines" for real-time data!'
+          '⚠️ AI is temporarily unavailable, pero I can still help! For budgeting, I suggest the 50-30-20 rule. With your income, allocate 50% for needs, 30% for wants, and 20% for savings. I can search for current bank rates to help you choose the best savings account!',
+          '⚠️ My AI brain is resting, but I have backup knowledge! I can help you find current information about any financial topic. Try asking me to "search for [topic]" and I\'ll find the latest information!',
+          '⚠️ AI connection failed, pero I can still search the web for you! Try "search for current CIMB bank rates" or "find iPhone 15 prices in Philippines" for real-time data!',
+          '⚠️ Primary AI is down, but I can still help with financial planning! What specific topic would you like me to research using web search?'
         ]
-        aiResponse += enhancedResponses[Math.floor(Math.random() * enhancedResponses.length)]
+        fallbackResponse += enhancedResponses[Math.floor(Math.random() * enhancedResponses.length)]
       }
       
-      // If we detected spending/mission activity, add mission context
-      if (inputMessage.toLowerCase().includes('spent') || 
-          inputMessage.toLowerCase().includes('cooked') ||
-          inputMessage.toLowerCase().includes('jeepney')) {
-        
-        if (!missionResponse) {
-          aiResponse += "I noticed you mentioned some spending/activity! If you're on any missions, I can help track your progress. Just tell me about your daily expenses or activities! 📊"
-        }
-      }
-      
-      // Remove loading message and add real response
-      const aiMessage = {
-        id: messages.length + 2,
+      // Remove loading message and add fallback response
+      const fallbackMessage = {
+        id: Date.now() + 1,
         type: 'bot',
-        content: aiResponse,
+        content: fallbackResponse,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev.filter(msg => msg.id !== messages.length + 1.5), aiMessage])
-    }, 2000) // Longer delay to simulate web search
+      setMessages(prev => [...prev.filter(msg => msg.id !== loadingMessage.id), fallbackMessage])
+    }
     
     setInputMessage('')
   }
@@ -356,7 +328,15 @@ Want me to create a personalized investment plan based on your income and risk t
       const fileInput = document.createElement('input')
       fileInput.type = 'file'
       fileInput.accept = 'image/*'
-      fileInput.onchange = handleImageUpload
+      fileInput.onchange = (e) => {
+        const event = e as any
+        if (event.target && event.target.files) {
+          handleImageUpload({
+            target: event.target,
+            currentTarget: event.target
+          } as React.ChangeEvent<HTMLInputElement>)
+        }
+      }
       fileInput.click()
       return
     }
@@ -447,14 +427,14 @@ Top Categories This Month:
                   <h1 className="text-xl font-bold text-gray-900">Financial AI Assistant</h1>
                   <p className="text-sm text-gray-600 flex items-center">
                     <Search className="w-4 h-4 mr-1" />
-                    Your personal kuya/ate with web search • Always online
+                    Your personal kuya/ate powered by OpenAI • Ready to help 24/7
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
-                <div className="hidden sm:flex items-center space-x-2 bg-primary/10 text-primary px-3 py-1 rounded-full text-sm">
+                <div className="hidden sm:flex items-center space-x-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
                   <Globe className="w-4 h-4" />
-                  <span>Web Search Enabled</span>
+                  <span>AI Assistant Active</span>
                 </div>
                 <Button
                   variant={showTools ? "default" : "outline"}
@@ -468,6 +448,56 @@ Top Categories This Month:
             </div>
           </div>
 
+          {/* Authentication Status Banner */}
+          {!user && !isLoading && (
+            <div className="bg-gradient-to-r from-primary/10 to-blue-100/50 border-b border-primary/20 p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      Get Personalized AI Memory
+                    </p>
+                    <p className="text-xs text-gray-600">
+                      Log in to enable AI that remembers your goals, preferences, and financial journey
+                    </p>
+                  </div>
+                </div>
+                <Link href="/auth/login">
+                  <Button size="sm" className="flex items-center space-x-2">
+                    <LogIn className="w-4 h-4" />
+                    <span>Log In</span>
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          )}
+
+          {user && (
+            <div className="bg-gradient-to-r from-green-50 to-emerald-100/50 border-b border-green-200 p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                    <Shield className="w-3 h-3 text-white" />
+                  </div>
+                  <p className="text-sm text-green-800">
+                    <span className="font-medium">Memory Active:</span> AI remembers your financial journey, {user.name}!
+                  </p>
+                </div>
+                <Button
+                  onClick={handleForceLogout}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  Clear & Logout
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Enhanced Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-white/50 to-transparent">
             {messages.map((message) => (
@@ -477,7 +507,7 @@ Top Categories This Month:
                     ? 'bg-gradient-to-br from-gray-600 to-gray-800 text-white' 
                     : 'bg-gradient-to-br from-primary to-blue-600 text-white'
                 }`}>
-                  {message.type === 'user' ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
+                  {message.type === 'user' ? <UserIcon className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
                 </div>
                 <div className={`flex-1 space-y-2 max-w-3xl ${message.type === 'user' ? 'flex flex-col items-end' : ''}`}>
                   <div className="flex items-center space-x-2">
@@ -526,7 +556,7 @@ Top Categories This Month:
                 <Input
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  placeholder="Ask me anything... Try 'search for iPhone price' or 'create budget for ₱25,000'"
+                  placeholder="Ask me anything about money... Try 'How should I budget ₱25,000?' or 'Best investment for beginners?'"
                   onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                   className="pr-14 h-12 bg-white/80 border-gray-200 focus:border-primary focus:ring-primary/20"
                 />
@@ -542,7 +572,7 @@ Top Categories This Month:
             </div>
             <div className="flex items-center justify-between text-xs">
               <p className="text-gray-500">
-                💡 Try: "search iPhone price", "budget my ₱20k salary", or upload receipt photos
+                💡 Try: "Budget my ₱20k salary", "Best savings account", or upload receipt photos
               </p>
               <div className="flex items-center space-x-1 text-gray-400">
                 <Shield className="w-3 h-3" />
@@ -557,29 +587,49 @@ Top Categories This Month:
           <div className="w-80 bg-white/90 backdrop-blur-md border-l border-gray-200/50 shadow-lg">
             <div className="p-6 space-y-6">
               <div>
-                <h3 className="font-bold text-lg mb-2 text-gray-900">Financial Analysis Tools</h3>
+                <h3 className="font-bold text-lg mb-2 text-gray-900">Digital Financial Tools</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Enhanced AI tools for comprehensive financial analysis
+                  Access our comprehensive suite of financial tools
                 </p>
               </div>
               
+              {/* Quick Access to Popular Tools */}
               <div className="space-y-3">
-                {financialTools.map((tool, index) => (
-                  <Card 
-                    key={index} 
-                    className="p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200 group border border-gray-100"
-                    onClick={() => useTool(tool)}
-                  >
+                <Link href="/tools/budget-calculator">
+                  <Card className="p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200 group border border-gray-100">
                     <div className="flex items-start space-x-3">
-                      <tool.icon className="w-6 h-6 text-primary mt-0.5 group-hover:scale-110 transition-transform" />
+                      <Calculator className="w-6 h-6 text-primary mt-0.5 group-hover:scale-110 transition-transform" />
                       <div className="flex-1">
-                        <h4 className="font-semibold text-sm text-gray-900">{tool.name}</h4>
-                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">{tool.description}</p>
+                        <h4 className="font-semibold text-sm text-gray-900">Budget Calculator</h4>
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">Quick 50-30-20 budget breakdown</p>
                       </div>
                       <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
                     </div>
                   </Card>
-                ))}
+                </Link>
+
+                <Link href="/tools/savings-tracker">
+                  <Card className="p-4 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all duration-200 group border border-gray-100">
+                    <div className="flex items-start space-x-3">
+                      <Target className="w-6 h-6 text-primary mt-0.5 group-hover:scale-110 transition-transform" />
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-sm text-gray-900">Savings Tracker</h4>
+                        <p className="text-xs text-gray-600 mt-1 leading-relaxed">Track your savings goals</p>
+                      </div>
+                      <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </Card>
+                </Link>
+              </div>
+
+              {/* Link to All Tools */}
+              <div className="pt-4 border-t border-gray-200">
+                <Link href="/digital-tools">
+                  <Button className="w-full">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    View All Digital Tools
+                  </Button>
+                </Link>
               </div>
 
               <div className="pt-4 border-t border-gray-200">

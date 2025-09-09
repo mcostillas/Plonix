@@ -4,6 +4,18 @@ export class WebSearchService {
 
   async searchWeb(query: string) {
     try {
+      // Check if API keys are configured
+      if (!this.apiKey || !this.searchEngineId || this.apiKey.includes('your_actual')) {
+        console.log('Google Custom Search API not configured')
+        return [{
+          title: "Search Unavailable",
+          snippet: "Web search is currently unavailable. Please configure Google Custom Search API keys in your environment variables.",
+          link: "#",
+          source: "plounix.ai",
+          displayLink: "Setup Required"
+        }]
+      }
+
       // Using Google Custom Search API (100 searches/day free)
       const response = await fetch(
         `https://www.googleapis.com/customsearch/v1?key=${this.apiKey}&cx=${this.searchEngineId}&q=${encodeURIComponent(query)}`
