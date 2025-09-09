@@ -7,12 +7,17 @@ import { LangChainMemoryManager } from './langchain-memory'
 export class PlounixAIAgent {
   private llm: ChatOpenAI
   private memoryManager: LangChainMemoryManager
-  private agent: AgentExecutor | null = null
 
   constructor() {
+    // Check if API key is available
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is not set in environment variables')
+    }
+    
     this.llm = new ChatOpenAI({
       modelName: "gpt-4o-mini",
       temperature: 0.7,
+      apiKey: process.env.OPENAI_API_KEY,
     })
     this.memoryManager = new LangChainMemoryManager()
   }
@@ -96,23 +101,22 @@ Remember previous conversations and build on user's financial journey.`],
       new MessagesPlaceholder("agent_scratchpad"),
     ])
 
-    this.agent = await createOpenAIFunctionsAgent({
+    const agent = await createOpenAIFunctionsAgent({
       llm: this.llm,
       tools,
       prompt,
     })
 
     return new AgentExecutor({
-      agent: this.agent,
+      agent,
       tools,
       verbose: true,
     })
   }
 
   async chat(userId: string, message: string): Promise<string> {
-    if (!this.agent) {
-      this.agent = await this.initializeAgent()
-    }
+    // Initialize agent if not already done
+    const agentExecutor = await this.initializeAgent()
 
     // Get conversation memory
     const memory = await this.memoryManager.getMemoryForUser(userId)
@@ -122,7 +126,7 @@ Remember previous conversations and build on user's financial journey.`],
     await this.memoryManager.addUserMessage(userId, message)
 
     // Run agent with memory context
-    const result = await this.agent.invoke({
+    const result = await agentExecutor.invoke({
       input: message,
       chat_history: chatHistory.history,
     })

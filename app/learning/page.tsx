@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { ChevronDown, ChevronUp, ExternalLink, Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe } from 'lucide-react'
+import { ChevronDown, ChevronUp, ExternalLink, Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, BarChart3 } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 
 export default function LearningPage() {
@@ -322,6 +322,276 @@ export default function LearningPage() {
                 </Card>
               )
             })}
+          </div>
+        </div>
+
+        {/* Emergency Fund Topic Section */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-4 text-gray-900">Essential Financial Topics</h2>
+            <p className="text-lg text-gray-600">
+              Additional financial knowledge every Filipino youth should know.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* Emergency Fund */}
+            <Card className="border-orange-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-orange-100">
+                  <Shield className="w-6 h-6 text-orange-600" />
+                </div>
+                <CardTitle className="text-lg text-orange-800">Emergency Fund</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Money saved for unexpected expenses like medical bills or laptop repairs.</div>
+                    <div><strong>Why:</strong> Prevents debt and gives financial peace of mind.</div>
+                    <div><strong>Tips:</strong> Start with ₱500, use GCash GSave, aim for 3-6 months expenses.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Students: ₱10,000-15,000 target</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Workers: 3-6 months expenses</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Keep in GCash GSave or CIMB</span>
+                  </div>
+                </div>
+                <Link href="/tools/savings-tracker">
+                  <Button variant="outline" className="w-full text-orange-600 border-orange-200">
+                    Track Emergency Fund
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Credit and Debt */}
+            <Card className="border-red-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-red-100">
+                  <Target className="w-6 h-6 text-red-600" />
+                </div>
+                <CardTitle className="text-lg text-red-800">Credit & Debt</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Understanding credit cards, loans, and borrowing responsibly.</div>
+                    <div><strong>Why:</strong> Avoid debt traps that affect many young Filipinos.</div>
+                    <div><strong>Tips:</strong> Pay full balance, understand interest rates, build credit history slowly.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Avoid credit card debt cycles</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Understanding loan interest rates</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Building good credit history</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full text-red-600 border-red-200">
+                  Learn About Credit
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Insurance Basics */}
+            <Card className="border-blue-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-blue-100">
+                  <Shield className="w-6 h-6 text-blue-600" />
+                </div>
+                <CardTitle className="text-lg text-blue-800">Insurance Basics</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Protection plans that cover health, life, and other risks.</div>
+                    <div><strong>Why:</strong> Protects families from financial disasters and unexpected costs.</div>
+                    <div><strong>Tips:</strong> Start with PhilHealth, add SSS, consider life insurance for family.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>PhilHealth for health coverage</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Life insurance for family protection</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>SSS benefits and contributions</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full text-blue-600 border-blue-200">
+                  Explore Insurance
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Digital Money */}
+            <Card className="border-green-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-green-100">
+                  <Globe className="w-6 h-6 text-green-600" />
+                </div>
+                <CardTitle className="text-lg text-green-800">Digital Money</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Using GCash, PayMaya, and online banking safely.</div>
+                    <div><strong>Why:</strong> Essential for modern Filipino financial life and convenience.</div>
+                    <div><strong>Tips:</strong> Use strong passwords, enable 2FA, learn all app features.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>GCash and PayMaya features</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Online banking security</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Digital payment safety tips</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full text-green-600 border-green-200">
+                  Master Digital Money
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Goal Setting */}
+            <Card className="border-purple-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-purple-100">
+                  <Target className="w-6 h-6 text-purple-600" />
+                </div>
+                <CardTitle className="text-lg text-purple-800">Financial Goals</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Setting specific targets like buying a laptop or saving for abroad.</div>
+                    <div><strong>Why:</strong> Gives direction and motivation for your money decisions.</div>
+                    <div><strong>Tips:</strong> Use SMART goals, break into small steps, track progress monthly.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>SMART financial goal setting</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Short vs long-term planning</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Tracking progress effectively</span>
+                  </div>
+                </div>
+                <Link href="/goals">
+                  <Button variant="outline" className="w-full text-purple-600 border-purple-200">
+                    Set Financial Goals
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Money Mindset */}
+            <Card className="border-yellow-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-yellow-100">
+                  <BookOpen className="w-6 h-6 text-yellow-600" />
+                </div>
+                <CardTitle className="text-lg text-yellow-800">Money Mindset</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Your beliefs and attitudes about money and wealth.</div>
+                    <div><strong>Why:</strong> Healthy mindset leads to better financial decisions and success.</div>
+                    <div><strong>Tips:</strong> Challenge limiting beliefs, balance family support with personal goals.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Overcoming "walang pera" mindset</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Balancing family and personal goals</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Building confidence with money</span>
+                  </div>
+                </div>
+                <Button variant="outline" className="w-full text-yellow-600 border-yellow-200">
+                  Improve Money Mindset
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Financial Needs Analysis */}
+            <Card className="border-indigo-200 hover:shadow-lg transition-shadow">
+              <CardHeader className="text-center">
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-indigo-100">
+                  <BarChart3 className="w-6 h-6 text-indigo-600" />
+                </div>
+                <CardTitle className="text-lg text-indigo-800">Financial Needs Analysis</CardTitle>
+                <CardDescription className="text-sm text-left">
+                  <div className="space-y-2">
+                    <div><strong>What:</strong> Evaluating your current financial situation and future needs.</div>
+                    <div><strong>Why:</strong> Helps prioritize spending and plan for life goals effectively.</div>
+                    <div><strong>Tips:</strong> List all expenses, identify wants vs needs, plan for life stages.</div>
+                  </div>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Tracking monthly income and expenses</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Distinguishing needs vs wants</span>
+                  </div>
+                  <div className="flex items-center text-sm">
+                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                    <span>Planning for future life events</span>
+                  </div>
+                </div>
+                <Link href="/tools/budget-calculator">
+                  <Button variant="outline" className="w-full text-indigo-600 border-indigo-200">
+                    Analyze Your Finances
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
           </div>
         </div>
 
