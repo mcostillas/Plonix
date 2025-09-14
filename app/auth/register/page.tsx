@@ -49,11 +49,18 @@ export default function RegisterPage() {
     }
 
     try {
+      // const fullName = `${formData.firstName} ${formData.lastName}`
+      // const { user, error: signUpError } = await signUp(
+      //   formData.email,
+      //   formData.password,
+      //   { full_name: fullName }
+      // )
+
       const fullName = `${formData.firstName} ${formData.lastName}`
       const { user, error: signUpError } = await signUp(
         formData.email,
         formData.password,
-        { full_name: fullName }
+        fullName
       )
 
       if (signUpError) {
