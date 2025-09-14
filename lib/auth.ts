@@ -16,8 +16,8 @@ export interface AuthSession {
 }
 
 // Standalone functions for backward compatibility
-export async function signUp(email: string, password: string, metadata?: { full_name?: string }) {
-  return await auth.signUp(email, password, metadata?.full_name)
+export async function signUp(email: string, password: string, name?: string) {
+  return await auth.signUp(email, password, name)
 }
 
 export async function signIn(email: string, password: string) {
