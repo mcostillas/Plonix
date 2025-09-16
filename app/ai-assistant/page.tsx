@@ -8,8 +8,6 @@ import { Card } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { Send, User as UserIcon, Bot, PlusCircle, Calculator, TrendingUp, PieChart, Target, FileText, Paperclip, Camera, Upload, Search, Globe, ArrowRight, Shield, LogIn } from 'lucide-react'
 import { goalManager } from '@/lib/goal-manager'
-import { WebSearchService } from '@/lib/web-search'
-import { FinancialDataService } from '@/lib/financial-apis'
 import { missionTracker } from '@/lib/mission-tracker'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 
@@ -20,14 +18,12 @@ export default function AIAssistantPage() {
     {
       id: 1,
       type: 'bot',
-      content: 'Kumusta! I\'m your AI-powered financial kuya/ate assistant! 🤖 I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+      content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate! 🤖 I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
       timestamp: new Date()
     }
   ])
   const [inputMessage, setInputMessage] = useState('')
   const [showTools, setShowTools] = useState(false)
-  const [webSearchService] = useState(() => new WebSearchService())
-  const [financialDataService] = useState(() => new FinancialDataService())
 
   // Authentication effect
   useEffect(() => {
@@ -424,17 +420,17 @@ Top Categories This Month:
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-gray-900">Financial AI Assistant</h1>
+                  <h1 className="text-xl font-bold text-gray-900">Fili - Your AI Financial Assistant</h1>
                   <p className="text-sm text-gray-600 flex items-center">
                     <Search className="w-4 h-4 mr-1" />
-                    Your personal kuya/ate powered by OpenAI • Ready to help 24/7
+                    Your personal financial kuya/ate powered by OpenAI • Ready to help 24/7
                   </p>
                 </div>
               </div>
               <div className="flex items-center space-x-3">
                 <div className="hidden sm:flex items-center space-x-2 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
                   <Globe className="w-4 h-4" />
-                  <span>AI Assistant Active</span>
+                  <span>Fili Active</span>
                 </div>
                 <Button
                   variant={showTools ? "default" : "outline"}
