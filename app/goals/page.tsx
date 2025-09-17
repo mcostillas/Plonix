@@ -48,13 +48,13 @@ export default function GoalsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navbar currentPage="goals" />
       
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Uniform Header */}
         <PageHeader
           title="My Financial Goals"
-          description="Track your savings goals and celebrate milestones. Create goals manually or let AI assistant help you plan."
+          description="Track your savings goals and celebrate milestones. Create goals manually or let Fili help you plan."
           badge={{
             text: "AI-Powered Planning",
             icon: Target
@@ -143,7 +143,7 @@ export default function GoalsPage() {
               <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">No Goals Yet</h3>
               <p className="text-gray-600 mb-6">
-                Create your first financial goal or chat with our AI assistant to get personalized suggestions!
+                Create your first financial goal or chat with Fili to get personalized suggestions!
               </p>
               <div className="flex justify-center space-x-4">
                 <Button onClick={() => setShowCreateForm(true)}>
@@ -202,7 +202,7 @@ export default function GoalsPage() {
                   <div className="text-sm text-gray-600 space-y-1">
                     <p>💰 Monthly target: ₱{goal.monthlyTarget.toLocaleString()}</p>
                     <p>📅 Deadline: {new Date(goal.deadline).toLocaleDateString()}</p>
-                    <p>🤖 Created by: {goal.createdBy === 'ai-assistant' ? 'AI Assistant' : 'Manual'}</p>
+                    <p>🤖 Created by: {goal.createdBy === 'ai-assistant' ? 'Fili' : 'Manual'}</p>
                   </div>
 
                   <Button className="w-full" variant="outline">
@@ -241,7 +241,7 @@ export default function GoalsPage() {
                   <li>• Automate your savings</li>
                   <li>• Celebrate milestones</li>
                   <li>• Adjust timeline if needed</li>
-                  <li>• Use AI assistant for motivation</li>
+                  <li>• Use Fili for motivation</li>
                 </ul>
               </div>
             </div>

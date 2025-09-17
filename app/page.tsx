@@ -10,8 +10,8 @@ export default function HomePage() {
   const features = [
     {
       icon: Bot,
-      title: 'AI Financial Assistant',
-      description: 'Chat with your personal financial kuya/ate. Get advice in Taglish, create savings goals, and access real-time web search for current prices and bank rates.',
+      title: 'Fili - AI Financial Assistant',
+      description: 'Chat with Fili, your personal financial kuya/ate. Get advice in Taglish, create savings goals, and access real-time web search for current prices and bank rates.',
       highlight: 'Web Search Enabled'
     },
     {
@@ -73,7 +73,7 @@ export default function HomePage() {
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
                 Your Financial
                 <span className="bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent block">
-                  Kuya/Ate AI
+                  Fili AI
                 </span>
               </h1>
               
@@ -286,7 +286,7 @@ export default function HomePage() {
             <Link href="/learning" className="hover:text-primary">Learn</Link>
             <Link href="/money-missions" className="hover:text-primary">Money Missions</Link>
             <Link href="/resource-hub" className="hover:text-primary">Resources</Link>
-            <Link href="/ai-assistant" className="hover:text-primary">AI Assistant</Link>
+            <Link href="/ai-assistant" className="hover:text-primary">Fili AI</Link>
           </div>
         </div>
       </footer>

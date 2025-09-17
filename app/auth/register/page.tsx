@@ -149,7 +149,7 @@ export default function RegisterPage() {
               <CardHeader className="text-center pb-6">
                 <CardTitle className="text-2xl font-bold">Create Your Account</CardTitle>
                 <p className="text-gray-600 mt-2">
-                  Start your financial journey with your AI kuya/ate
+                  Start your financial journey with Fili, your AI kuya/ate
                 </p>
               </CardHeader>
               

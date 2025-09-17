@@ -95,7 +95,7 @@ export function AIChat() {
       <div className="messages">
         {messages.map((message, index) => (
           <div key={index} className={`message ${message.role}`}>
-            <strong>{message.role === 'user' ? 'You' : 'Plounix AI'}:</strong>
+            <strong>{message.role === 'user' ? 'You' : 'Fili'}:</strong>
             <p>{message.content}</p>
           </div>
         ))}

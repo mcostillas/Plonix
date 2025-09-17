@@ -217,7 +217,7 @@ export default function ProfilePage() {
         {/* AI Interaction History */}
         <Card>
           <CardHeader>
-            <CardTitle>AI Assistant History</CardTitle>
+            <CardTitle>Fili Chat History</CardTitle>
             <CardDescription>Your conversations and learned preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

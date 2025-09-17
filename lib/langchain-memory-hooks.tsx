@@ -294,7 +294,7 @@ export function EnhancedAIChat() {
       <div className="messages-container max-h-96 overflow-y-auto border rounded-lg p-4 mb-4 bg-white">
         {messages.length === 0 && (
           <div className="text-gray-500 text-center py-8">
-            <p>👋 Kumusta! I'm your enhanced Plounix AI with advanced memory.</p>
+            <p>👋 Kumusta! I'm Fili, your enhanced AI with advanced memory.</p>
             <p>I'll remember our conversations and learn your preferences over time!</p>
           </div>
         )}
@@ -307,7 +307,7 @@ export function EnhancedAIChat() {
                 : 'bg-gray-200 text-gray-800'
             }`}>
               <strong className="block text-sm opacity-75">
-                {message.role === 'user' ? 'You' : 'Plounix AI'}
+                {message.role === 'user' ? 'You' : 'Fili'}
               </strong>
               <div className="mt-1 whitespace-pre-wrap">{message.content}</div>
               <div className="text-xs opacity-50 mt-1">

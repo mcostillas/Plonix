@@ -42,7 +42,7 @@ export default function TestAIPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6">Test AI Assistant</h1>
+        <h1 className="text-2xl font-bold mb-6">Test Fili AI</h1>
         
         <Card className="p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">Send a message to AI (Simple OpenAI API)</h2>

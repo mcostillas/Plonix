@@ -76,7 +76,7 @@ export default function DebugPage() {
           <Link href="/ai-assistant">
             <Button variant="outline" size="sm">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to AI Assistant
+              Back to Fili
             </Button>
           </Link>
           <h1 className="text-2xl font-bold">Debug & Clear Cache</h1>

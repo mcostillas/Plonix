@@ -24,7 +24,7 @@ export default function BudgetCalculatorPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar currentPage="resources" />
+      <Navbar currentPage="tools" />
       
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="flex items-center space-x-4 mb-6">

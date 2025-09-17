@@ -36,7 +36,7 @@ export default function LoginPage() {
       const result = await auth.signIn(email, password)
       
       if (result.success) {
-        // Redirect to AI assistant or dashboard
+        // Redirect to Fili or dashboard
         router.push('/ai-assistant')
       } else {
         setError(result.error || 'Login failed')
@@ -73,7 +73,7 @@ export default function LoginPage() {
                 </div>
                 <CardTitle className="text-2xl font-bold">Welcome Back!</CardTitle>
                 <p className="text-gray-600 mt-2">
-                  Continue your financial journey with your AI kuya/ate
+                  Continue your financial journey with Fili, your AI kuya/ate
                 </p>
               </CardHeader>
               
@@ -188,7 +188,7 @@ export default function LoginPage() {
                     <Bot className="w-4 h-4 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">AI Assistant with Web Search</h3>
+                    <h3 className="font-semibold text-gray-900">Fili AI with Web Search</h3>
                     <p className="text-gray-600 text-sm">Get real-time prices, bank rates, and financial advice</p>
                   </div>
                 </div>

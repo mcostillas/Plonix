@@ -70,7 +70,7 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* AI Assistant Highlight */}
+        {/* Fili AI Highlight */}
         <div className="mb-8">
           <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
             <CardContent className="p-6">
@@ -80,7 +80,7 @@ export default function DashboardPage() {
                     <Search className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">AI Assistant with Web Search</h3>
+                    <h3 className="text-xl font-bold mb-1">Fili AI with Web Search</h3>
                     <p className="text-blue-100">
                       Ask me to search for current prices, bank rates, or any financial info!
                     </p>
@@ -231,7 +231,7 @@ export default function DashboardPage() {
                 <Target className="w-12 h-12 text-green-600 mb-4" />
                 <CardTitle>My Financial Goals</CardTitle>
                 <CardDescription>
-                  Track savings goals created manually or by AI assistant
+                  Track savings goals created manually or by Fili AI
                 </CardDescription>
               </CardHeader>
               <CardContent>

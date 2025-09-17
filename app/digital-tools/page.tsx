@@ -255,11 +255,11 @@ export default function DigitalToolsPage() {
             <CardContent className="p-8">
               <h3 className="text-2xl font-bold mb-4">Need Help Choosing a Tool?</h3>
               <p className="text-gray-600 mb-6">
-                Our AI assistant can recommend the best tools for your financial goals
+                Our AI assistant Fili can recommend the best tools for your financial goals
               </p>
               <Link href="/ai-assistant">
                 <Button size="lg">
-                  Ask Plounix AI
+                  Ask Fili
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>

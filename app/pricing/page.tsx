@@ -60,7 +60,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm">Basic AI assistant (10 queries/day)</span>
+                  <span className="text-sm">Basic Fili (10 queries/day)</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />
@@ -108,7 +108,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm">AI assistant (100 queries/day)</span>
+                  <span className="text-sm">Fili unlimited (unlimited queries)</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />

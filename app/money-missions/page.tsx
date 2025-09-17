@@ -221,7 +221,7 @@ export default function MoneyMissionsPage() {
           <div className="bg-blue-50 p-3 rounded-lg">
             <h4 className="font-semibold text-blue-800 text-sm mb-1">How to track:</h4>
             <p className="text-blue-700 text-sm">
-              💬 Chat with AI Assistant about your daily spending and activities - it will automatically track your mission progress!
+              💬 Chat with Fili about your daily spending and activities - it will automatically track your mission progress!
             </p>
           </div>
 

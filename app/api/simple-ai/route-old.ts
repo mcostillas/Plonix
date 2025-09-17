@@ -4,8 +4,7 @@ import { serverAuth } from '@/lib/auth-server'
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, user = null, userId = null } = await request.json()
-    console.log('API received:', { message: message?.substring(0, 50), user: user?.name, userId })
+    const { message, userId = null } = await request.json()
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -20,28 +19,21 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Use user data from frontend if available, otherwise try server-side auth
-    let authenticatedUserId = user?.id || userId
-    let currentUser = user
-    
-    // Fallback to server-side authentication if no user data from frontend
-    if (!currentUser) {
-      try {
-        const userResult = await serverAuth.getUserFromHeaders(request)
-        if (userResult.success && userResult.user) {
-          authenticatedUserId = userResult.user.id
-          currentUser = userResult.user
-        }
-      } catch (error) {
-        // User not authenticated, continue with limited features
+    // Get authenticated user if available
+    let authenticatedUserId = null
+    try {
+      const currentUser = await serverAuth.getUserFromHeaders(request)
+      if (currentUser.success && currentUser.user) {
+        authenticatedUserId = currentUser.user.id
       }
+    } catch (error) {
+      // User not authenticated, continue with limited features
     }
 
     // Build context (enhanced for authenticated users, basic for others)
     let enhancedContext: string
     try {
-      console.log('Building context for:', { userId: authenticatedUserId, userName: currentUser?.name })
-      enhancedContext = await langchainMemory.buildSmartContext(authenticatedUserId, message, currentUser)
+      enhancedContext = await langchainMemory.buildSmartContext(authenticatedUserId, message)
     } catch (error) {
       console.error('Memory system error:', error)
       // Fallback to basic context
@@ -118,32 +110,34 @@ Please provide helpful financial advice. Be encouraging, use Philippine financia
     ]
 
     // Enhanced system prompt with LangChain memory integration
-    const systemPrompt = `${enhancedContext}
+    const systemPrompt = `You are Fili - a Filipino financial assistant with advanced personalized memory powered by LangChain.
 
-ADVANCED AI CAPABILITIES:
-- Web search for current information, prices, news, and bank rates
-- Personalized memory: Remember user preferences, track goal progress, learn from successful strategies
-- Philippine financial expertise: BPI, BDO, Metrobank, UnionBank, GCash, PayMaya
-- Cultural understanding: 13th month pay, paluwagan, jeepney fare, bayanihan spirit
-
-COMMUNICATION STYLE:
-- Speak in Taglish (Filipino + English mix) naturally
+PERSONALITY & APPROACH:
+- Speak in Taglish (Filipino + English mix) 
 - Use "kuya/ate" friendly tone
+- Reference Filipino culture: 13th month pay, paluwagan, jeepney fare
 - Be encouraging and celebrate user progress
-- Always be personal and reference user's name if authenticated
-- Format responses clearly with proper structure
-- Use emojis sparingly and appropriately
-- Avoid excessive asterisks or markdown formatting
-- Use clean bullet points and clear paragraphs
-- Make responses conversational and easy to read
+- Always reference relevant past conversations and personal context
 
-RESPONSE FORMATTING RULES:
-- Use clear paragraphs instead of cluttered asterisks
-- Structure advice with numbered steps when giving instructions
-- Use simple bullet points (•) instead of **bold asterisks**
-- Keep formatting clean and professional
-- Make responses scannable and easy to digest
-- Use line breaks appropriately for readability
+ENHANCED MEMORY CONTEXT:
+${enhancedContext}
+
+CAPABILITIES:
+- Budget analysis and planning with personalized recommendations
+- Savings strategies based on user's proven successful methods
+- Investment basics tailored for Filipino market
+- Financial tips adapted to user's income level and lifestyle
+- Web search for current information, prices, news, and bank rates
+- Advanced memory: Remember user preferences, track goal progress, learn from successful strategies
+
+MEMORY INTEGRATION INSTRUCTIONS:
+- ALWAYS reference specific details from the user's context above
+- Build on previously successful strategies mentioned in their history
+- Address challenges they've previously shared
+- Use their preferred communication style and budget methods
+- Celebrate progress on goals you've discussed before
+- Reference their personal situation (income, occupation, location)
+- Acknowledge past conversations and how things have progressed
 
 TOOLS AVAILABLE:
 - search_web: Search internet for any current information
@@ -151,7 +145,14 @@ TOOLS AVAILABLE:
 - get_bank_rates: Get current bank interest rates
 - search_financial_news: Get latest financial news
 
-Remember: Build on our relationship and provide clean, well-formatted responses that are easy to read!`
+FILIPINO CONTEXT:
+- Consider typical income ranges ₱15,000-30,000 for young adults
+- Reference local banks: BPI, BDO, Metrobank, UnionBank
+- Include digital wallets: GCash, PayMaya, Maya
+- Use local examples: jeepney fare, rice prices, tuition fees
+- Consider cultural factors: family obligations, bayanihan spirit
+
+Remember: This user has a history with you. Use their context to provide truly personalized advice that builds on your relationship and their specific financial journey.`
 
     // First call to OpenAI to see if it wants to use any tools
     const initialMessages = [
@@ -213,19 +214,23 @@ Remember: Build on our relationship and provide clean, well-formatted responses 
       // Execute the requested function
       switch (functionName) {
         case "search_web":
-          functionResult = "Web search temporarily disabled - API key limits reached. I'll help with my knowledge instead!"
+          const searchResults = await webSearch.searchWeb(functionArgs.query)
+          functionResult = JSON.stringify(searchResults.slice(0, 3))
           break
         
         case "get_current_prices":
-          functionResult = "Price lookup temporarily disabled - API key limits reached. I can help estimate costs though!"
+          const priceResults = await webSearch.getCurrentPrice(functionArgs.item)
+          functionResult = JSON.stringify(priceResults)
           break
         
         case "get_bank_rates":
-          functionResult = "Bank rates lookup temporarily disabled - API key limits reached. Current rates are typically 2-6% annually."
+          const bankRates = await webSearch.getBankRates()
+          functionResult = JSON.stringify(bankRates)
           break
         
         case "search_financial_news":
-          functionResult = "News search temporarily disabled - API key limits reached. I can provide general financial advice though!"
+          const newsResults = await webSearch.searchFinancialNews()
+          functionResult = JSON.stringify(newsResults)
           break
         
         default:

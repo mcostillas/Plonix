@@ -608,7 +608,7 @@ export default function LearningPage() {
               </Link>
               <Link href="/ai-assistant">
                 <Button variant="outline" size="lg" className="text-white border-white hover:bg-white hover:text-primary">
-                  Ask AI Assistant
+                  Ask Fili
                 </Button>
               </Link>
             </div>

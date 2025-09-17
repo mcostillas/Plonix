@@ -569,7 +569,7 @@ return (
           <span>AI-Powered Learning</span>
         </CardTitle>
         <CardDescription>
-          Our AI assistant is trained using content from these trusted Filipino and international financial resources. 
+          Fili is trained using content from these trusted Filipino and international financial resources. 
           All links open in new tabs so you can easily return here.
         </CardDescription>
       </CardHeader>

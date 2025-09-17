@@ -12,23 +12,42 @@ export function PlounixLogo({ className = '', size = 'md' }: LogoProps) {
 
   return (
     <svg 
-      viewBox="0 0 40 24" 
+      viewBox="0 0 32 32" 
       className={`${sizeClasses[size]} ${className}`}
       fill="currentColor" 
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Brain on the left */}
-      <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M6 8 C4 8 2 10 2 12 C2 14 4 16 6 16 C6 18 8 20 10 20 C12 20 14 18 14 16 C14 14 12 12 10 12 C10 10 8 8 6 8" />
-        <path d="M8 10 C9 10 10 11 10 12" />
-        <path d="M6 12 C7 12 8 13 8 14" />
-      </g>
+      {/* Clean rounded square background */}
+      <rect x="0" y="0" width="32" height="32" rx="6" ry="6" fill="currentColor" />
       
-      {/* Bold "P" on the right */}
-      <path 
-        d="M20 4 L20 20 L24 20 L24 14 L30 14 C33 14 35 12 35 10 C35 8 33 6 30 6 L24 6 L24 4 L20 4 Z M24 8 L30 8 C31 8 32 9 32 10 C32 11 31 12 30 12 L24 12 L24 8 Z" 
-        fillRule="evenodd"
-      />
+      {/* White content */}
+      <g fill="white">
+        {/* Modern, bold "P" */}
+        <path d="M6 4 L6 28 L11 28 L11 18 L18 18 C22.4 18 26 14.4 26 10 C26 5.6 22.4 2 18 2 L6 2 L6 4 Z M11 7 L18 7 C19.7 7 21 8.3 21 10 C21 11.7 19.7 13 18 13 L11 13 L11 7 Z" />
+        
+        {/* Piggy bank elements */}
+        {/* Body of piggy */}
+        <ellipse cx="21" cy="22" rx="4" ry="2.5" fill="white" opacity="0.15" />
+        
+        {/* Coins floating around */}
+        <circle cx="24" cy="16" r="1" fill="white" opacity="0.4" />
+        <circle cx="26" cy="20" r="0.8" fill="white" opacity="0.3" />
+        <circle cx="22" cy="26" r="0.6" fill="white" opacity="0.3" />
+        
+        {/* Peso symbol */}
+        <text x="21" y="24" fontSize="3" textAnchor="middle" fill="white" fontWeight="bold" opacity="0.6">₱</text>
+        
+        {/* Simple upward trend line */}
+        <polyline 
+          points="4,26 6,24 8,25 10,22 12,23 14,20" 
+          stroke="white" 
+          strokeWidth="1.5" 
+          fill="none" 
+          opacity="0.4" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+        />
+      </g>
     </svg>
   )
 }

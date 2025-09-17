@@ -1,10 +1,11 @@
+'use client'
+
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { User, LogOut, BookOpen, MessageCircle, Target, Database, Home, Plus, Trophy, Calculator, Menu, X, TrendingUp } from 'lucide-react'
+import { User, LogOut, BookOpen, MessageCircle, Target, Database, Home, Plus, Trophy, Calculator, Menu, X } from 'lucide-react'
 import { PlounixLogo } from './logo'
 import { useAuth } from '@/lib/auth'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 interface NavbarProps {
   currentPage?: string
@@ -13,228 +14,212 @@ interface NavbarProps {
 export function Navbar({ currentPage }: NavbarProps) {
   const { user, signOut } = useAuth()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   const navItems = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home, description: 'Your financial overview' },
-    { name: 'Learn', href: '/learning', icon: BookOpen, description: 'Financial education' },
-    { name: 'Goals', href: '/goals', icon: Target, description: 'Track your progress' },
-    { name: 'Fili', href: '/ai-assistant', icon: MessageCircle, description: 'Your AI financial assistant' },
-    { name: 'Tools', href: '/tools', icon: Calculator, description: 'Budget & savings calculators' },
-    { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Fun money challenges' },
-    { name: 'Resources', href: '/resource-hub', icon: Database, description: 'Philippine financial guides' },
+    { name: 'Dashboard', href: '/dashboard', icon: Home, key: 'dashboard' },
+    { name: 'Learn', href: '/learning', icon: BookOpen, key: 'learning' },
+    { name: 'Goals', href: '/goals', icon: Target, key: 'goals' },
+    { name: 'Fili', href: '/ai-assistant', icon: MessageCircle, key: 'fili' },
+    { name: 'Tools', href: '/digital-tools', icon: Calculator, key: 'tools' },
+    { name: 'Challenges', href: '/challenges', icon: Trophy, key: 'challenges' },
+    { name: 'Resources', href: '/resource-hub', icon: Database, key: 'resources' },
   ]
 
   const handleLogout = async () => {
-    if (confirm('Are you sure you want to sign out?')) {
-      try {
-        await signOut()
-        // Clear any cached data
-        if (typeof window !== 'undefined') {
-          localStorage.clear()
-          sessionStorage.clear()
-        }
-        // Redirect to home with success message
-        router.push('/?message=signed-out')
-      } catch (error) {
-        console.error('Sign out error:', error)
-        // Fallback: force redirect even if signOut fails
-        router.push('/auth/login')
-      }
+    try {
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Sign out error:', error)
     }
   }
 
-  const toggleMobileMenu = () => {
-    setIsMobileMenuOpen(!isMobileMenuOpen)
-  }
-
-  // Don't render user info until mounted to avoid hydration issues
-  if (!mounted) {
-    return (
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-3">
-              <PlounixLogo className="text-primary" size="md" />
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent">Plounix</span>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded-md"></div>
-            </div>
-          </div>
-        </div>
-      </nav>
-    )
-  }
+  const isActive = (itemKey: string) => currentPage === itemKey
 
   return (
-    <>
-      <nav className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 hover:opacity-80 transition-opacity">
-              <PlounixLogo className="text-primary" size="md" />
-              <span className="text-xl font-bold bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent">Plounix</span>
+    <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <div className="flex-shrink-0">
+            <Link href="/" className="flex items-center space-x-3 hover:opacity-90 transition-opacity">
+              <PlounixLogo className="text-primary w-8 h-8" size="md" />
+              <span className="text-xl font-bold bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent">
+                Plounix
+              </span>
             </Link>
+          </div>
 
-            {/* Desktop Navigation Items */}
-            <nav className="hidden lg:flex items-center space-x-1">
-              {navItems.map((item) => (
-                <Link key={item.name} href={item.href}>
-                  <Button 
-                    variant={currentPage === item.name.toLowerCase() || 
-                             (currentPage === 'tools' && item.name === 'Tools') ||
-                             (currentPage === 'challenges' && item.name === 'Challenges') ? "default" : "ghost"}
-                    size="sm"
-                    className="flex items-center space-x-2 h-9 px-3 text-sm font-medium"
-                  >
-                    <item.icon className="w-4 h-4" />
-                    <span>{item.name}</span>
-                  </Button>
-                </Link>
-              ))}
-              <div className="ml-2 pl-2 border-l border-gray-200">
-                <Link href="/add-transaction">
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center space-x-2 h-9 px-3 text-sm font-medium hover:bg-primary hover:text-white transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Track</span>
-                  </Button>
-                </Link>
-              </div>
-            </nav>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-2">
+            {navItems.map((item) => (
+              <Link key={item.key} href={item.href} className="inline-block">
+                <button className={`inline-flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                  isActive(item.key)
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-gray-700 hover:text-primary hover:bg-gray-50'
+                }`}>
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.name}</span>
+                </button>
+              </Link>
+            ))}
+            
+            {/* Track Button */}
+            <div className="ml-2 pl-2 border-l border-gray-200">
+              <Link href="/add-transaction" className="inline-block">
+                <button className="inline-flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium border border-primary text-primary hover:bg-primary hover:text-white transition-all duration-200">
+                  <Plus className="w-4 h-4" />
+                  <span>Track</span>
+                </button>
+              </Link>
+            </div>
+          </nav>
 
-            {/* Mobile Menu Button & User Profile */}
-            <div className="flex items-center space-x-3">
+          {/* Right Side */}
+          <div className="flex items-center space-x-3">
+            {/* Desktop Auth */}
+            <div className="hidden sm:flex items-center space-x-3">
               {user ? (
                 <>
-                  <div className="hidden sm:flex items-center space-x-3">
-                    <div className="text-right">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name || user.email.split('@')[0]}
-                      </p>
-                      <p className="text-xs text-gray-500">Welcome back!</p>
-                    </div>
-                    <Link href="/profile">
-                      <Button 
-                        variant={currentPage === "profile" ? "default" : "ghost"} 
-                        size="icon"
-                        className="w-9 h-9"
-                      >
-                        <User className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="ghost" 
-                      onClick={handleLogout}
-                      size="sm"
-                      className="text-gray-600 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="w-4 h-4 mr-1" />
-                      <span className="hidden md:block">Sign Out</span>
-                    </Button>
+                  <div className="text-right min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate max-w-32">
+                      {user.name || user.email?.split('@')[0] || 'User'}
+                    </p>
+                    <p className="text-xs text-gray-500">Welcome back</p>
                   </div>
-                  <div className="sm:hidden flex items-center space-x-2">
-                    <Link href="/profile">
-                      <Button variant="ghost" size="icon" className="w-9 h-9">
-                        <User className="w-4 h-4" />
-                      </Button>
-                    </Link>
-                  </div>
+                  <Link href="/profile" className="inline-block">
+                    <button className={`p-2 rounded-md transition-all duration-200 ${
+                      currentPage === 'profile'
+                        ? 'bg-primary text-white'
+                        : 'text-gray-500 hover:text-primary hover:bg-gray-50'
+                    }`}>
+                      <User className="w-4 h-4" />
+                    </button>
+                  </Link>
+                  <button 
+                    onClick={handleLogout}
+                    className="inline-flex items-center space-x-1 px-2 py-1 rounded-md text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span className="hidden md:inline">Sign Out</span>
+                  </button>
                 </>
               ) : (
-                <div className="hidden sm:flex items-center space-x-2">
-                  <Link href="/auth/login">
-                    <Button variant="ghost" size="sm">Sign In</Button>
+                <>
+                  <Link href="/auth/login" className="inline-block">
+                    <button className="px-3 py-2 text-sm font-medium text-gray-700 hover:text-primary transition-colors duration-200">
+                      Sign In
+                    </button>
                   </Link>
-                  <Link href="/auth/register">
-                    <Button variant="default" size="sm">Get Started</Button>
+                  <Link href="/auth/register" className="inline-block">
+                    <button className="px-3 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary/90 transition-all duration-200">
+                      Get Started
+                    </button>
                   </Link>
-                </div>
+                </>
               )}
-              
-              {/* Mobile Menu Toggle */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={toggleMobileMenu}
-                className="lg:hidden w-9 h-9"
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </Button>
             </div>
+            
+            {/* Mobile User Icon */}
+            {user && (
+              <div className="sm:hidden">
+                <Link href="/profile" className="inline-block">
+                  <button className="p-2 rounded-md text-gray-500 hover:text-primary hover:bg-gray-50 transition-all duration-200">
+                    <User className="w-4 h-4" />
+                  </button>
+                </Link>
+              </div>
+            )}
+            
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 rounded-md text-gray-500 hover:text-primary hover:bg-gray-50 transition-all duration-200"
+              aria-label="Toggle menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
-      </nav>
+      </div>
 
       {/* Mobile Menu */}
       {isMobileMenuOpen && (
-        <div className="lg:hidden bg-white border-b border-gray-200 shadow-lg">
-          <div className="container mx-auto px-4 py-4">
-            <div className="space-y-2">
+        <div className="lg:hidden bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="space-y-1">
               {navItems.map((item) => (
-                <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
-                    <item.icon className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-xs text-gray-500">{item.description}</p>
-                    </div>
+                <Link 
+                  key={item.key} 
+                  href={item.href} 
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="block"
+                >
+                  <div className={`flex items-center space-x-3 px-3 py-3 rounded-md transition-all duration-200 ${
+                    isActive(item.key)
+                      ? 'bg-primary text-white'
+                      : 'text-gray-700 hover:bg-gray-50 hover:text-primary'
+                  }`}>
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium">{item.name}</span>
                   </div>
                 </Link>
               ))}
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <Link href="/add-transaction" onClick={() => setIsMobileMenuOpen(false)}>
-                  <div className="flex items-center space-x-3 p-3 rounded-lg hover:bg-primary/5 transition-colors">
-                    <Plus className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className="font-medium text-primary">Track Transaction</p>
-                      <p className="text-xs text-gray-500">Add income or expense</p>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-              {user && (
-                <div className="border-t border-gray-200 pt-3 mt-3 sm:hidden">
+              
+              {/* Track Button */}
+              <Link 
+                href="/add-transaction" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="block pt-2 mt-2 border-t border-gray-200"
+              >
+                <div className="flex items-center space-x-3 px-3 py-3 rounded-md text-primary hover:bg-primary/5 transition-all duration-200">
+                  <Plus className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-medium">Track Transaction</span>
+                </div>
+              </Link>
+              
+              {/* Mobile Auth Actions */}
+              <div className="pt-2 mt-2 border-t border-gray-200 space-y-1">
+                {user ? (
                   <button
-                    onClick={handleLogout}
-                    className="flex items-center space-x-3 p-3 rounded-lg hover:bg-red-50 transition-colors w-full text-left"
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      handleLogout()
+                    }}
+                    className="w-full flex items-center space-x-3 px-3 py-3 rounded-md text-red-600 hover:bg-red-50 transition-all duration-200"
                   >
-                    <LogOut className="w-5 h-5 text-red-600" />
-                    <div>
-                      <p className="font-medium text-red-600">Sign Out</p>
-                      <p className="text-xs text-gray-500">See you soon!</p>
-                    </div>
+                    <LogOut className="w-5 h-5 flex-shrink-0" />
+                    <span className="font-medium">Sign Out</span>
                   </button>
-                </div>
-              )}
-              {!user && (
-                <div className="border-t border-gray-200 pt-3 mt-3 space-y-2 sm:hidden">
-                  <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/auth/register" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button variant="default" className="w-full justify-start">
-                      Get Started Free
-                    </Button>
-                  </Link>
-                </div>
-              )}
+                ) : (
+                  <>
+                    <Link 
+                      href="/auth/login" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <div className="px-3 py-2 text-center text-gray-700 hover:text-primary transition-colors duration-200">
+                        Sign In
+                      </div>
+                    </Link>
+                    <Link 
+                      href="/auth/register" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block"
+                    >
+                      <div className="mx-3 py-2 bg-primary text-white text-center rounded-md hover:bg-primary/90 transition-all duration-200">
+                        Get Started Free
+                      </div>
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
-    </>
+    </header>
   )
 }

@@ -46,7 +46,7 @@ export default function AddTransactionPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+      <Navbar currentPage="dashboard" />
       
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="flex items-center space-x-4 mb-6">
