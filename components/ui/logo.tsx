@@ -1,34 +1,117 @@
 interface LogoProps {
   className?: string
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  variant?: 'icon' | 'full' | 'stacked'
+  theme?: 'default' | 'green' | 'minimal'
 }
 
-export function PlounixLogo({ className = '', size = 'md' }: LogoProps) {
+export function PlounixLogo({ 
+  className = '', 
+  size = 'md', 
+  variant = 'icon',
+  theme = 'green'
+}: LogoProps) {
   const sizeClasses = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8', 
-    lg: 'w-12 h-12'
+    sm: variant === 'icon' ? 'w-6 h-6' : 'h-6',
+    md: variant === 'icon' ? 'w-8 h-8' : 'h-8', 
+    lg: variant === 'icon' ? 'w-12 h-12' : 'h-12',
+    xl: variant === 'icon' ? 'w-16 h-16' : 'h-16'
   }
 
-  return (
-    <svg 
-      viewBox="0 0 40 24" 
-      className={`${sizeClasses[size]} ${className}`}
-      fill="currentColor" 
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      {/* Brain on the left */}
-      <g fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-        <path d="M6 8 C4 8 2 10 2 12 C2 14 4 16 6 16 C6 18 8 20 10 20 C12 20 14 18 14 16 C14 14 12 12 10 12 C10 10 8 8 6 8" />
-        <path d="M8 10 C9 10 10 11 10 12" />
-        <path d="M6 12 C7 12 8 13 8 14" />
-      </g>
-      
-      {/* Bold "P" on the right */}
-      <path 
-        d="M20 4 L20 20 L24 20 L24 14 L30 14 C33 14 35 12 35 10 C35 8 33 6 30 6 L24 6 L24 4 L20 4 Z M24 8 L30 8 C31 8 32 9 32 10 C32 11 31 12 30 12 L24 12 L24 8 Z" 
-        fillRule="evenodd"
-      />
-    </svg>
-  )
+  // Color themes
+  const getColors = () => {
+    switch (theme) {
+      case 'green':
+        return {
+          primary: 'hsl(142.1, 76.2%, 36.3%)', // System primary color
+          secondary: 'hsl(142.1, 70.6%, 45.3%)', // Slightly lighter variant
+          accent: 'hsl(142.1, 80%, 30%)' // Darker variant
+        }
+      case 'minimal':
+        return {
+          primary: 'currentColor',
+          secondary: 'currentColor', 
+          accent: 'currentColor'
+        }
+      default:
+        return {
+          primary: 'currentColor',
+          secondary: 'currentColor',
+          accent: 'currentColor'
+        }
+    }
+  }
+
+  const colors = getColors()
+
+  // Icon-only logo
+  if (variant === 'icon') {
+    return (
+      <div className={`${sizeClasses[size]} ${className} relative flex-shrink-0`}>
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          viewBox="0 0 24 24" 
+          fill="none" 
+          stroke={theme === 'green' ? colors.primary : 'currentColor'}
+          strokeWidth="2" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+          className="w-full h-full"
+        >
+          {/* Brain/Head shape - represents learning and intelligence */}
+          <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z"/>
+          <path d="M2 9v1c0 1.1.9 2 2 2h1"/>
+          <path d="M16 11h0"/>
+        </svg>
+      </div>
+    )
+  }
+
+  // Full logo with text
+  if (variant === 'full') {
+    const textSize = {
+      sm: 'text-lg',
+      md: 'text-xl', 
+      lg: 'text-3xl',
+      xl: 'text-4xl'
+    }
+
+    return (
+      <div className={`flex items-center space-x-3 ${className}`}>
+        <PlounixLogo size={size} variant="icon" theme={theme} />
+        <div className="flex flex-col">
+          <span 
+            className={`font-bold ${textSize[size]} leading-tight text-primary`}
+          >
+            Plounix
+          </span>
+        </div>
+      </div>
+    )
+  }
+
+  // Stacked logo (icon on top, text below)
+  if (variant === 'stacked') {
+    const textSize = {
+      sm: 'text-sm',
+      md: 'text-base', 
+      lg: 'text-lg',
+      xl: 'text-xl'
+    }
+
+    return (
+      <div className={`flex flex-col items-center space-y-2 ${className}`}>
+        <PlounixLogo size={size} variant="icon" theme={theme} />
+        <div className="text-center">
+          <div 
+            className={`font-bold ${textSize[size]} text-primary`}
+          >
+            Plounix
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return null
 }
