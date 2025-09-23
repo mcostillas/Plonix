@@ -5,66 +5,71 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle } from 'lucide-react'
+import { useAuth } from '@/lib/auth'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default function DashboardPage() {
+  const { user } = useAuth()
+  
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="dashboard" />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Welcome Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold mb-2">Welcome back, Juan! 👋</h1>
-          <p className="text-gray-600">Ready to level up your financial game today?</p>
+        <div className="mb-8 bg-gradient-to-r from-primary/10 to-blue-600/10 rounded-2xl p-6 border border-primary/20">
+          <h1 className="text-3xl font-bold mb-2 text-gray-900">
+            Welcome back, {user?.name || user?.email?.split('@')[0] || 'there'}! 👋
+          </h1>
+          <p className="text-gray-600 text-lg">Ready to level up your financial game today?</p>
         </div>
 
         {/* Quick Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          <Card>
+          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
             <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <PiggyBank className="w-8 h-8 text-green-500" />
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-green-600">₱8,450</p>
-                  <p className="text-xs text-gray-600">Total Saved</p>
+                  <p className="text-sm text-gray-600 font-medium">Total Saved</p>
                 </div>
+                <PiggyBank className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
             <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <Target className="w-8 h-8 text-blue-500" />
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-blue-600">3</p>
-                  <p className="text-xs text-gray-600">Active Goals</p>
+                  <p className="text-sm text-gray-600 font-medium">Active Goals</p>
                 </div>
+                <Target className="w-8 h-8 text-blue-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-emerald-500">
             <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <TrendingUp className="w-8 h-8 text-emerald-500" />
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-emerald-600">₱15,250</p>
-                  <p className="text-xs text-gray-600">This Month</p>
+                  <p className="text-sm text-gray-600 font-medium">This Month</p>
                 </div>
+                <ArrowUpRight className="w-8 h-8 text-emerald-500" />
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-orange-500">
             <CardContent className="pt-6">
-              <div className="flex items-center space-x-2">
-                <PieChart className="w-8 h-8 text-orange-500" />
+              <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-orange-600">₱12,800</p>
-                  <p className="text-xs text-gray-600">Spent</p>
+                  <p className="text-sm text-gray-600 font-medium">Spent</p>
                 </div>
+                <ArrowDownRight className="w-8 h-8 text-orange-500" />
               </div>
             </CardContent>
           </Card>
@@ -99,22 +104,22 @@ export default function DashboardPage() {
 
         {/* Dashboard Insights */}
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
-          {/* Financial Health Score */}
+          {/* Learning Progress */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <TrendingUp className="w-5 h-5 mr-2 text-green-500" />
-                Financial Health Score
+                <BookOpen className="w-5 h-5 mr-2 text-blue-500" />
+                Learning Progress
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-center">
-                <div className="text-4xl font-bold text-green-600 mb-2">8.2</div>
-                <div className="text-sm text-gray-600 mb-4">out of 10</div>
+                <div className="text-4xl font-bold text-blue-600 mb-2">12</div>
+                <div className="text-sm text-gray-600 mb-4">modules completed</div>
                 <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div className="bg-green-500 h-3 rounded-full" style={{ width: '82%' }}></div>
+                  <div className="bg-blue-500 h-3 rounded-full" style={{ width: '60%' }}></div>
                 </div>
-                <p className="text-xs text-gray-600 mt-2">Great! You're on track with your finances</p>
+                <p className="text-xs text-gray-600 mt-2">Great progress! 8 modules remaining</p>
               </div>
             </CardContent>
           </Card>
@@ -200,6 +205,92 @@ export default function DashboardPage() {
                     <div className="bg-purple-500 h-2 rounded-full" style={{ width: '50%' }}></div>
                   </div>
                   <p className="text-xs text-gray-600 mt-1">50% complete</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Cashflow Analysis */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-r from-slate-50 to-blue-50 border-0 shadow-xl">
+            <CardHeader>
+              <CardTitle className="flex items-center text-xl">
+                <TrendingUp className="w-6 h-6 mr-3 text-emerald-500" />
+                Monthly Cashflow Overview
+              </CardTitle>
+              <CardDescription className="text-base">Track your income vs expenses and see your financial flow</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-3 gap-8">
+                {/* Total Income */}
+                <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-green-500 rounded-full">
+                      <ArrowUpRight className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-green-600 mb-2">₱18,750</div>
+                  <div className="text-sm text-green-700 font-semibold mb-4">Total Income</div>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Salary</span>
+                      <span className="font-medium">₱15,000</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Freelance</span>
+                      <span className="font-medium">₱2,500</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Allowance</span>
+                      <span className="font-medium">₱1,250</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Total Expenses */}
+                <div className="text-center p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-red-500 rounded-full">
+                      <ArrowDownRight className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-red-600 mb-2">₱12,800</div>
+                  <div className="text-sm text-red-700 font-semibold mb-4">Total Expenses</div>
+                  <div className="space-y-2 text-sm text-gray-700">
+                    <div className="flex justify-between">
+                      <span>Food & Dining</span>
+                      <span className="font-medium">₱4,200</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Transportation</span>
+                      <span className="font-medium">₱2,800</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Others</span>
+                      <span className="font-medium">₱5,800</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Net Cashflow */}
+                <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-center mb-3">
+                    <div className="p-3 bg-blue-500 rounded-full">
+                      <PiggyBank className="w-6 h-6 text-white" />
+                    </div>
+                  </div>
+                  <div className="text-3xl font-bold text-blue-600 mb-2">₱5,950</div>
+                  <div className="text-sm text-blue-700 font-semibold mb-4">Net Cashflow</div>
+                  <div className="mb-4">
+                    <div className="text-sm text-gray-600 mb-3">
+                      {((5950 / 18750) * 100).toFixed(1)}% of income saved
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div className="bg-blue-500 h-3 rounded-full transition-all duration-500" style={{ width: '32%' }}></div>
+                    </div>
+                  </div>
+                  <p className="text-sm text-blue-600 font-semibold">Excellent savings rate! 🎯</p>
                 </div>
               </div>
             </CardContent>
@@ -311,38 +402,8 @@ export default function DashboardPage() {
         <div className="grid lg:grid-cols-2 gap-8">
           <Card>
             <CardHeader>
-              <CardTitle>Recent AI Conversations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <MessageCircle className="w-5 h-5 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Search for iPhone 15 price Philippines</p>
-                    <p className="text-xs text-gray-600">Created savings goal: ₱65,000</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Search className="w-5 h-5 text-blue-500" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Find current CIMB bank rates</p>
-                    <p className="text-xs text-gray-600">Got latest 4% interest rate info</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <Calculator className="w-5 h-5 text-green-500" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Budget analysis for ₱25,000 salary</p>
-                    <p className="text-xs text-gray-600">Applied 50-30-20 rule successfully</p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
               <CardTitle>Recent Transactions</CardTitle>
+              <CardDescription>Your latest income and expenses</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -393,6 +454,83 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <span className="text-sm font-medium text-red-600">-₱549</span>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <Link href="/add-transaction">
+                  <Button className="w-full" variant="outline">
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Add New Transaction
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Expense Categories This Month</CardTitle>
+              <CardDescription>Where your money is going</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium">Food & Dining</p>
+                      <p className="text-xs text-gray-600">15 transactions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">₱4,200</p>
+                    <p className="text-xs text-gray-600">32.8%</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium">Transportation</p>
+                      <p className="text-xs text-gray-600">22 transactions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">₱2,800</p>
+                    <p className="text-xs text-gray-600">21.9%</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium">Entertainment</p>
+                      <p className="text-xs text-gray-600">8 transactions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">₱1,950</p>
+                    <p className="text-xs text-gray-600">15.2%</p>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <div>
+                      <p className="text-sm font-medium">Others</p>
+                      <p className="text-xs text-gray-600">12 transactions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-medium">₱3,850</p>
+                    <p className="text-xs text-gray-600">30.1%</p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <div className="text-center">
+                  <p className="text-sm text-gray-600">Monthly Budget: ₱15,000</p>
+                  <p className="text-xs text-green-600">₱2,200 remaining</p>
                 </div>
               </div>
             </CardContent>
