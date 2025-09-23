@@ -97,6 +97,7 @@ export function Navbar({ currentPage }: NavbarProps) {
       title: 'Finance',
       icon: TrendingUp,
       items: [
+        { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' },
         { name: 'Goals', href: '/goals', icon: Target, description: 'Set and track goals' },
         { name: 'Add Transaction', href: '/add-transaction', icon: Plus, description: 'Record expenses' },
         { name: 'Pricing', href: '/pricing', icon: CreditCard, description: 'Subscription plans' }
@@ -140,9 +141,8 @@ export function Navbar({ currentPage }: NavbarProps) {
             <div className="flex items-center">
               <Link href="/dashboard" className="flex items-center space-x-3">
                 <PlounixLogo 
-                  variant="full" 
                   size="md" 
-                  theme="green"
+                  className="text-primary"
                 />
               </Link>
             </div>
@@ -163,9 +163,8 @@ export function Navbar({ currentPage }: NavbarProps) {
           <div className="flex items-center">
             <Link href="/dashboard" className="flex items-center space-x-3">
               <PlounixLogo 
-                variant="full" 
                 size="md" 
-                theme="green"
+                className="text-primary"
               />
             </Link>
           </div>
