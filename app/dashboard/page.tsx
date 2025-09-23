@@ -19,7 +19,7 @@ export default function DashboardPage() {
         {/* Welcome Header */}
         <div className="mb-8 bg-gradient-to-r from-primary/10 to-blue-600/10 rounded-2xl p-6 border border-primary/20">
           <h1 className="text-3xl font-bold mb-2 text-gray-900">
-            Welcome back, {user?.name || user?.email?.split('@')[0] || 'there'}! 👋
+            Welcome back, {user?.name || user?.email?.split('@')[0] || 'there'}! 
           </h1>
           <p className="text-gray-600 text-lg">Ready to level up your financial game today?</p>
         </div>
