@@ -5,319 +5,317 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { ChevronDown, ChevronUp, ExternalLink, Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, BarChart3 } from 'lucide-react'
-import { PageHeader } from '@/components/ui/page-header'
+import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain } from 'lucide-react'
 
 export default function LearningPage() {
-  const [expandedCards, setExpandedCards] = useState<string[]>([])
+  const [completedModules, setCompletedModules] = useState<string[]>([])
 
-  const toggleCard = (cardId: string) => {
-    setExpandedCards(prev => 
-      prev.includes(cardId) 
-        ? prev.filter(id => id !== cardId)
-        : [...prev, cardId]
-    )
+  // Function to mark module as completed
+  const markModuleCompleted = (moduleId: string) => {
+    if (!completedModules.includes(moduleId)) {
+      setCompletedModules(prev => [...prev, moduleId])
+    }
   }
 
-  const learningTopics = [
-    // Financial Literacy introduction card (moved to top)
-    {
-      id: 'financial-literacy',
-      title: 'What is Financial Literacy?',
-      icon: BookOpen,
-      color: 'indigo',
-      description: 'Financial literacy is the ability to understand and effectively use various financial skills, including personal financial management, budgeting, and investing. For Filipino students and young professionals, it means knowing how to manage your allowance, save for goals, and make informed decisions about banks, investments, and financial products available in the Philippines.',
-      sources: [
-        {
-          title: 'Corporate Finance Institute - Financial Literacy',
-          url: 'https://corporatefinanceinstitute.com/resources/wealth-management/financial-literacy/',
-          type: 'Professional Education'
-        },
-        {
-          title: 'BSP - Financial Education',
-          url: 'https://www.bsp.gov.ph/SitePages/Default.aspx',
-          type: 'Government'
-        },
-        {
-          title: 'Annuity.org - Financial Literacy Guide',
-          url: 'https://www.annuity.org/financial-literacy/',
-          type: 'Educational'
-        }
-      ],
-      faqs: [
-        {
-          question: 'Why is financial literacy important for Filipino youth?',
-          answer: 'With limited government safety nets and strong family financial obligations, Filipino youth need financial literacy to break cycles of debt, build emergency funds, and create opportunities for education and business ventures.'
-        },
-        {
-          question: 'What financial skills should I learn first?',
-          answer: 'Start with budgeting your allowance/salary, then learn about savings accounts and emergency funds. Once you have a foundation, explore investing in mutual funds and understanding loans/credit.'
-        },
-        {
-          question: 'How does financial literacy help with family obligations?',
-          answer: 'Good financial planning helps you support family sustainably while building your own financial security. You can budget for "family support" while still saving for personal goals.'
-        },
-        {
-          question: 'What Filipino financial products should I know about?',
-          answer: 'Learn about GCash/PayMaya features, digital banks (CIMB, ING, Tonik), mutual funds from BPI/BDO, COL Financial for stocks, and government programs like SSS and PhilHealth.'
-        }
-      ]
-    },
+  // Function to check if a module is accessible
+  const isModuleAccessible = (moduleId: string, moduleType: 'core' | 'essential') => {
+    if (moduleType === 'core') {
+      // Sequential unlocking for core modules: budgeting -> saving -> investing
+      if (moduleId === 'budgeting') return true
+      if (moduleId === 'saving') return completedModules.includes('budgeting')
+      if (moduleId === 'investing') return completedModules.includes('saving')
+    }
     
-    // Main learning topics
+    // Essential modules unlock after completing at least 2 core modules
+    const completedCoreModules = completedModules.filter(id => ['budgeting', 'saving', 'investing'].includes(id))
+    return completedCoreModules.length >= 2
+  }
+
+  // Core learning topics
+  const coreTopics = [
     {
       id: 'budgeting',
       title: 'Budgeting',
       icon: Calculator,
       color: 'blue',
-      description: 'Budgeting is creating a plan for your allowance or salary before you spend it. Whether you receive ₱5,000 weekly allowance or ₱20,000 monthly starting salary, budgeting helps you cover school expenses, family contributions, and still save for your future. It\'s about making your money last until the next "baon" or payday while building good financial habits early.',
-      sources: [
-        {
-          title: 'Peso Sense - Budgeting for Students',
-          url: 'https://www.youtube.com/@pesosense4306',
-          type: 'YouTube'
-        },
-        {
-          title: 'Khan Academy - Planning a Budget',
-          url: 'https://www.khanacademy.org/college-careers-more/financial-literacy/xa6995ea67a8e9fdd:budgeting-and-saving/xa6995ea67a8e9fdd:budgeting/a/planning-a-budget-start',
-          type: 'Educational'
-        },
-        {
-          title: 'UNFCU 50-30-20 Rule Guide',
-          url: 'https://www.unfcu.org/financial-wellness/50-30-20-rule/',
-          type: 'Educational'
-        }
-      ],
-      faqs: [
-        {
-          question: 'How do I budget my weekly allowance of ₱3,000?',
-          answer: 'Try 50% for school needs (₱1,500 for food, transport, supplies), 30% for wants (₱900 for movies, coffee with friends), 20% for savings (₱600 weekly = ₱2,400 monthly emergency fund).'
-        },
-        {
-          question: 'What if my parents give me irregular amounts?',
-          answer: 'Base your budget on the minimum amount you usually receive. Save any extra money in good weeks to cover shortfalls in lean weeks. Keep a small notebook to track what you actually receive.'
-        },
-        {
-          question: 'Should I ask for more allowance or find ways to earn?',
-          answer: 'First, optimize your current budget. Track spending for 2 weeks to see where money goes. Then consider small income sources like tutoring younger students, selling preloved items, or online freelancing.'
-        },
-        {
-          question: 'How do I budget for school supplies and projects?',
-          answer: 'Create a separate "School Projects" fund by saving ₱200-500 monthly. This prevents you from borrowing or asking parents for emergency funds when big projects come up.'
-        }
-      ]
+      description: 'Master the 50-30-20 rule and create budgets that work with Filipino lifestyle and income levels.',
     },
     {
       id: 'saving', 
       title: 'Saving',
       icon: PiggyBank,
       color: 'green',
-      description: 'Saving is keeping part of your allowance or salary for emergencies and future goals instead of spending everything. As a student or fresh graduate, saving helps you handle unexpected expenses (broken laptop, medical bills), achieve goals (new phone, graduation celebration), and build financial independence. Even saving ₱100 weekly creates ₱5,200 yearly - that\'s a laptop fund!',
-      sources: [
-        {
-          title: 'Nicole Alba - Student Saving Tips',
-          url: 'https://www.youtube.com/results?search_query=nicole+alba',
-          type: 'YouTube'
-        },
-        {
-          title: 'BSP - Financial Consumer Protection',
-          url: 'https://www.bsp.gov.ph/SitePages/Default.aspx',
-          type: 'Government'
-        },
-        {
-          title: 'GCash - Student Savings Features',
-          url: 'https://www.gcash.com/',
-          type: 'Fintech'
-        }
-      ],
-      faqs: [
-        {
-          question: 'Where should I save my allowance money?',
-          answer: 'For students: GCash GSave (2.6% interest, instant access), or CIMB UpSave (4% interest, ₱100 minimum). Both are perfect for small amounts and you can deposit through 7-Eleven or online banking.'
-        },
-        {
-          question: 'How much should I save from my ₱8,000 monthly allowance?',
-          answer: 'Start with ₱800 (10%) if you\'re new to saving. Once comfortable, aim for ₱1,600 (20%). Remember: ₱800 monthly = ₱9,600 yearly emergency fund - enough for laptop repairs or medical emergencies.'
-        },
-        {
-          question: 'I\'m graduating soon, how much should I save?',
-          answer: 'Fresh graduates need ₱30,000-50,000 for job hunting (professional clothes, transportation, certificates). Start saving at least ₱3,000 monthly during your final year to build this fund.'
-        },
-        {
-          question: 'Should I save in a bank or digital wallet?',
-          answer: 'Digital wallets (GCash, PayMaya) are convenient for students - easy deposits, higher interest than traditional banks. For larger amounts (₱20,000+), consider CIMB or ING Bank for better rates.'
-        }
-      ]
+      description: 'Discover where to save money for maximum growth with digital banks and high-interest accounts.',
     },
     {
       id: 'investing',
       title: 'Investing',
       icon: TrendingUp,
       color: 'purple',
-      description: 'Investing is using your saved money to buy assets that can grow in value over time, like stocks, mutual funds, or businesses. For young Filipinos, investing helps your money grow faster than inflation and builds wealth for major life goals - house down payment, wedding, or starting a business. The earlier you start, even with just ₱500 monthly, the more time compound growth has to work magic.',
-      sources: [
-        {
-          title: 'COL Financial - Student Investment Guide',
-          url: 'https://www.colfinancial.com/ape/Final2/home/HOME_NL_MAIN.asp?p=0',
-          type: 'Investment Platform'
-        },
-        {
-          title: 'SEC Philippines - Investor Education',
-          url: 'https://www.sec.gov.ph/#gsc.tab=0',
-          type: 'Government'
-        },
-        {
-          title: 'Chinkee Tan - Investment Mindset',
-          url: 'https://chinkeetan.com/blog/',
-          type: 'Financial Education'
-        },
-        {
-          title: 'Corporate Finance Institute',
-          url: 'https://corporatefinanceinstitute.com/resources/wealth-management/financial-literacy/',
-          type: 'Professional Education'
-        }
-      ],
-      faqs: [
-        {
-          question: 'Can I start investing with just ₱1,000 as a student?',
-          answer: 'Yes! GInvest (via GCash) allows ₱50 minimum investment in mutual funds. BPI and BDO also offer mutual funds starting at ₱1,000. Perfect for students to learn investing basics with small amounts.'
-        },
-        {
-          question: 'What should fresh graduates invest in first?',
-          answer: 'After building emergency fund, start with balanced mutual funds (60% stocks, 40% bonds). These offer growth potential with less risk than pure stock funds. Invest ₱2,000-5,000 monthly from your first salary.'
-        },
-        {
-          question: 'Is investing risky for young people?',
-          answer: 'At 18-25, you have 40+ years until retirement, so you can handle more risk for higher returns. Start conservative with mutual funds, then gradually learn about individual stocks as your knowledge grows.'
-        },
-        {
-          question: 'Should I invest my graduation money?',
-          answer: 'Only invest money you won\'t need for 3+ years. Keep 6 months emergency fund first. If your graduation money exceeds emergency needs, investing 50% in mutual funds while keeping 50% for job hunting is smart.'
-        }
-      ]
+      description: 'Start building wealth with beginner-friendly Philippine investments like mutual funds and stocks.',
     }
   ]
 
-  const getColorClasses = (color: string) => {
-    switch (color) {
-      case 'indigo':
-        return 'bg-indigo-50 text-indigo-600 border-indigo-200'
-      case 'blue':
-        return 'bg-blue-50 text-blue-600 border-blue-200'
-      case 'green':
-        return 'bg-green-50 text-green-600 border-green-200'
-      case 'purple':
-        return 'bg-purple-50 text-purple-600 border-purple-200'
-      default:
-        return 'bg-gray-50 text-gray-600 border-gray-200'
+  // Essential modules that unlock after core modules
+  const essentialModules = [
+    {
+      id: 'emergency-fund',
+      title: 'Emergency Fund',
+      icon: Shield,
+      color: 'orange',
+      description: 'Build your financial safety net with emergency funds designed for Filipino youth.',
+      features: ['Students: ₱10,000-15,000 target', 'Workers: 3-6 months expenses']
+    },
+    {
+      id: 'credit-debt',
+      title: 'Credit & Debt', 
+      icon: CreditCard,
+      color: 'red',
+      description: 'Master credit cards, loans, and debt management to avoid common traps.',
+      features: ['Credit card best practices', 'Understanding interest rates']
+    },
+    {
+      id: 'digital-money',
+      title: 'Digital Money',
+      icon: Globe,
+      color: 'green', 
+      description: 'Navigate GCash, PayMaya, and online banking like a pro.',
+      features: ['GCash & PayMaya mastery', 'Online banking security']
+    },
+    {
+      id: 'insurance',
+      title: 'Insurance Basics',
+      icon: Shield,
+      color: 'blue',
+      description: 'Protection strategies for Filipino families - PhilHealth, SSS, and life insurance.',
+      features: ['Health insurance basics', 'Government benefits']
+    },
+    {
+      id: 'financial-goals', 
+      title: 'Financial Goals',
+      icon: Target,
+      color: 'purple',
+      description: 'SMART goal setting for laptops, travel, and major life purchases.',
+      features: ['SMART goal framework', 'Progress tracking']
+    },
+    {
+      id: 'money-mindset',
+      title: 'Money Mindset',
+      icon: Brain,
+      color: 'yellow',
+      description: 'Transform your relationship with money and overcome limiting beliefs.',
+      features: ['Mindset transformation', 'Overcoming money blocks']
     }
-  }
+  ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-white to-green-50/30">
+    <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="learning" />
 
-      <div className="container mx-auto px-4 py-12">
-        {/* Uniform Header */}
-        <PageHeader
-          title="Financial Literacy Basics"
-          description="Master the three pillars of personal finance designed specifically for Filipino young adults. Learn practical strategies that work with our culture and financial system."
-          badge={{
-            text: "Interactive Learning",
-            icon: BookOpen
-          }}
-        />
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Progress Bar */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">Learning Progress</h3>
+            <span className="text-sm text-gray-600">
+              {completedModules.length} of {coreTopics.length + essentialModules.length} completed
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-primary h-3 rounded-full transition-all duration-300" 
+              style={{ 
+                width: `${(completedModules.length / (coreTopics.length + essentialModules.length)) * 100}%` 
+              }}
+            ></div>
+          </div>
+        </div>
 
-        {/* Simplified Featured Financial Literacy Card */}
-        <div className="max-w-3xl mx-auto mb-12">
-          <Card className="border-2 border-primary/20 shadow-lg">
-            <div className="absolute -top-3 left-6">
-              <span className="bg-primary text-white px-4 py-1 rounded-full text-sm font-medium">
-                ⭐ Start Here
-              </span>
-            </div>
-            
-            <CardHeader className="text-center pt-8">
-              <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-100">
-                <BookOpen className="w-8 h-8 text-indigo-600" />
+        {/* Financial Literacy Introduction */}
+        <div className="mb-12">
+          <Card className="bg-white border shadow-sm">
+            <CardHeader className="text-center pb-6">
+              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+                <BookOpen className="w-8 h-8 text-white" />
               </div>
-              <CardTitle className="text-2xl mb-3">{learningTopics[0].title}</CardTitle>
-              <CardDescription className="text-base leading-relaxed">
-                {learningTopics[0].description}
+              
+              <CardTitle className="text-2xl font-bold mb-3 text-gray-900">
+                Your Financial Journey Starts Here
+              </CardTitle>
+              
+              <CardDescription className="text-base leading-relaxed max-w-2xl mx-auto text-gray-600">
+                Financial literacy is your superpower for building wealth and achieving your dreams. Learn to manage money like a pro, make smart investments, and secure your financial future with skills designed specifically for Filipino youth.
               </CardDescription>
             </CardHeader>
             
-            <CardContent className="pb-6">
-              <div className="text-center">
-                <div className="flex flex-wrap gap-2 justify-center mb-4">
-                  <span className="bg-indigo-100 text-indigo-800 text-sm px-3 py-1 rounded-full">Foundation</span>
-                  <span className="bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">Philippine Context</span>
-                  <span className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full">Youth Focused</span>
+            <CardContent className="text-center pb-6">
+              <p className="text-primary font-medium">
+                Start with Budgeting to unlock the next modules!
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Learning Path Disclaimer */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
+            <CardContent className="p-6">
+              <div className="flex items-center space-x-4">
+                <div className="bg-amber-100 p-3 rounded-full">
+                  <Target className="w-8 h-8 text-amber-600" />
                 </div>
-                <p className="text-indigo-700 font-medium">
-                  📚 Ready to start? Choose any topic below!
-                </p>
+                <div>
+                  <h3 className="text-xl font-bold mb-1 text-amber-800">📚 How Learning Works</h3>
+                  <p className="text-amber-700 text-sm leading-relaxed">
+                    <strong>Core Modules:</strong> Complete in order (Budgeting → Saving → Investing) • 
+                    <strong>Essential Modules:</strong> Unlock after finishing any 2 core modules • 
+                    <strong>Progress saves automatically</strong> as you complete each module
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Learning Path Section */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">Your Learning Path</h2>
-            <p className="text-lg text-gray-600">
-              Follow our structured approach to build financial knowledge.
-            </p>
-          </div>
+        {/* AI Assistant Highlight */}
+        <div className="mb-8">
+          <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="bg-white/20 p-3 rounded-full">
+                    <Globe className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold mb-1">Need Help Learning? Ask Our AI!</h3>
+                    <p className="text-blue-100">
+                      Get explanations, search for current financial info, and personalized advice!
+                    </p>
+                  </div>
+                </div>
+                <Link href="/ai-assistant">
+                  <Button variant="secondary">
+                    <Globe className="w-4 h-4 mr-2" />
+                    Chat Now
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-          {/* Three Main Learning Cards */}
-          <div className="grid lg:grid-cols-3 gap-6">
-            {learningTopics.slice(1).map((topic, index) => {
-              const isExpanded = expandedCards.includes(topic.id)
+        {/* Core Learning Modules */}
+        <div className="mb-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Core Financial Skills</h2>
+            <p className="text-gray-600">Master these three essential topics first - they're the foundation of financial success</p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-6">
+            {coreTopics.map((topic) => {
               const IconComponent = topic.icon
+              const isAccessible = isModuleAccessible(topic.id, 'core')
+              const isCompleted = completedModules.includes(topic.id)
+              
+              // Get color classes based on topic color
+              const getTopicColorClasses = () => {
+                switch (topic.color) {
+                  case 'blue':
+                    return {
+                      border: 'border-l-blue-500',
+                      icon: 'text-blue-500',
+                      badge: 'bg-blue-100 text-blue-800'
+                    }
+                  case 'green':
+                    return {
+                      border: 'border-l-green-500',
+                      icon: 'text-green-500',
+                      badge: 'bg-green-100 text-green-800'
+                    }
+                  case 'purple':
+                    return {
+                      border: 'border-l-purple-500',
+                      icon: 'text-purple-500',
+                      badge: 'bg-purple-100 text-purple-800'
+                    }
+                  default:
+                    return {
+                      border: 'border-l-gray-500',
+                      icon: 'text-gray-500',
+                      badge: 'bg-gray-100 text-gray-800'
+                    }
+                }
+              }
+              
+              const colorClasses = getTopicColorClasses()
               
               return (
-                <Card key={topic.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader className="text-center">
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-3 ${getColorClasses(topic.color)}`}>
-                      <IconComponent className="w-7 h-7" />
-                    </div>
-                    <CardTitle className="text-xl mb-2">{topic.title}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {topic.description}
-                    </CardDescription>
-                  </CardHeader>
-
-                  <CardContent>
-                    {/* FAQ Toggle */}
-                    <Button
-                      variant="outline"
-                      className="w-full mb-4"
-                      onClick={() => toggleCard(topic.id)}
-                    >
-                      <span>Questions</span>
-                      {isExpanded ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDown className="w-4 h-4 ml-2" />}
-                    </Button>
-
-                    {isExpanded && (
-                      <div className="space-y-2 mb-4">
-                        {topic.faqs?.slice(0, 2).map((faq, faqIndex) => (
-                          <div key={faqIndex} className="border rounded-lg p-3">
-                            <h4 className="font-medium text-sm mb-1">{faq.question}</h4>
-                            <p className="text-xs text-gray-600">{faq.answer}</p>
+                <Card key={topic.id} className={`h-full flex flex-col transition-all duration-200 border-l-4 ${
+                  !isAccessible 
+                    ? 'border-l-gray-300 bg-gray-50 opacity-60' 
+                    : isCompleted 
+                      ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
+                      : `${colorClasses.border} hover:shadow-lg`
+                }`}>
+                  <CardHeader className="flex-shrink-0">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <IconComponent className={`w-8 h-8 ${
+                          !isAccessible ? 'text-gray-400' : isCompleted ? 'text-green-600' : colorClasses.icon
+                        }`} />
+                        {!isAccessible && (
+                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
+                            <Lock className="w-3 h-3 text-white" />
                           </div>
-                        ))}
+                        )}
+                        {isCompleted && (
+                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        )}
                       </div>
-                    )}
+                      <div>
+                        <CardTitle className={`text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
+                          {topic.title}
+                        </CardTitle>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          !isAccessible 
+                            ? 'bg-gray-200 text-gray-500' 
+                            : isCompleted 
+                              ? 'bg-green-100 text-green-800' 
+                              : colorClasses.badge
+                        }`}>
+                          {isCompleted ? 'Completed' : !isAccessible ? 'Locked' : 'Core Module'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex flex-col">
+                    <CardDescription className={`text-sm leading-relaxed mb-4 flex-grow ${
+                      !isAccessible ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {!isAccessible 
+                        ? 'Complete the previous module to unlock this content.'
+                        : topic.description
+                      }
+                    </CardDescription>
 
-                    {/* Learn More Button */}
-                    <Link href={`/learning/${topic.id}`}>
-                      <Button className="w-full">
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Start Learning
-                      </Button>
-                    </Link>
+                    <div className="mt-auto">
+                      {isAccessible ? (
+                        <Link href={`/learning/${topic.id}`}>
+                          <Button className="w-full" onClick={() => markModuleCompleted(topic.id)}>
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            {isCompleted ? 'Review Module' : 'Start Learning'}
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button disabled className="w-full">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Module Locked
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -325,290 +323,186 @@ export default function LearningPage() {
           </div>
         </div>
 
-        {/* Emergency Fund Topic Section */}
+        {/* Essential Financial Topics */}
         <div className="mb-12">
           <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">Essential Financial Topics</h2>
+            <h2 className="text-3xl font-bold mb-4 text-gray-900">Essential Financial Modules</h2>
             <p className="text-lg text-gray-600">
-              Additional financial knowledge every Filipino youth should know.
+              Master these crucial topics through our Interactive LAR (Learning, Application, Reflection) system.
             </p>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <Lock className="w-4 h-4 inline mr-1" />
+                Unlock by completing any 2 core modules above
+              </p>
+            </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {/* Emergency Fund */}
-            <Card className="border-orange-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-orange-100">
-                  <Shield className="w-6 h-6 text-orange-600" />
-                </div>
-                <CardTitle className="text-lg text-orange-800">Emergency Fund</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Money saved for unexpected expenses like medical bills or laptop repairs.</div>
-                    <div><strong>Why:</strong> Prevents debt and gives financial peace of mind.</div>
-                    <div><strong>Tips:</strong> Start with ₱500, use GCash GSave, aim for 3-6 months expenses.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Students: ₱10,000-15,000 target</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Workers: 3-6 months expenses</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Keep in GCash GSave or CIMB</span>
-                  </div>
-                </div>
-                <Link href="/tools/savings-tracker">
-                  <Button variant="outline" className="w-full text-orange-600 border-orange-200">
-                    Track Emergency Fund
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {essentialModules.map((module) => {
+              const IconComponent = module.icon
+              const isAccessible = isModuleAccessible(module.id, 'essential')
+              const isCompleted = completedModules.includes(module.id)
+              
+              // Get color classes based on module color
+              const getModuleColorClasses = () => {
+                switch (module.color) {
+                  case 'orange':
+                    return {
+                      border: 'border-l-orange-500',
+                      icon: 'text-orange-500',
+                      badge: 'bg-orange-100 text-orange-800'
+                    }
+                  case 'red':
+                    return {
+                      border: 'border-l-red-500',
+                      icon: 'text-red-500',
+                      badge: 'bg-red-100 text-red-800'
+                    }
+                  case 'green':
+                    return {
+                      border: 'border-l-green-500',
+                      icon: 'text-green-500',
+                      badge: 'bg-green-100 text-green-800'
+                    }
+                  case 'blue':
+                    return {
+                      border: 'border-l-blue-500',
+                      icon: 'text-blue-500',
+                      badge: 'bg-blue-100 text-blue-800'
+                    }
+                  case 'purple':
+                    return {
+                      border: 'border-l-purple-500',
+                      icon: 'text-purple-500',
+                      badge: 'bg-purple-100 text-purple-800'
+                    }
+                  case 'yellow':
+                    return {
+                      border: 'border-l-yellow-500',
+                      icon: 'text-yellow-600',
+                      badge: 'bg-yellow-100 text-yellow-800'
+                    }
+                  default:
+                    return {
+                      border: 'border-l-gray-500',
+                      icon: 'text-gray-500',
+                      badge: 'bg-gray-100 text-gray-800'
+                    }
+                }
+              }
+              
+              const colorClasses = getModuleColorClasses()
+              
+              return (
+                <Card key={module.id} className={`h-full flex flex-col transition-all duration-200 border-l-4 ${
+                  !isAccessible 
+                    ? 'border-l-gray-300 bg-gray-50 opacity-60' 
+                    : isCompleted 
+                      ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
+                      : `${colorClasses.border} hover:shadow-lg`
+                }`}>
+                  <CardHeader className="flex-shrink-0">
+                    <div className="flex items-center space-x-3">
+                      <div className="relative">
+                        <IconComponent className={`w-8 h-8 ${
+                          !isAccessible 
+                            ? 'text-gray-400' 
+                            : isCompleted 
+                              ? 'text-green-600' 
+                              : colorClasses.icon
+                        }`} />
+                        {!isAccessible && (
+                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
+                            <Lock className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                        {isCompleted && (
+                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                            <CheckCircle className="w-3 h-3 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <CardTitle className={`text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
+                          {module.title}
+                        </CardTitle>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          !isAccessible 
+                            ? 'bg-gray-200 text-gray-500' 
+                            : isCompleted 
+                              ? 'bg-green-100 text-green-800' 
+                              : colorClasses.badge
+                        }`}>
+                          {isCompleted ? 'Completed' : !isAccessible ? 'Locked' : 'Essential'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="flex-grow flex flex-col">
+                    <CardDescription className={`text-sm leading-relaxed mb-4 flex-grow ${
+                      !isAccessible ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      {!isAccessible 
+                        ? 'Complete any 2 core modules to unlock this content.'
+                        : module.description
+                      }
+                    </CardDescription>
 
-            {/* Credit and Debt */}
-            <Card className="border-red-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-red-100">
-                  <Target className="w-6 h-6 text-red-600" />
-                </div>
-                <CardTitle className="text-lg text-red-800">Credit & Debt</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Understanding credit cards, loans, and borrowing responsibly.</div>
-                    <div><strong>Why:</strong> Avoid debt traps that affect many young Filipinos.</div>
-                    <div><strong>Tips:</strong> Pay full balance, understand interest rates, build credit history slowly.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Avoid credit card debt cycles</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Understanding loan interest rates</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Building good credit history</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full text-red-600 border-red-200">
-                  Learn About Credit
-                </Button>
-              </CardContent>
-            </Card>
+                    {isAccessible && (
+                      <div className="space-y-2 mb-4">
+                        {module.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-center text-xs">
+                            <CheckCircle className="w-3 h-3 text-gray-500 mr-2" />
+                            <span>{feature}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-            {/* Insurance Basics */}
-            <Card className="border-blue-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-blue-100">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                </div>
-                <CardTitle className="text-lg text-blue-800">Insurance Basics</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Protection plans that cover health, life, and other risks.</div>
-                    <div><strong>Why:</strong> Protects families from financial disasters and unexpected costs.</div>
-                    <div><strong>Tips:</strong> Start with PhilHealth, add SSS, consider life insurance for family.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>PhilHealth for health coverage</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Life insurance for family protection</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>SSS benefits and contributions</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full text-blue-600 border-blue-200">
-                  Explore Insurance
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Digital Money */}
-            <Card className="border-green-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-green-100">
-                  <Globe className="w-6 h-6 text-green-600" />
-                </div>
-                <CardTitle className="text-lg text-green-800">Digital Money</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Using GCash, PayMaya, and online banking safely.</div>
-                    <div><strong>Why:</strong> Essential for modern Filipino financial life and convenience.</div>
-                    <div><strong>Tips:</strong> Use strong passwords, enable 2FA, learn all app features.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>GCash and PayMaya features</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Online banking security</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Digital payment safety tips</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full text-green-600 border-green-200">
-                  Master Digital Money
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Goal Setting */}
-            <Card className="border-purple-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-purple-100">
-                  <Target className="w-6 h-6 text-purple-600" />
-                </div>
-                <CardTitle className="text-lg text-purple-800">Financial Goals</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Setting specific targets like buying a laptop or saving for abroad.</div>
-                    <div><strong>Why:</strong> Gives direction and motivation for your money decisions.</div>
-                    <div><strong>Tips:</strong> Use SMART goals, break into small steps, track progress monthly.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>SMART financial goal setting</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Short vs long-term planning</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Tracking progress effectively</span>
-                  </div>
-                </div>
-                <Link href="/goals">
-                  <Button variant="outline" className="w-full text-purple-600 border-purple-200">
-                    Set Financial Goals
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-
-            {/* Money Mindset */}
-            <Card className="border-yellow-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-yellow-100">
-                  <BookOpen className="w-6 h-6 text-yellow-600" />
-                </div>
-                <CardTitle className="text-lg text-yellow-800">Money Mindset</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Your beliefs and attitudes about money and wealth.</div>
-                    <div><strong>Why:</strong> Healthy mindset leads to better financial decisions and success.</div>
-                    <div><strong>Tips:</strong> Challenge limiting beliefs, balance family support with personal goals.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Overcoming "walang pera" mindset</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Balancing family and personal goals</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Building confidence with money</span>
-                  </div>
-                </div>
-                <Button variant="outline" className="w-full text-yellow-600 border-yellow-200">
-                  Improve Money Mindset
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Financial Needs Analysis */}
-            <Card className="border-indigo-200 hover:shadow-lg transition-shadow">
-              <CardHeader className="text-center">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3 bg-indigo-100">
-                  <BarChart3 className="w-6 h-6 text-indigo-600" />
-                </div>
-                <CardTitle className="text-lg text-indigo-800">Financial Needs Analysis</CardTitle>
-                <CardDescription className="text-sm text-left">
-                  <div className="space-y-2">
-                    <div><strong>What:</strong> Evaluating your current financial situation and future needs.</div>
-                    <div><strong>Why:</strong> Helps prioritize spending and plan for life goals effectively.</div>
-                    <div><strong>Tips:</strong> List all expenses, identify wants vs needs, plan for life stages.</div>
-                  </div>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 mb-4">
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Tracking monthly income and expenses</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Distinguishing needs vs wants</span>
-                  </div>
-                  <div className="flex items-center text-sm">
-                    <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
-                    <span>Planning for future life events</span>
-                  </div>
-                </div>
-                <Link href="/tools/budget-calculator">
-                  <Button variant="outline" className="w-full text-indigo-600 border-indigo-200">
-                    Analyze Your Finances
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
+                    <div className="mt-auto">
+                      {isAccessible ? (
+                        <Link href={`/learning/${module.id}`}>
+                          <Button className="w-full" onClick={() => markModuleCompleted(module.id)}>
+                            <BookOpen className="w-4 h-4 mr-2" />
+                            {isCompleted ? 'Review Module' : 'Start Module'}
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button disabled className="w-full">
+                          <Lock className="w-4 h-4 mr-2" />
+                          Module Locked
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         </div>
 
-        {/* Simplified CTA */}
-        <Card className="text-center bg-primary text-white">
-          <CardContent className="py-12">
-            <h3 className="text-3xl font-bold mb-4">Ready to Master Your Finances?</h3>
-            <p className="text-xl mb-6 text-blue-100">
-              Start with any topic above and begin your journey to financial freedom.
+        {/* CTA Section */}
+        <Card className="text-center bg-gradient-to-br from-gray-50 to-primary/10 border-0 shadow-xl">
+          <CardContent className="p-12">
+            <Users className="w-16 h-16 text-primary mx-auto mb-6" />
+            <h3 className="text-3xl lg:text-4xl font-bold mb-6">
+              Ready to Master Your Finances?
+            </h3>
+            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
+              Start with Budgeting to unlock your financial journey. Our AI is here to help every step of the way.
             </p>
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/learning/budgeting">
-                <Button variant="secondary" size="lg">Start with Budgeting</Button>
+                <Button size="lg" className="w-full sm:w-auto">
+                  <Calculator className="w-5 h-5 mr-2" />
+                  Start with Budgeting
+                </Button>
               </Link>
               <Link href="/ai-assistant">
-                <Button variant="outline" size="lg" className="text-white border-white hover:bg-white hover:text-primary">
-                  Ask AI Assistant
+                <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                  <Globe className="w-5 h-5 mr-2" />
+                  Get AI Help
                 </Button>
               </Link>
             </div>
