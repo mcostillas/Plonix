@@ -36,8 +36,8 @@ export default function LoginPage() {
       const result = await auth.signIn(email, password)
       
       if (result.success) {
-        // Redirect to AI assistant or dashboard
-        router.push('/ai-assistant')
+        // Redirect to dashboard instead of AI assistant
+        router.push('/dashboard')
       } else {
         setError(result.error || 'Login failed')
       }
