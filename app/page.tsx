@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bot, BookOpen, Target, Users, TrendingUp, Calculator, PiggyBank, Search, MessageCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react'
 import { PlounixLogo } from '@/components/ui/logo'
+import { useAuth } from '@/lib/auth'
 
 export default function HomePage() {
+  const { user, isLoading } = useAuth()
   const features = [
     {
       icon: Bot,
@@ -50,12 +52,24 @@ export default function HomePage() {
             <Link href="/pricing" className="text-gray-600 hover:text-primary transition-colors">
               Pricing
             </Link>
-            <Link href="/auth/login">
-              <Button variant="outline">Log In</Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Get Started</Button>
-            </Link>
+            {!isLoading && (
+              <>
+                {user ? (
+                  <Link href="/dashboard">
+                    <Button>Go to Dashboard</Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/auth/login">
+                      <Button variant="outline">Log In</Button>
+                    </Link>
+                    <Link href="/auth/register">
+                      <Button>Get Started</Button>
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -82,10 +96,10 @@ export default function HomePage() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href="/dashboard">
+                <Link href={user ? "/dashboard" : "/auth/register"}>
                   <Button size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
                     <Bot className="w-5 h-5 mr-2" />
-                    Start Your Journey
+                    {user ? "Go to Dashboard" : "Start Your Journey"}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -254,18 +268,29 @@ export default function HomePage() {
                 Join thousands of Filipino youth building wealth with AI-powered guidance. No complex jargon, just practical advice that works with our culture and lifestyle.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Link href="/auth/register">
-                  <Button size="lg" className="w-full sm:w-auto">
-                    <BookOpen className="w-5 h-5 mr-2" />
-                    Create Free Account
-                  </Button>
-                </Link>
-                <Link href="/auth/login">
-                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                    <Target className="w-5 h-5 mr-2" />
-                    Already Have Account?
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="w-full sm:w-auto">
+                      <BookOpen className="w-5 h-5 mr-2" />
+                      Go to Dashboard
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/auth/register">
+                      <Button size="lg" className="w-full sm:w-auto">
+                        <BookOpen className="w-5 h-5 mr-2" />
+                        Create Free Account
+                      </Button>
+                    </Link>
+                    <Link href="/auth/login">
+                      <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                        <Target className="w-5 h-5 mr-2" />
+                        Already Have Account?
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
