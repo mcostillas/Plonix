@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,13 +21,360 @@ import {
   DollarSign,
   Download,
   Eye,
-  Edit3
+  Edit3,
+  ChevronDown,
+  FileText,
+  FileSpreadsheet
 } from 'lucide-react'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 export default function TransactionsPage() {
   const { user } = useAuth()
   const [selectedPeriod, setSelectedPeriod] = useState('this-month')
   const [selectedCategory, setSelectedCategory] = useState('all')
+  const [showExportDropdown, setShowExportDropdown] = useState(false)
+  const exportDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (exportDropdownRef.current && !exportDropdownRef.current.contains(event.target as Node)) {
+        setShowExportDropdown(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Export function to generate CSV
+  const exportToCSV = () => {
+    const headers = ['Date', 'Time', 'Description', 'Category', 'Type', 'Amount']
+    
+    // Properly escape and format CSV content
+    const formatCSVRow = (row: (string | number)[]) => {
+      return row.map(cell => {
+        const cellStr = String(cell || '')
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`
+        }
+        return cellStr
+      }).join(',')
+    }
+
+    const csvContent = [
+      formatCSVRow(headers),
+      ...filteredTransactions.map(transaction => formatCSVRow([
+        transaction.date,
+        transaction.time,
+        transaction.description,
+        transaction.category,
+        transaction.type,
+        `PHP ${transaction.amount.toLocaleString()}`
+      ]))
+    ].join('\n')
+
+    // Add UTF-8 BOM to handle special characters properly
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `financial-overview-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setShowExportDropdown(false)
+  }
+
+  // Export function to generate detailed CSV with summary
+  const exportDetailedCSV = () => {
+    const summaryHeaders = ['Metric', 'Value']
+    const transactionHeaders = ['Date', 'Time', 'Description', 'Category', 'Type', 'Amount']
+    
+    const summaryData = [
+      ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
+      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
+      ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Transaction Count', summary.transactionCount.toString()],
+      ['Savings Rate', `${((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)}%`],
+      ['Daily Avg Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
+      ['Daily Avg Income', `PHP ${Math.round(summary.totalIncome / 30).toLocaleString()}`],
+      ['Export Date', new Date().toLocaleDateString()],
+      ['Export Time', new Date().toLocaleTimeString()]
+    ]
+
+    // Properly escape and format CSV content
+    const formatCSVRow = (row: (string | number)[]) => {
+      return row.map(cell => {
+        const cellStr = String(cell || '')
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        if (cellStr.includes(',') || cellStr.includes('"') || cellStr.includes('\n')) {
+          return `"${cellStr.replace(/"/g, '""')}"`
+        }
+        return cellStr
+      }).join(',')
+    }
+
+    const csvContent = [
+      '=== FINANCIAL SUMMARY ===',
+      formatCSVRow(summaryHeaders),
+      ...summaryData.map(row => formatCSVRow(row)),
+      '',
+      '=== TRANSACTIONS ===',
+      formatCSVRow(transactionHeaders),
+      ...filteredTransactions.map(transaction => formatCSVRow([
+        transaction.date,
+        transaction.time,
+        transaction.description,
+        transaction.category,
+        transaction.type,
+        `PHP ${transaction.amount.toLocaleString()}`
+      ]))
+    ].join('\n')
+
+    // Add UTF-8 BOM to handle special characters properly
+    const BOM = '\uFEFF'
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = URL.createObjectURL(blob)
+    link.setAttribute('href', url)
+    link.setAttribute('download', `detailed-financial-report-${new Date().toISOString().split('T')[0]}.csv`)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    setShowExportDropdown(false)
+  }
+
+  // Export PDF function with better formatting
+  const exportPDF = () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.width
+    const margin = 20
+    
+    // Title
+    doc.setFontSize(20)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Financial Overview Report', pageWidth / 2, 25, { align: 'center' })
+    
+    // Date
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, pageWidth / 2, 35, { align: 'center' })
+    
+    // Financial Summary Section
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Financial Summary', margin, 55)
+    
+    const summaryData = [
+      ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
+      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
+      ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Transaction Count', summary.transactionCount.toString()],
+      ['Savings Rate', `${((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)}%`],
+      ['Daily Avg Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
+      ['Daily Avg Income', `PHP ${Math.round(summary.totalIncome / 30).toLocaleString()}`]
+    ]
+
+    // @ts-ignore - jsPDF autoTable plugin
+    autoTable(doc, {
+      startY: 65,
+      head: [['Metric', 'Value']],
+      body: summaryData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      styles: { fontSize: 10 },
+      margin: { left: margin, right: margin }
+    })
+
+    // Get the Y position after the summary table
+    // @ts-ignore
+    const finalY = (doc as any).lastAutoTable.finalY || 150
+
+    // Transactions Section
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Recent Transactions', margin, finalY + 20)
+
+    const transactionData = filteredTransactions.slice(0, 20).map(transaction => [
+      transaction.date,
+      transaction.time,
+      transaction.description,
+      transaction.category,
+      transaction.type === 'income' ? 'Income' : 'Expense',
+      `PHP ${transaction.amount.toLocaleString()}`
+    ])
+
+    // @ts-ignore - jsPDF autoTable plugin
+    autoTable(doc, {
+      startY: finalY + 30,
+      head: [['Date', 'Time', 'Description', 'Category', 'Type', 'Amount']],
+      body: transactionData,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+      styles: { fontSize: 8 },
+      margin: { left: margin, right: margin },
+      columnStyles: {
+        0: { cellWidth: 25 }, // Date
+        1: { cellWidth: 20 }, // Time
+        2: { cellWidth: 40 }, // Description
+        3: { cellWidth: 30 }, // Category
+        4: { cellWidth: 20 }, // Type
+        5: { cellWidth: 25, halign: 'right' } // Amount
+      }
+    })
+
+    // Save the PDF
+    doc.save(`financial-overview-${new Date().toISOString().split('T')[0]}.pdf`)
+    setShowExportDropdown(false)
+  }
+
+  // Export detailed PDF with charts and better formatting
+  const exportDetailedPDF = () => {
+    const doc = new jsPDF()
+    const pageWidth = doc.internal.pageSize.width
+    const margin = 20
+
+    // Title Page
+    doc.setFontSize(24)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Detailed Financial Report', pageWidth / 2, 40, { align: 'center' })
+    
+    doc.setFontSize(12)
+    doc.setFont('helvetica', 'normal')
+    doc.text(`Report Period: ${new Date().toLocaleDateString()}`, pageWidth / 2, 55, { align: 'center' })
+    doc.text(`Generated: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, pageWidth / 2, 65, { align: 'center' })
+    
+    // Executive Summary
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Executive Summary', margin, 90)
+    
+    doc.setFontSize(10)
+    doc.setFont('helvetica', 'normal')
+    const savingsRate = ((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)
+    const summaryText = [
+      `During this period, you had a total income of PHP ${summary.totalIncome.toLocaleString()} and expenses of PHP ${summary.totalExpenses.toLocaleString()}.`,
+      `This resulted in a net cashflow of PHP ${summary.netCashflow.toLocaleString()}, representing a ${savingsRate}% savings rate.`,
+      `You completed ${summary.transactionCount} transactions with an average daily spending of PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}.`
+    ]
+    
+    let yPos = 100
+    summaryText.forEach(text => {
+      const lines = doc.splitTextToSize(text, pageWidth - 2 * margin)
+      doc.text(lines, margin, yPos)
+      yPos += lines.length * 5 + 3
+    })
+
+    // Financial Summary Table
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Financial Summary', margin, yPos + 10)
+
+    const detailedSummaryData = [
+      ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
+      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
+      ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Transaction Count', summary.transactionCount.toString()],
+      ['Savings Rate', `${savingsRate}%`],
+      ['Daily Average Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
+      ['Daily Average Income', `PHP ${Math.round(summary.totalIncome / 30).toLocaleString()}`],
+      ['Largest Expense', `PHP ${Math.max(...transactions.filter(t => t.type === 'expense').map(t => t.amount)).toLocaleString()}`],
+      ['Largest Income', `PHP ${Math.max(...transactions.filter(t => t.type === 'income').map(t => t.amount)).toLocaleString()}`]
+    ]
+
+    // @ts-ignore
+    autoTable(doc, {
+      startY: yPos + 20,
+      head: [['Metric', 'Value']],
+      body: detailedSummaryData,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 10 },
+      margin: { left: margin, right: margin }
+    })
+
+    // New page for transactions
+    doc.addPage()
+    
+    // All Transactions
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('All Transactions', margin, 30)
+
+    const allTransactionData = filteredTransactions.map(transaction => [
+      transaction.date,
+      transaction.time,
+      transaction.description,
+      transaction.category,
+      transaction.type === 'income' ? 'Income' : 'Expense',
+      `PHP ${transaction.amount.toLocaleString()}`
+    ])
+
+    // @ts-ignore
+    autoTable(doc, {
+      startY: 40,
+      head: [['Date', 'Time', 'Description', 'Category', 'Type', 'Amount']],
+      body: allTransactionData,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 9 },
+      margin: { left: margin, right: margin },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 20 },
+        2: { cellWidth: 45 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 30, halign: 'right' }
+      }
+    })
+
+    // Category Breakdown
+    doc.addPage()
+    doc.setFontSize(16)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Expense Categories Breakdown', margin, 30)
+
+    const categoryData = categories.map(category => [
+      category.name,
+      category.transactions.toString(),
+      `PHP ${category.amount.toLocaleString()}`,
+      `${category.percentage}%`
+    ])
+
+    // @ts-ignore
+    autoTable(doc, {
+      startY: 40,
+      head: [['Category', 'Transactions', 'Amount', 'Percentage']],
+      body: categoryData,
+      theme: 'grid',
+      headStyles: { fillColor: [59, 130, 246], textColor: 255, fontStyle: 'bold' },
+      styles: { fontSize: 11 },
+      margin: { left: margin, right: margin }
+    })
+
+    // Footer on each page
+    const pageCount = (doc as any).internal.getNumberOfPages()
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i)
+      doc.setFontSize(8)
+      doc.setFont('helvetica', 'normal')
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth - margin, doc.internal.pageSize.height - 10, { align: 'right' })
+      doc.text('Plounix Financial Report', margin, doc.internal.pageSize.height - 10)
+    }
+
+    doc.save(`detailed-financial-report-${new Date().toISOString().split('T')[0]}.pdf`)
+    setShowExportDropdown(false)
+  }
 
   // Mock data - this would come from your database
   const transactions = [
@@ -79,10 +426,76 @@ export default function TransactionsPage() {
               <p className="text-gray-600">Complete view of your income, expenses, and transactions</p>
             </div>
             <div className="flex space-x-3">
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-2" />
-                Export
-              </Button>
+              <div className="relative" ref={exportDropdownRef}>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowExportDropdown(!showExportDropdown)}
+                  className="flex items-center"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                  <ChevronDown className="w-3 h-3 ml-1" />
+                </Button>
+                
+                {showExportDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+                    <button
+                      onClick={() => {
+                        exportToCSV()
+                        setShowExportDropdown(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 mr-3 text-green-600" />
+                      <div>
+                        <div className="font-medium">Transactions CSV</div>
+                        <div className="text-xs text-gray-500">Export transaction data only</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        exportDetailedCSV()
+                        setShowExportDropdown(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                    >
+                      <FileText className="w-4 h-4 mr-3 text-blue-600" />
+                      <div>
+                        <div className="font-medium">Detailed Report CSV</div>
+                        <div className="text-xs text-gray-500">Include summary & transactions</div>
+                      </div>
+                    </button>
+                    <div className="border-t border-gray-100 my-1"></div>
+                    <button
+                      onClick={() => {
+                        exportPDF()
+                        setShowExportDropdown(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                    >
+                      <FileText className="w-4 h-4 mr-3 text-red-600" />
+                      <div>
+                        <div className="font-medium">Simple PDF Report</div>
+                        <div className="text-xs text-gray-500">Basic summary & transactions</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        exportDetailedPDF()
+                        setShowExportDropdown(false)
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                    >
+                      <FileText className="w-4 h-4 mr-3 text-purple-600" />
+                      <div>
+                        <div className="font-medium">Detailed PDF Report</div>
+                        <div className="text-xs text-gray-500">Complete analysis with charts</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
               <Link href="/add-transaction">
                 <Button size="sm">
                   <PlusCircle className="w-4 h-4 mr-2" />
