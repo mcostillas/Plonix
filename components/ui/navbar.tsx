@@ -144,6 +144,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                   size="md" 
                   className="text-primary"
                 />
+                <span className="text-xl font-bold text-gray-900">Plounix</span>
               </Link>
             </div>
             <div className="flex items-center space-x-4">
@@ -166,6 +167,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 size="md" 
                 className="text-primary"
               />
+              <span className="text-xl font-bold text-gray-900">Plounix</span>
             </Link>
           </div>
 

@@ -1,36 +1,14 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain, Award, Trophy } from 'lucide-react'
+import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain } from 'lucide-react'
 
 export default function LearningPage() {
   const [completedModules, setCompletedModules] = useState<string[]>([])
-  const [mounted, setMounted] = useState(false)
-
-  // Load completed modules from localStorage on mount
-  useEffect(() => {
-    const savedProgress = localStorage.getItem('plounix-learning-progress')
-    if (savedProgress) {
-      try {
-        const parsed = JSON.parse(savedProgress)
-        setCompletedModules(parsed)
-      } catch (error) {
-        console.error('Failed to load learning progress:', error)
-      }
-    }
-    setMounted(true)
-  }, [])
-
-  // Save to localStorage whenever completedModules changes
-  useEffect(() => {
-    if (mounted && completedModules.length > 0) {
-      localStorage.setItem('plounix-learning-progress', JSON.stringify(completedModules))
-    }
-  }, [completedModules, mounted])
 
   // Function to mark module as completed
   const markModuleCompleted = (moduleId: string) => {
@@ -39,43 +17,12 @@ export default function LearningPage() {
     }
   }
 
-  // Function to reset progress (for testing/debugging)
-  const resetProgress = () => {
-    setCompletedModules([])
-    localStorage.removeItem('plounix-learning-progress')
-  }
-
   // Function to check if a module is accessible
   const isModuleAccessible = (moduleId: string, moduleType: 'core' | 'essential') => {
-    if (moduleType === 'core') {
-      // Sequential unlocking for core modules: budgeting -> saving -> investing
-      if (moduleId === 'budgeting') return true
-      if (moduleId === 'saving') return completedModules.includes('budgeting')
-      if (moduleId === 'investing') return completedModules.includes('saving')
-    }
-    
-    if (moduleType === 'essential') {
-      // Essential modules unlock one by one after completing core modules
-      const completedCoreModules = completedModules.filter(id => ['budgeting', 'saving', 'investing'].includes(id))
-      
-      // Need at least 2 core modules to start unlocking essential modules
-      if (completedCoreModules.length < 2) return false
-      
-      // Sequential unlocking of essential modules based on their order
-      const essentialOrder = ['debt-credit', 'emergency-insurance', 'financial-goals', 'money-mindset']
-      const moduleIndex = essentialOrder.indexOf(moduleId)
-      
-      if (moduleIndex === -1) return false // Module not found
-      
-      // First essential module unlocks after 2 core modules
-      if (moduleIndex === 0) return completedCoreModules.length >= 2
-      
-      // Subsequent essential modules unlock after completing the previous essential module
-      const previousEssentialModule = essentialOrder[moduleIndex - 1]
-      return completedModules.includes(previousEssentialModule)
-    }
-    
-    return false
+    if (moduleType === 'core') return true // Core modules are always accessible
+    // Essential modules unlock after completing at least 2 core modules
+    const completedCoreModules = completedModules.filter(id => ['budgeting', 'saving', 'investing'].includes(id))
+    return completedCoreModules.length >= 2
   }
 
   // Core learning topics
@@ -160,96 +107,29 @@ export default function LearningPage() {
       <Navbar currentPage="learning" />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Enhanced Progress Bar Section */}
+        {/* Progress Bar */}
         <div className="mb-8">
-          <Card className="bg-gradient-to-r from-primary/5 to-blue-600/5 border border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Trophy className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Learning Progress</h3>
-                    <p className="text-sm text-gray-600">
-                      {completedModules.length} of {coreTopics.length + essentialModules.length} modules completed
-                    </p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">
-                    {Math.round((completedModules.length / (coreTopics.length + essentialModules.length)) * 100)}%
-                  </div>
-                  <p className="text-sm text-gray-500">Complete</p>
-                </div>
-              </div>
-              
-              <div className="space-y-3">
-                <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
-                  <div 
-                    className="bg-gradient-to-r from-primary to-blue-600 h-4 rounded-full transition-all duration-500 relative" 
-                    style={{ 
-                      width: `${Math.max(2, (completedModules.length / (coreTopics.length + essentialModules.length)) * 100)}%` 
-                    }}
-                  >
-                    <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                  </div>
-                </div>
-                
-                {/* Achievement badges */}
-                {completedModules.length > 0 && (
-                  <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Achievements:</span>
-                    {completedModules.length >= 1 && (
-                      <div className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                        <Award className="w-3 h-3 mr-1" />
-                        First Step
-                      </div>
-                    )}
-                    {completedModules.length >= 3 && (
-                      <div className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        <Award className="w-3 h-3 mr-1" />
-                        Core Learner
-                      </div>
-                    )}
-                    {completedModules.length >= 5 && (
-                      <div className="flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
-                        <Trophy className="w-3 h-3 mr-1" />
-                        Advanced
-                      </div>
-                    )}
-                    {completedModules.length === (coreTopics.length + essentialModules.length) && (
-                      <div className="flex items-center bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-                        <Trophy className="w-3 h-3 mr-1" />
-                        Master
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {/* Debug reset button - only show in development */}
-                {process.env.NODE_ENV === 'development' && completedModules.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={resetProgress}
-                      className="text-xs"
-                    >
-                      Reset Progress (Dev Only)
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold text-gray-800">Learning Progress</h3>
+            <span className="text-sm text-gray-600">
+              {completedModules.length} of {coreTopics.length + essentialModules.length} completed
+            </span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-3">
+            <div 
+              className="bg-blue-600 h-3 rounded-full transition-all duration-300" 
+              style={{ 
+                width: `${(completedModules.length / (coreTopics.length + essentialModules.length)) * 100}%` 
+              }}
+            ></div>
+          </div>
         </div>
 
         {/* Financial Literacy Introduction */}
         <div className="mb-12">
           <Card className="bg-white border shadow-sm">
             <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               
@@ -263,37 +143,16 @@ export default function LearningPage() {
             </CardHeader>
             
             <CardContent className="text-center pb-6">
-              <p className="text-primary font-medium">
-                Start with Budgeting to unlock the next modules!
+              <p className="text-blue-600 font-medium">
+                Choose any module below to begin learning
               </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Learning Path Disclaimer */}
-        <div className="mb-8">
-          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-amber-100 p-3 rounded-full">
-                  <Target className="w-8 h-8 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1 text-amber-800">📚 How Learning Works</h3>
-                  <p className="text-amber-700 text-sm leading-relaxed">
-                    <strong>Core Modules:</strong> Complete in order (Budgeting → Saving → Investing) • 
-                    <strong>Essential Modules:</strong> Unlock one at a time after finishing 2 core modules • 
-                    <strong>Progress saves automatically</strong> as you complete each module
-                  </p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>
 
         {/* AI Assistant Highlight */}
         <div className="mb-8">
-          <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
+          <Card className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -331,51 +190,19 @@ export default function LearningPage() {
               const isAccessible = isModuleAccessible(topic.id, 'core')
               const isCompleted = completedModules.includes(topic.id)
               
-              // Get color classes based on topic color
-              const getTopicColorClasses = () => {
-                switch (topic.color) {
-                  case 'blue':
-                    return {
-                      border: 'border-l-blue-500',
-                      icon: 'text-blue-500',
-                      badge: 'bg-blue-100 text-blue-800'
-                    }
-                  case 'green':
-                    return {
-                      border: 'border-l-green-500',
-                      icon: 'text-green-500',
-                      badge: 'bg-green-100 text-green-800'
-                    }
-                  case 'purple':
-                    return {
-                      border: 'border-l-purple-500',
-                      icon: 'text-purple-500',
-                      badge: 'bg-purple-100 text-purple-800'
-                    }
-                  default:
-                    return {
-                      border: 'border-l-gray-500',
-                      icon: 'text-gray-500',
-                      badge: 'bg-gray-100 text-gray-800'
-                    }
-                }
-              }
-              
-              const colorClasses = getTopicColorClasses()
-              
               return (
                 <Card key={topic.id} className={`h-full flex flex-col transition-all duration-200 border-l-4 ${
                   !isAccessible 
                     ? 'border-l-gray-300 bg-gray-50 opacity-60' 
                     : isCompleted 
                       ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
-                      : `${colorClasses.border} hover:shadow-lg`
+                      : 'border-l-blue-600 hover:shadow-lg'
                 }`}>
                   <CardHeader className="flex-shrink-0">
                     <div className="flex items-center space-x-3">
                       <div className="relative">
                         <IconComponent className={`w-8 h-8 ${
-                          !isAccessible ? 'text-gray-400' : isCompleted ? 'text-green-600' : colorClasses.icon
+                          !isAccessible ? 'text-gray-400' : isCompleted ? 'text-green-600' : 'text-blue-600'
                         }`} />
                         {!isAccessible && (
                           <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
@@ -397,7 +224,7 @@ export default function LearningPage() {
                             ? 'bg-gray-200 text-gray-500' 
                             : isCompleted 
                               ? 'bg-green-100 text-green-800' 
-                              : colorClasses.badge
+                              : 'bg-blue-100 text-blue-800'
                         }`}>
                           {isCompleted ? 'Completed' : !isAccessible ? 'Locked' : 'Core Module'}
                         </span>
@@ -417,15 +244,7 @@ export default function LearningPage() {
                     <div className="mt-auto">
                       {isAccessible ? (
                         <Link href={`/learning/${topic.id}`}>
-                          <Button 
-                            className="w-full" 
-                            onClick={() => {
-                              if (!isCompleted) {
-                                markModuleCompleted(topic.id)
-                                // Add confetti or celebration effect here if desired
-                              }
-                            }}
-                          >
+                          <Button className="w-full" onClick={() => markModuleCompleted(topic.id)}>
                             <BookOpen className="w-4 h-4 mr-2" />
                             {isCompleted ? 'Review Module' : 'Start Learning'}
                             <ArrowRight className="w-4 h-4 ml-2" />
@@ -466,63 +285,13 @@ export default function LearningPage() {
               const isAccessible = isModuleAccessible(module.id, 'essential')
               const isCompleted = completedModules.includes(module.id)
               
-              // Get color classes based on module color
-              const getModuleColorClasses = () => {
-                switch (module.color) {
-                  case 'orange':
-                    return {
-                      border: 'border-l-orange-500',
-                      icon: 'text-orange-500',
-                      badge: 'bg-orange-100 text-orange-800'
-                    }
-                  case 'red':
-                    return {
-                      border: 'border-l-red-500',
-                      icon: 'text-red-500',
-                      badge: 'bg-red-100 text-red-800'
-                    }
-                  case 'green':
-                    return {
-                      border: 'border-l-green-500',
-                      icon: 'text-green-500',
-                      badge: 'bg-green-100 text-green-800'
-                    }
-                  case 'blue':
-                    return {
-                      border: 'border-l-blue-500',
-                      icon: 'text-blue-500',
-                      badge: 'bg-blue-100 text-blue-800'
-                    }
-                  case 'purple':
-                    return {
-                      border: 'border-l-purple-500',
-                      icon: 'text-purple-500',
-                      badge: 'bg-purple-100 text-purple-800'
-                    }
-                  case 'yellow':
-                    return {
-                      border: 'border-l-yellow-500',
-                      icon: 'text-yellow-600',
-                      badge: 'bg-yellow-100 text-yellow-800'
-                    }
-                  default:
-                    return {
-                      border: 'border-l-gray-500',
-                      icon: 'text-gray-500',
-                      badge: 'bg-gray-100 text-gray-800'
-                    }
-                }
-              }
-              
-              const colorClasses = getModuleColorClasses()
-              
               return (
                 <Card key={module.id} className={`h-full flex flex-col transition-all duration-200 border-l-4 ${
                   !isAccessible 
                     ? 'border-l-gray-300 bg-gray-50 opacity-60' 
                     : isCompleted 
                       ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
-                      : `${colorClasses.border} hover:shadow-lg`
+                      : 'border-l-blue-600 hover:shadow-lg'
                 }`}>
                   <CardHeader className="flex-shrink-0">
                     <div className="flex items-center space-x-3">
@@ -532,7 +301,7 @@ export default function LearningPage() {
                             ? 'text-gray-400' 
                             : isCompleted 
                               ? 'text-green-600' 
-                              : colorClasses.icon
+                              : 'text-blue-600'
                         }`} />
                         {!isAccessible && (
                           <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
@@ -554,7 +323,7 @@ export default function LearningPage() {
                             ? 'bg-gray-200 text-gray-500' 
                             : isCompleted 
                               ? 'bg-green-100 text-green-800' 
-                              : colorClasses.badge
+                              : 'bg-blue-100 text-blue-800'
                         }`}>
                           {isCompleted ? 'Completed' : !isAccessible ? 'Locked' : 'Essential'}
                         </span>
@@ -585,23 +354,15 @@ export default function LearningPage() {
                     <div className="mt-auto">
                       {isAccessible ? (
                         <Link href={`/learning/${module.id}`}>
-                          <Button 
-                            className="w-full" 
-                            onClick={() => {
-                              if (!isCompleted) {
-                                markModuleCompleted(module.id)
-                              }
-                            }}
-                          >
+                          <Button className="w-full" onClick={() => markModuleCompleted(module.id)}>
                             <BookOpen className="w-4 h-4 mr-2" />
                             {isCompleted ? 'Review Module' : 'Start Module'}
-                            <ArrowRight className="w-4 h-4 ml-2" />
                           </Button>
                         </Link>
                       ) : (
                         <Button disabled className="w-full">
                           <Lock className="w-4 h-4 mr-2" />
-                          Complete 2 Core Modules First
+                          Module Locked
                         </Button>
                       )}
                     </div>
@@ -613,14 +374,14 @@ export default function LearningPage() {
         </div>
 
         {/* CTA Section */}
-        <Card className="text-center bg-gradient-to-br from-gray-50 to-primary/10 border-0 shadow-xl">
+        <Card className="text-center bg-gradient-to-br from-gray-50 to-blue-50/30 border-0 shadow-xl">
           <CardContent className="p-12">
-            <Users className="w-16 h-16 text-primary mx-auto mb-6" />
+            <Users className="w-16 h-16 text-blue-600 mx-auto mb-6" />
             <h3 className="text-3xl lg:text-4xl font-bold mb-6">
               Ready to Master Your Finances?
             </h3>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Start with Budgeting to unlock your financial journey. Our AI is here to help every step of the way.
+              Start with any module above and begin building the financial skills that will transform your future. Our AI is here to help every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/learning/budgeting">
