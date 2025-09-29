@@ -31,7 +31,7 @@ export default function NavbarPreview() {
               <div className="space-y-3 text-sm">
                 <div>
                   <strong className="text-primary">Learning:</strong>
-                  <span className="text-gray-600 ml-2">Learning Hub, Challenges, Money Missions</span>
+                  <span className="text-gray-600 ml-2">Learning Hub, Challenges</span>
                 </div>
                 <div>
                   <strong className="text-primary">Tools:</strong>
