@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { Trophy, Calendar, Users, Target, TrendingUp, PiggyBank, Coffee, BookOpen } from 'lucide-react'
+import { Trophy, Calendar, Users, Target, TrendingUp, PiggyBank, Coffee, BookOpen, Flame, GraduationCap, Briefcase, CheckCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 
 export default function ChallengesPage() {
@@ -163,30 +163,32 @@ export default function ChallengesPage() {
   ]
 
   const renderChallengeCard = (challenge: any, isJoined: boolean) => (
-    <Card key={challenge.id} className="hover:shadow-lg transition-shadow">
-      <CardHeader>
+    <Card key={challenge.id} className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary/20 hover:border-l-primary">
+      <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <challenge.icon className="w-8 h-8 text-primary" />
-            <div>
-              <CardTitle className="text-lg">{challenge.title}</CardTitle>
-              <CardDescription className="mt-1">{challenge.description}</CardDescription>
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <challenge.icon className="w-6 h-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <CardTitle className="text-lg font-semibold text-gray-900">{challenge.title}</CardTitle>
+              <CardDescription className="mt-1 text-gray-600">{challenge.description}</CardDescription>
             </div>
           </div>
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            challenge.difficulty === 'Easy' ? 'bg-green-100 text-green-800' :
-            challenge.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
-            'bg-red-100 text-red-800'
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            challenge.difficulty === 'Easy' ? 'bg-green-100 text-green-700 border border-green-200' :
+            challenge.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
+            'bg-red-100 text-red-700 border border-red-200'
           }`}>
             {challenge.difficulty}
           </span>
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="pt-0">
         <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm text-gray-600">
-            <div className="flex items-center space-x-4">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center space-x-4 text-gray-500">
               <div className="flex items-center space-x-1">
                 <Calendar className="w-4 h-4" />
                 <span>{challenge.duration}</span>
@@ -196,22 +198,30 @@ export default function ChallengesPage() {
                 <span>{challenge.participants.toLocaleString()} joined</span>
               </div>
             </div>
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+            <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md font-medium">
               {challenge.category}
             </span>
           </div>
 
-          <div className="bg-green-50 p-3 rounded-lg">
-            <h4 className="font-semibold text-green-800 text-sm mb-1">Reward:</h4>
-            <p className="text-green-700 text-sm">{challenge.reward}</p>
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
+            <div className="flex items-start space-x-2">
+              <Trophy className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-green-800 text-sm">Reward</h4>
+                <p className="text-green-700 text-sm mt-1">{challenge.reward}</p>
+              </div>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-semibold text-sm mb-2">Tips to succeed:</h4>
-            <ul className="space-y-1">
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm text-gray-900 flex items-center space-x-2">
+              <Target className="w-4 h-4 text-primary" />
+              <span>Success Tips</span>
+            </h4>
+            <ul className="space-y-2">
               {challenge.tips.slice(0, 2).map((tip: string, index: number) => (
-                <li key={index} className="text-sm text-gray-600 flex items-start space-x-1">
-                  <span className="text-primary mt-1">•</span>
+                <li key={index} className="text-sm text-gray-600 flex items-start space-x-2">
+                  <CheckCircle className="w-3 h-3 text-primary mt-1 flex-shrink-0" />
                   <span>{tip}</span>
                 </li>
               ))}
@@ -219,12 +229,19 @@ export default function ChallengesPage() {
           </div>
 
           <Button 
-            className="w-full" 
+            className="w-full h-11 font-medium transition-all duration-200" 
             onClick={() => joinChallenge(challenge.id)}
             disabled={isJoined}
             variant={isJoined ? "outline" : "default"}
           >
-            {isJoined ? '✓ Joined Challenge' : 'Join Challenge'}
+            {isJoined ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Challenge Joined
+              </>
+            ) : (
+              'Join Challenge'
+            )}
           </Button>
         </div>
       </CardContent>
@@ -247,33 +264,44 @@ export default function ChallengesPage() {
         />
 
         {/* Stats Overview */}
-        <div className="grid md:grid-cols-3 gap-6 mb-8">
-          <Card>
+        <div className="grid md:grid-cols-3 gap-6 mb-12">
+          <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
             <CardContent className="text-center pt-6">
-              <Trophy className="w-8 h-8 text-yellow-500 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold">12</h3>
-              <p className="text-gray-600">Challenges Completed</p>
+              <div className="p-3 bg-yellow-500 rounded-full w-fit mx-auto mb-3">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">12</h3>
+              <p className="text-gray-600 font-medium">Challenges Completed</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
             <CardContent className="text-center pt-6">
-              <PiggyBank className="w-8 h-8 text-green-500 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold">₱8,450</h3>
-              <p className="text-gray-600">Total Money Saved</p>
+              <div className="p-3 bg-green-500 rounded-full w-fit mx-auto mb-3">
+                <PiggyBank className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">₱8,450</h3>
+              <p className="text-gray-600 font-medium">Total Money Saved</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
             <CardContent className="text-center pt-6">
-              <Users className="w-8 h-8 text-blue-500 mx-auto mb-2" />
-              <h3 className="text-2xl font-bold">1,247</h3>
-              <p className="text-gray-600">Community Members</p>
+              <div className="p-3 bg-blue-500 rounded-full w-fit mx-auto mb-3">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900">1,247</h3>
+              <p className="text-gray-600 font-medium">Community Members</p>
             </CardContent>
           </Card>
         </div>
 
         {/* Popular Challenges */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">🔥 Popular This Week</h2>
+        <div className="mb-12">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="p-2 bg-orange-100 rounded-lg">
+              <Flame className="w-5 h-5 text-orange-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Popular This Week</h2>
+          </div>
           <div className="grid lg:grid-cols-2 gap-6">
             {popularChallenges.map((challenge) => 
               renderChallengeCard(challenge, joinedChallenges.includes(challenge.id))
@@ -282,9 +310,14 @@ export default function ChallengesPage() {
         </div>
 
         {/* Student Challenges */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">🎓 Student Challenges</h2>
-          <p className="text-gray-600 mb-6">Perfect for college students managing allowances and building first financial habits.</p>
+        <div className="mb-12">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <GraduationCap className="w-5 h-5 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Student Challenges</h2>
+          </div>
+          <p className="text-gray-600 mb-6 text-lg">Perfect for college students managing allowances and building first financial habits.</p>
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {studentChallenges.map((challenge) => 
               renderChallengeCard(challenge, joinedChallenges.includes(challenge.id))
@@ -293,29 +326,20 @@ export default function ChallengesPage() {
         </div>
 
         {/* Graduate Challenges */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-6">💼 Fresh Graduate Challenges</h2>
-          <p className="text-gray-600 mb-6">Level up your financial game with your first salary and career goals.</p>
+        <div className="mb-12">
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="p-2 bg-purple-100 rounded-lg">
+              <Briefcase className="w-5 h-5 text-purple-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900">Fresh Graduate Challenges</h2>
+          </div>
+          <p className="text-gray-600 mb-6 text-lg">Level up your financial game with your first salary and career goals.</p>
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {graduateChallenges.map((challenge) => 
               renderChallengeCard(challenge, joinedChallenges.includes(challenge.id))
             )}
           </div>
         </div>
-
-        {/* Community Call-to-Action */}
-        <Card className="text-center bg-gradient-to-r from-primary to-blue-600 text-white">
-          <CardContent className="py-8">
-            <Trophy className="w-12 h-12 mx-auto mb-4 text-yellow-300" />
-            <h3 className="text-2xl font-bold mb-2">Create Your Own Challenge</h3>
-            <p className="mb-6 text-blue-100">
-              Have a unique financial goal? Start a challenge and invite your friends to join!
-            </p>
-            <Button variant="secondary" size="lg">
-              Start Custom Challenge
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )
