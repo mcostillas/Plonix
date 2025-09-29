@@ -270,7 +270,7 @@ export default function PricingPage() {
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />
-                  <span className="text-sm">Community money missions</span>
+                  <span className="text-sm">Community challenges</span>
                 </div>
                 <div className="flex items-center space-x-3">
                   <Check className="w-5 h-5 text-green-600" />

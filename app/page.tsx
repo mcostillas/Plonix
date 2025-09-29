@@ -309,7 +309,7 @@ export default function HomePage() {
           </p>
           <div className="flex justify-center space-x-6">
             <Link href="/learning" className="hover:text-primary">Learn</Link>
-            <Link href="/money-missions" className="hover:text-primary">Money Missions</Link>
+            <Link href="/challenges" className="hover:text-primary">Challenges</Link>
             <Link href="/resource-hub" className="hover:text-primary">Resources</Link>
             <Link href="/ai-assistant" className="hover:text-primary">AI Assistant</Link>
           </div>

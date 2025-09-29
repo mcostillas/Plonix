@@ -80,8 +80,7 @@ export function Navbar({ currentPage }: NavbarProps) {
       icon: BookOpen,
       items: [
         { name: 'Learning Hub', href: '/learning', icon: BookOpen, description: 'Financial education' },
-        { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Learn through challenges' },
-        { name: 'Money Missions', href: '/money-missions', icon: Award, description: 'Complete financial tasks' }
+        { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Complete financial challenges & missions' }
       ]
     },
     {
