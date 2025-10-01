@@ -15,10 +15,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Get authenticated user for memory context
-    let authenticatedUserId = null
+    let authenticatedUser = null
     try {
       const user = await getCurrentUser()
-      authenticatedUserId = user?.id || null
+      authenticatedUser = user || null
     } catch (error) {
       // User not authenticated, continue with general mode
       console.log('User not authenticated, providing general advice')
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     // Check if OpenAI API key is available
     if (!process.env.OPENAI_API_KEY) {
       console.log('OpenAI API key not found, using fallback response')
-      const fallbackResponse = authenticatedUserId 
+      const fallbackResponse = authenticatedUser 
         ? "Hi! I notice the AI is not fully configured yet. You'll need to add your OpenAI API key to the .env.local file. Since you're logged in, I'll remember our conversation once the AI is configured! In the meantime, I can still help with basic financial advice!"
         : "Hi! I notice the AI is not fully configured yet. You'll need to add your OpenAI API key to the .env.local file. Consider logging in for a personalized experience once the AI is ready!"
       
@@ -35,12 +35,12 @@ export async function POST(request: NextRequest) {
         response: fallbackResponse,
         success: true,
         fallback: true,
-        authenticated: !!authenticatedUserId
+        authenticated: !!authenticatedUser
       })
     }
 
     // Use authenticated user ID if available, otherwise fall back to provided/default userId
-    const effectiveUserId = authenticatedUserId || userId || 'anonymous'
+    const effectiveUserId = authenticatedUser?.id || userId || 'anonymous'
 
     // Get or create AI agent for this user
     let agent = aiAgents.get(effectiveUserId)
@@ -51,21 +51,21 @@ export async function POST(request: NextRequest) {
 
     // Build smart context with memory (only for authenticated users)
     let contextualMessage = message
-    if (authenticatedUserId) {
+    if (authenticatedUser) {
       try {
-        contextualMessage = await getAuthenticatedMemoryContext(authenticatedUserId, message)
+        contextualMessage = await getAuthenticatedMemoryContext(authenticatedUser.id, message)
       } catch (error) {
         console.log('Memory not available, using direct message')
       }
     }
 
-    // Get AI response
-    const response = await agent.chat(effectiveUserId, contextualMessage)
+    // Get AI response with user context
+    const response = await agent.chat(effectiveUserId, contextualMessage, authenticatedUser)
 
     // Save to memory if user is authenticated
-    if (authenticatedUserId) {
+    if (authenticatedUser) {
       try {
-        await addToUserMemory(authenticatedUserId, message, response)
+        await addToUserMemory(authenticatedUser.id, message, response)
       } catch (error) {
         console.log('Could not save to memory, continuing without persistence')
       }
@@ -74,8 +74,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ 
       response,
       success: true,
-      authenticated: !!authenticatedUserId,
-      memoryEnabled: !!authenticatedUserId
+      authenticated: !!authenticatedUser,
+      memoryEnabled: !!authenticatedUser
     })
 
   } catch (error) {
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     // Check if it's an API key issue
     if (error instanceof Error && error.message.includes('OPENAI_API_KEY')) {
       return NextResponse.json({ 
-        response: "🔧 **Setup Required**: The AI needs an OpenAI API key to work. Please add your API key to the .env.local file as OPENAI_API_KEY=your_key_here. Once configured, I'll be able to provide personalized financial advice!",
+        response: "Setup Required: The AI needs an OpenAI API key to work. Please add your API key to the .env.local file as OPENAI_API_KEY=your_key_here. Once configured, I'll be able to provide personalized financial advice!",
         success: true,
         fallback: true,
         authenticated: false
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const fallbackResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)]
     
     return NextResponse.json({ 
-      response: fallbackResponse + "\n\n(Note: AI is temporarily unavailable, pero I'm still here to help!)",
+      response: fallbackResponse + "\n\nNote: AI is temporarily unavailable, pero I'm still here to help!",
       success: true,
       fallback: true,
       authenticated: false

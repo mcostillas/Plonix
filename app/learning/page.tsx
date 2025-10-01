@@ -5,9 +5,18 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
+import { AuthGuard } from '@/components/AuthGuard'
 import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain, Award, Trophy } from 'lucide-react'
 
 export default function LearningPage() {
+  return (
+    <AuthGuard>
+      <LearningContent />
+    </AuthGuard>
+  )
+}
+
+function LearningContent() {
   const [completedModules, setCompletedModules] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
 
@@ -301,7 +310,7 @@ export default function LearningPage() {
                     <Globe className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Need Help Learning? Ask Our AI!</h3>
+                    <h3 className="text-xl font-bold mb-1">Need Help Learning? Ask Fili!</h3>
                     <p className="text-blue-100">
                       Get explanations, search for current financial info, and personalized advice!
                     </p>
@@ -620,7 +629,7 @@ export default function LearningPage() {
               Ready to Master Your Finances?
             </h3>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Start with Budgeting to unlock your financial journey. Our AI is here to help every step of the way.
+              Start with Budgeting to unlock your financial journey. Fili is here to help every step of the way.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/learning/budgeting">

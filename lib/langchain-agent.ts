@@ -2,11 +2,11 @@ import { ChatOpenAI } from "@langchain/openai"
 import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents"
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts"
 import { DynamicTool } from "langchain/tools"
-import { LangChainMemoryManager } from './langchain-memory'
+import { EnhancedLangChainMemory } from './langchain-memory'
 
 export class PlounixAIAgent {
   private llm: ChatOpenAI
-  private memoryManager: LangChainMemoryManager
+  private memoryManager: EnhancedLangChainMemory
 
   constructor() {
     // Check if API key is available
@@ -19,7 +19,7 @@ export class PlounixAIAgent {
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     })
-    this.memoryManager = new LangChainMemoryManager()
+    this.memoryManager = new EnhancedLangChainMemory()
   }
 
   private createFinancialTools() {
@@ -30,9 +30,9 @@ export class PlounixAIAgent {
         func: async (input: string) => {
           // Simulate budget analysis
           return `Based on ₱18,000 monthly income:
-- Needs (50%): ₱9,000 - Currently ₱8,100 ✅
-- Wants (30%): ₱5,400 - Currently ₱4,700 ✅  
-- Savings (20%): ₱3,600 - Currently ₱5,200 🎉
+- Needs (50%): ₱9,000 - Currently ₱8,100 - Good
+- Wants (30%): ₱5,400 - Currently ₱4,700 - Good  
+- Savings (20%): ₱3,600 - Currently ₱5,200 - Excellent
 Great job! You're saving more than recommended.`
         },
       }),
@@ -75,13 +75,14 @@ Monthly total: ₱4,200 (target: ₱3,600). Medyo over budget, try cooking at ho
     const tools = this.createFinancialTools()
 
     const prompt = ChatPromptTemplate.fromMessages([
-      ["system", `You are Plounix AI - a Filipino financial assistant for young adults.
+      ["system", `You are Fili - a Filipino financial assistant for young adults.
 
 PERSONALITY:
 - Speak in Taglish (Filipino + English mix)
-- Use "kuya/ate" friendly tone
+- Use "kuya/ate" friendly tone, but address users by their actual name when provided
 - Reference Filipino culture: 13th month pay, paluwagan, jeepney fare
 - Be encouraging about financial goals
+- Keep responses professional and clean without emojis
 
 CONTEXT:
 - Users earn ₱15,000-30,000 monthly
@@ -94,6 +95,8 @@ CAPABILITIES:
 - Receipt scanning for expense tracking  
 - Generate culturally relevant challenges
 - Provide personalized financial advice
+
+IMPORTANT: When given user context with a name, address them by their name (e.g., "Hi Maria!" instead of "Hi ate!"). Use "kuya/ate" only when no name is provided.
 
 Remember previous conversations and build on user's financial journey.`],
       new MessagesPlaceholder("chat_history"),
@@ -114,25 +117,31 @@ Remember previous conversations and build on user's financial journey.`],
     })
   }
 
-  async chat(userId: string, message: string): Promise<string> {
+  async chat(userId: string, message: string, userContext?: any): Promise<string> {
     // Initialize agent if not already done
     const agentExecutor = await this.initializeAgent()
 
     // Get conversation memory
-    const memory = await this.memoryManager.getMemoryForUser(userId)
+    const memory = await this.memoryManager.getConversationMemory(userId)
     const chatHistory = await memory.loadMemoryVariables({})
 
-    // Add user message to memory
-    await this.memoryManager.addUserMessage(userId, message)
+    // Build enhanced input with user context
+    let enhancedMessage = message
+    if (userContext) {
+      const userName = userContext.name || userContext.email?.split('@')[0] || 'there'
+      enhancedMessage = `User Context: The user's name is ${userName}. Address them by name when appropriate.
+
+User Message: ${message}`
+    }
 
     // Run agent with memory context
     const result = await agentExecutor.invoke({
-      input: message,
+      input: enhancedMessage,
       chat_history: chatHistory.history,
     })
 
-    // Add AI response to memory
-    await this.memoryManager.addAIMessage(userId, result.output)
+    // Add conversation to memory
+    await this.memoryManager.addConversation(userId, message, result.output)
 
     return result.output
   }

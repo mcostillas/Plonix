@@ -87,7 +87,7 @@ export default function HomePage() {
               <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
                 Your Financial
                 <span className="bg-gradient-to-r from-primary to-green-600 bg-clip-text text-transparent block">
-                  Kuya/Ate AI
+                  Fili AI
                 </span>
               </h1>
               
@@ -103,12 +103,21 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                <Link href="/ai-assistant">
-                  <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    Chat with AI
-                  </Button>
-                </Link>
+                {user ? (
+                  <Link href="/ai-assistant">
+                    <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Chat with Fili AI
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link href="/auth/login">
+                    <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                      <MessageCircle className="w-5 h-5 mr-2" />
+                      Login to Chat
+                    </Button>
+                  </Link>
+                )}
               </div>
               
               <div className="flex items-center space-x-8 text-sm text-gray-600">
@@ -135,7 +144,7 @@ export default function HomePage() {
                       <Bot className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="font-semibold text-sm">Financial AI</p>
+                      <p className="font-semibold text-sm">Fili AI</p>
                       <p className="text-xs text-gray-500">Online now</p>
                     </div>
                   </div>
@@ -143,8 +152,8 @@ export default function HomePage() {
                   <div className="space-y-3">
                     <div className="bg-gray-50 rounded-lg p-3">
                       <p className="text-sm">
-                        Kumusta! I can help you create a savings plan for your iPhone 15. 
-                        With your ₱25,000 salary, you can save ₱6,500 monthly and buy it in 10 months! 📱
+                        Kumusta! I'm Fili, and I can help you create a savings plan for your iPhone 15. 
+                        With your ₱25,000 salary, you can save ₱6,500 monthly and buy it in 10 months!
                       </p>
                     </div>
                     
@@ -220,11 +229,19 @@ export default function HomePage() {
             Our AI doesn't just give generic advice. It searches the web for current prices, bank rates, and financial news to give you the most up-to-date information for your financial decisions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/ai-assistant">
-              <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
-                Try Web Search Now
-              </Button>
-            </Link>
+            {user ? (
+              <Link href="/ai-assistant">
+                <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
+                  Try Fili AI Search Now
+                </Button>
+              </Link>
+            ) : (
+              <Link href="/auth/register">
+                <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
+                  Sign Up to Try AI Search
+                </Button>
+              </Link>
+            )}
             <Button variant="outline" size="lg" className="text-lg text-white border-white hover:bg-white hover:text-primary w-full sm:w-auto">
               Watch Demo
             </Button>
@@ -311,7 +328,11 @@ export default function HomePage() {
             <Link href="/learning" className="hover:text-primary">Learn</Link>
             <Link href="/challenges" className="hover:text-primary">Challenges</Link>
             <Link href="/resource-hub" className="hover:text-primary">Resources</Link>
-            <Link href="/ai-assistant" className="hover:text-primary">AI Assistant</Link>
+            {user ? (
+              <Link href="/ai-assistant" className="hover:text-primary">Fili AI</Link>
+            ) : (
+              <Link href="/auth/login" className="hover:text-primary">Login for AI</Link>
+            )}
           </div>
         </div>
       </footer>

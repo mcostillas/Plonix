@@ -6,9 +6,18 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth'
+import { AuthGuard } from '@/components/AuthGuard'
 import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default function DashboardPage() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
+  )
+}
+
+function DashboardContent() {
   const { user } = useAuth()
   const [completedModules, setCompletedModules] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
@@ -176,28 +185,61 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          {/* AI Assistant - Takes 3 columns */}
+          {/* Challenges Overview - Takes 3 columns */}
           <div className="lg:col-span-3">
-            <Card className="bg-gradient-to-r from-primary to-blue-600 text-white h-full">
-              <CardContent className="p-6 flex items-center h-full">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex items-center space-x-4">
-                    <div className="bg-white/20 p-3 rounded-full">
-                      <Search className="w-8 h-8" />
+            <Card className="bg-white h-full">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Trophy className="w-5 h-5 mr-2 text-purple-500" />
+                  Challenges Overview
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600 mb-1">7</div>
+                      <div className="text-xs text-gray-600">Completed</div>
                     </div>
-                    <div>
-                      <h3 className="text-xl font-bold mb-1">AI Assistant with Web Search</h3>
-                      <p className="text-blue-100">
-                        Ask me to search for current prices, bank rates, or any financial info!
-                      </p>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600 mb-1">₱3,200</div>
+                      <div className="text-xs text-gray-600">Saved</div>
+                    </div>
+                    <div className="text-center p-3 bg-gray-50 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600 mb-1">2</div>
+                      <div className="text-xs text-gray-600">Active</div>
                     </div>
                   </div>
-                  <Link href="/ai-assistant">
-                    <Button variant="secondary">
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Chat Now
-                    </Button>
-                  </Link>
+
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-gray-800">Active Challenges</h4>
+                    
+                    <div className="p-3 bg-gray-50 rounded-lg border-l-3 border-blue-500">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <h5 className="font-medium text-gray-800">₱100 Daily Challenge</h5>
+                          <p className="text-sm text-gray-600">4 days remaining</p>
+                        </div>
+                        <span className="text-sm font-semibold text-blue-600">Day 3/7</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '43%' }}></div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-gray-50 rounded-lg border-l-3 border-green-500">
+                      <div className="flex justify-between items-center mb-2">
+                        <div>
+                          <h5 className="font-medium text-gray-800">Load Smart Challenge</h5>
+                          <p className="text-sm text-gray-600">1 week remaining</p>
+                        </div>
+                        <span className="text-sm font-semibold text-green-600">Week 1/2</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '50%' }}></div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -206,6 +248,33 @@ export default function DashboardPage() {
 
         {/* Main Navigation */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* AI Assistant Card - Featured */}
+          <div className="lg:col-span-3 mb-4">
+            <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="bg-white/20 p-3 rounded-full">
+                      <Globe className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold mb-1">Need Help Learning? Ask Fili!</h3>
+                      <p className="text-blue-100">
+                        Get explanations, search for current financial info, and personalized advice!
+                      </p>
+                    </div>
+                  </div>
+                  <Link href="/ai-assistant">
+                    <Button variant="secondary">
+                      <Globe className="w-4 h-4 mr-2" />
+                      Chat Now
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <Link href="/learning">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>

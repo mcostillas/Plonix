@@ -6,11 +6,20 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
-import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp } from 'lucide-react'
+import { AuthGuard } from '@/components/AuthGuard'
+import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp, Smartphone, Laptop, Plane, Shield, GraduationCap, User } from 'lucide-react'
 import { goalManager, FinancialGoal } from '@/lib/goal-manager'
 import { PageHeader } from '@/components/ui/page-header'
 
 export default function GoalsPage() {
+  return (
+    <AuthGuard>
+      <GoalsContent />
+    </AuthGuard>
+  )
+}
+
+function GoalsContent() {
   const [goals, setGoals] = useState<FinancialGoal[]>([])
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [formData, setFormData] = useState({
@@ -38,13 +47,25 @@ export default function GoalsPage() {
   }
 
   const categories = [
-    { value: 'phone', label: 'Phone/Gadgets', icon: '📱' },
-    { value: 'laptop', label: 'Laptop/Computer', icon: '💻' },
-    { value: 'vacation', label: 'Travel/Vacation', icon: '✈️' },
-    { value: 'emergency', label: 'Emergency Fund', icon: '🚨' },
-    { value: 'education', label: 'Education/Course', icon: '📚' },
-    { value: 'custom', label: 'Other', icon: '🎯' }
+    { value: 'phone', label: 'Phone/Gadgets', icon: Smartphone, color: 'blue' },
+    { value: 'laptop', label: 'Laptop/Computer', icon: Laptop, color: 'purple' },
+    { value: 'vacation', label: 'Travel/Vacation', icon: Plane, color: 'green' },
+    { value: 'emergency', label: 'Emergency Fund', icon: Shield, color: 'red' },
+    { value: 'education', label: 'Education/Course', icon: GraduationCap, color: 'yellow' },
+    { value: 'custom', label: 'Other', icon: Target, color: 'gray' }
   ]
+
+  const getCategoryColors = (category: string) => {
+    const colorMap: Record<string, {primary: string, light: string}> = {
+      technology: { primary: '#3b82f6', light: '#dbeafe' }, // blue
+      travel: { primary: '#8b5cf6', light: '#ede9fe' }, // purple  
+      education: { primary: '#10b981', light: '#d1fae5' }, // green
+      emergency: { primary: '#ef4444', light: '#fee2e2' }, // red
+      investment: { primary: '#f59e0b', light: '#fef3c7' }, // yellow
+      custom: { primary: '#6b7280', light: '#f3f4f6' } // gray
+    }
+    return colorMap[category] || colorMap.custom
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -63,72 +84,80 @@ export default function GoalsPage() {
 
         {/* Create Goal Form */}
         {showCreateForm && (
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Create New Financial Goal</CardTitle>
+          <Card className="mb-8 border-l-4 border-l-primary shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-blue-50">
+              <CardTitle className="flex items-center space-x-2">
+                <Plus className="w-5 h-5 text-primary" />
+                <span>Create New Financial Goal</span>
+              </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <CardContent className="space-y-6 p-6">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Goal Title</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Goal Title</label>
                   <Input
-                    placeholder="e.g., Save for iPhone 15"
+                    placeholder="e.g., First Job Emergency Fund"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Target Amount (₱)</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Target Amount (₱)</label>
                   <Input
                     type="number"
-                    placeholder="e.g., 65000"
+                    placeholder="e.g., 30000"
                     value={formData.targetAmount}
                     onChange={(e) => setFormData({...formData, targetAmount: e.target.value})}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium mb-2">Description</label>
+                <label className="block text-sm font-semibold mb-2 text-gray-700">Description</label>
                 <Input
-                  placeholder="Why is this goal important to you?"
+                  placeholder="Build a safety net for when I start working"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
+                  className="border-2 focus:border-primary"
                 />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Timeframe (months)</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Timeframe (months)</label>
                   <Input
                     type="number"
                     placeholder="e.g., 12"
                     value={formData.timeframe}
                     onChange={(e) => setFormData({...formData, timeframe: e.target.value})}
+                    className="border-2 focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Category</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Category</label>
                   <select 
-                    className="w-full p-2 border rounded-md"
+                    className="w-full p-3 border-2 rounded-lg focus:border-primary focus:outline-none"
                     value={formData.category}
                     onChange={(e) => setFormData({...formData, category: e.target.value})}
                   >
                     <option value="">Select category</option>
                     {categories.map((cat) => (
                       <option key={cat.value} value={cat.value}>
-                        {cat.icon} {cat.label}
+                        {cat.label}
                       </option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              <div className="flex space-x-3">
-                <Button onClick={handleCreateGoal} className="flex-1">
+              <div className="flex space-x-3 pt-4">
+                <Button onClick={handleCreateGoal} className="flex-1 h-12 text-base">
+                  <Target className="w-4 h-4 mr-2" />
                   Create Goal
                 </Button>
-                <Button variant="outline" onClick={() => setShowCreateForm(false)}>
+                <Button variant="outline" onClick={() => setShowCreateForm(false)} className="h-12 px-8">
                   Cancel
                 </Button>
               </div>
@@ -151,8 +180,9 @@ export default function GoalsPage() {
                   Create Manual Goal
                 </Button>
                 <Link href="/ai-assistant">
-                  <Button variant="outline">
-                    💬 Ask AI for Goal Ideas
+                  <Button variant="outline" className="flex items-center space-x-2">
+                    <User className="w-4 h-4" />
+                    <span>Ask Fili for Goal Ideas</span>
                   </Button>
                 </Link>
               </div>
@@ -160,62 +190,111 @@ export default function GoalsPage() {
           </Card>
         ) : (
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {goals.map((goal) => (
-              <Card key={goal.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{goal.title}</CardTitle>
-                      <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
-                    </div>
-                    <span className="text-2xl">
-                      {categories.find(c => c.value === goal.category)?.icon || '🎯'}
-                    </span>
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="space-y-4">
-                  <div>
-                    <div className="flex justify-between text-sm mb-2">
-                      <span>Progress</span>
-                      <span>{((goal.currentAmount / goal.targetAmount) * 100).toFixed(1)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
+            {goals.map((goal) => {
+              const progressPercentage = (goal.currentAmount / goal.targetAmount) * 100;
+              const category = categories.find(c => c.value === goal.category);
+              const IconComponent = category?.icon || Target;
+              const categoryColors = getCategoryColors(goal.category);
+              
+              return (
+                <Card key={goal.id} className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary relative overflow-hidden">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <CardTitle className="text-lg font-bold text-gray-800">{goal.title}</CardTitle>
+                        <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
+                      </div>
                       <div 
-                        className="bg-primary h-3 rounded-full transition-all duration-300" 
-                        style={{ width: `${Math.min((goal.currentAmount / goal.targetAmount) * 100, 100)}%` }}
-                      />
+                        className="p-3 rounded-full flex items-center justify-center ml-3"
+                        style={{backgroundColor: categoryColors.light}}
+                      >
+                        <IconComponent 
+                          className="w-5 h-5" 
+                          style={{color: categoryColors.primary}}
+                        />
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-lg font-bold text-blue-600">₱{goal.currentAmount.toLocaleString()}</p>
-                      <p className="text-xs text-blue-700">Saved</p>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Enhanced Progress Section */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-600">Progress</span>
+                        <span className="text-sm font-bold text-gray-800">{progressPercentage.toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-green-400 to-green-600"
+                          style={{width: `${Math.min(progressPercentage, 100)}%`}}
+                        />
+                      </div>
                     </div>
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      <p className="text-lg font-bold text-green-600">₱{goal.targetAmount.toLocaleString()}</p>
-                      <p className="text-xs text-green-700">Target</p>
+
+                    {/* Amount Display */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
+                        <p className="text-lg font-bold text-blue-600">₱{goal.currentAmount.toLocaleString()}</p>
+                        <p className="text-xs font-medium text-blue-700">Saved</p>
+                      </div>
+                      <div className="bg-green-50 p-3 rounded-lg border border-green-100 text-center">
+                        <p className="text-lg font-bold text-green-600">₱{goal.targetAmount.toLocaleString()}</p>
+                        <p className="text-xs font-medium text-green-700">Target</p>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>💰 Monthly target: ₱{goal.monthlyTarget.toLocaleString()}</p>
-                    <p>📅 Deadline: {new Date(goal.deadline).toLocaleDateString()}</p>
-                    <p>🤖 Created by: {goal.createdBy === 'ai-assistant' ? 'AI Assistant' : 'Manual'}</p>
-                  </div>
+                    {/* Goal Details */}
+                    <div className="space-y-2 text-sm">
+                      <div className="flex items-center justify-between bg-amber-50 p-2 rounded border border-amber-100">
+                        <span className="text-amber-700 font-medium">Monthly Target:</span>
+                        <span className="text-amber-800 font-bold">₱{goal.monthlyTarget.toLocaleString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-gray-600">
+                        <span className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-1" />
+                          Deadline:
+                        </span>
+                        <span className="font-medium">{new Date(goal.deadline).toLocaleDateString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-gray-600">
+                        <span className="flex items-center">
+                          <User className="w-4 h-4 mr-1" />
+                          Created by:
+                        </span>
+                        <span className="font-medium">{goal.createdBy === 'ai-assistant' ? 'Fili AI' : 'Manual'}</span>
+                      </div>
+                    </div>
 
-                  <Button className="w-full" variant="outline">
-                    Update Progress
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    {/* Action Button */}
+                    <Button 
+                      className="w-full h-10 font-medium"
+                      variant="outline"
+                      style={{
+                        borderColor: categoryColors.primary,
+                        color: categoryColors.primary,
+                        borderWidth: '2px'
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = categoryColors.primary;
+                        e.currentTarget.style.color = 'white';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = categoryColors.primary;
+                      }}
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Update Progress
+                    </Button>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
         )}
 
         {/* Quick Tips */}
-        <Card className="mt-8 bg-primary/5">
+        <Card className="mt-8 bg-gradient-to-r from-primary/5 to-blue-50 border border-primary/20">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <TrendingUp className="w-5 h-5 text-primary" />
@@ -223,25 +302,61 @@ export default function GoalsPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <h4 className="font-semibold mb-2">💡 SMART Goals:</h4>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Specific: "iPhone 15" not "new phone"</li>
-                  <li>• Measurable: ₱65,000 exact amount</li>
-                  <li>• Achievable: Based on your income</li>
-                  <li>• Relevant: Important to your life</li>
-                  <li>• Time-bound: Clear deadline</li>
+            <div className="grid md:grid-cols-2 gap-6 text-sm">
+              <div className="space-y-3">
+                <h4 className="font-semibold mb-3 flex items-center text-primary">
+                  <Target className="w-4 h-4 mr-2" />
+                  SMART Goals Framework
+                </h4>
+                <ul className="space-y-2 text-gray-700">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span><strong>Specific:</strong> "First job emergency fund" not "save money"</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span><strong>Measurable:</strong> ₱30,000 (2-3 months expenses)</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span><strong>Achievable:</strong> ₱2,000-3,000 monthly savings</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span><strong>Relevant:</strong> Financial independence from family</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span><strong>Time-bound:</strong> Build within 12-15 months</span>
+                  </li>
                 </ul>
               </div>
-              <div>
-                <h4 className="font-semibold mb-2">🎯 Success Strategies:</h4>
-                <ul className="space-y-1 text-gray-600">
-                  <li>• Start with small, achievable goals</li>
-                  <li>• Automate your savings</li>
-                  <li>• Celebrate milestones</li>
-                  <li>• Adjust timeline if needed</li>
-                  <li>• Use AI assistant for motivation</li>
+              <div className="space-y-3">
+                <h4 className="font-semibold mb-3 flex items-center text-green-600">
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Success Strategies
+                </h4>
+                <ul className="space-y-2 text-gray-700">
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span>Start with ₱1,000 emergency fund goal</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span>Save first before buying wants</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span>Build good financial habits early</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span>Track every peso to learn spending patterns</span>
+                  </li>
+                  <li className="flex items-start">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <span>Use Fili AI for student financial tips</span>
+                  </li>
                 </ul>
               </div>
             </div>
