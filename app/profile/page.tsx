@@ -4,10 +4,19 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
+import { AuthGuard } from '@/components/AuthGuard'
 import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 
 export default function ProfilePage() {
+  return (
+    <AuthGuard>
+      <ProfileContent />
+    </AuthGuard>
+  )
+}
+
+function ProfileContent() {
   const [conversationStats, setConversationStats] = useState({
     totalChats: 0,
     totalMessages: 0,

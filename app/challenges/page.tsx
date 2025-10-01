@@ -5,10 +5,19 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
+import { AuthGuard } from '@/components/AuthGuard'
 import { Trophy, Calendar, Users, Target, TrendingUp, PiggyBank, Coffee, BookOpen, Flame, GraduationCap, Briefcase, CheckCircle } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 
 export default function ChallengesPage() {
+  return (
+    <AuthGuard>
+      <ChallengesContent />
+    </AuthGuard>
+  )
+}
+
+function ChallengesContent() {
   const [joinedChallenges, setJoinedChallenges] = useState<string[]>([])
 
   const joinChallenge = (challengeId: string) => {

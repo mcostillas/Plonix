@@ -8,8 +8,18 @@ import { Card } from '@/components/ui/card'
 import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield } from 'lucide-react'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
+import { AuthGuard } from '@/components/AuthGuard'
+import ReactMarkdown from 'react-markdown'
 
 export default function AIAssistantPage() {
+  return (
+    <AuthGuard>
+      <AIAssistantContent />
+    </AuthGuard>
+  )
+}
+
+function AIAssistantContent() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -27,7 +37,7 @@ export default function AIAssistantPage() {
         {
           id: 1,
           type: 'bot',
-          content: 'Kumusta! I\'m your AI-powered financial kuya/ate assistant! 🤖 I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+          content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
           timestamp: new Date()
         }
       ]
@@ -76,7 +86,7 @@ export default function AIAssistantPage() {
         {
           id: 1,
           type: 'bot',
-          content: 'Hello! I\'m your AI financial assistant. How can I help you with your money matters today? 🤖',
+          content: 'Hello! I\'m Fili, your AI financial assistant. How can I help you with your money matters today?',
           timestamp: new Date()
         }
       ]
@@ -137,7 +147,7 @@ export default function AIAssistantPage() {
     const loadingMessage = {
       id: Date.now(),
       type: 'bot',
-      content: '🤔 Thinking...',
+      content: 'Thinking...',
       timestamp: new Date()
     }
     setMessages([...updatedMessages, loadingMessage])
@@ -180,7 +190,7 @@ export default function AIAssistantPage() {
       const errorMessage = {
         id: Date.now() + 1,
         type: 'bot',
-        content: '⚠️ Sorry, I\'m having trouble connecting right now. But I can still help! For budgeting, try the 50-30-20 rule: 50% for needs, 30% for wants, 20% for savings. What specific financial topic would you like to discuss?',
+        content: 'Sorry, I\'m having trouble connecting right now. But I can still help! For budgeting, try the 50-30-20 rule: 50% for needs, 30% for wants, 20% for savings. What specific financial topic would you like to discuss?',
         timestamp: new Date()
       }
       const finalMessages = [...updatedMessages, errorMessage]
@@ -212,7 +222,7 @@ export default function AIAssistantPage() {
                   <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
                 </button>
                 <div>
-                  <h2 className="font-bold text-gray-900 text-sm">FILI</h2>
+                  <h2 className="font-bold text-gray-900 text-sm">Fili</h2>
                   <p className="text-xs text-gray-500">Financial Assistant</p>
                 </div>
               </div>
@@ -337,7 +347,7 @@ export default function AIAssistantPage() {
               <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">FILI</h1>
+              <h1 className="font-bold text-gray-900 text-lg">Fili</h1>
               <div className="text-sm text-gray-500 flex items-center">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
                 <span>Financial Assistant • Ready to help</span>
@@ -369,9 +379,9 @@ export default function AIAssistantPage() {
                 <div className="w-16 h-16 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Sparkles className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold mb-4 text-gray-900">Welcome to Plounix AI!</h2>
+                <h2 className="text-2xl font-bold mb-4 text-gray-900">Welcome to Fili!</h2>
                 <p className="text-gray-600 mb-8 leading-relaxed">
-                  Your personal financial kuya/ate assistant powered by AI. I can help you with budgeting, 
+                  Your personal financial kuya/ate assistant. I'm Fili, and I can help you with budgeting, 
                   investing, saving strategies, and all things money management designed for Filipino youth.
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
@@ -413,7 +423,19 @@ export default function AIAssistantPage() {
                         ? 'bg-primary text-white rounded-br-sm' 
                         : 'bg-gray-50 text-gray-800 rounded-bl-sm'
                     }`}>
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+                      <div className="whitespace-pre-wrap text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-gray-900 prose-strong:text-gray-900 prose-p:text-gray-700">
+                        <ReactMarkdown 
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
+                            ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                            li: ({ children }) => <li className="text-sm">{children}</li>
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
                     </div>
                     <p className="text-xs text-gray-400 mt-1 px-1">
                       {message.timestamp.toLocaleTimeString()}
