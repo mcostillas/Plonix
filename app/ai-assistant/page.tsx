@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield } from 'lucide-react'
+import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon } from 'lucide-react'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
 import ReactMarkdown from 'react-markdown'
+import { supabase } from '@/lib/supabase'
 
 export default function AIAssistantPage() {
   return (
@@ -23,16 +24,23 @@ function AIAssistantContent() {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentChatId, setCurrentChatId] = useState('1')
   const [inputMessage, setInputMessage] = useState('')
+  const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
+  const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   
-  // Chat history state
+  // Chat history state - starts with one default chat with unique session ID
+  const defaultSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
   const [chats, setChats] = useState([
     {
-      id: '1',
-      title: 'Budget Planning Help',
-      lastMessage: 'How should I budget my ₱25,000 salary?',
-      timestamp: new Date(Date.now() - 86400000), // 1 day ago
+      id: defaultSessionId,
+      title: 'New Chat',
+      lastMessage: '',
+      timestamp: new Date(),
       messages: [
         {
           id: 1,
@@ -41,44 +49,129 @@ function AIAssistantContent() {
           timestamp: new Date()
         }
       ]
-    },
-    {
-      id: '2',
-      title: 'Investment Advice',
-      lastMessage: 'Best investments for beginners?',
-      timestamp: new Date(Date.now() - 172800000), // 2 days ago
-      messages: []
-    },
-    {
-      id: '3',
-      title: 'Emergency Fund Setup',
-      lastMessage: 'How much should I save for emergencies?',
-      timestamp: new Date(Date.now() - 259200000), // 3 days ago
-      messages: []
     }
   ])
 
   const [messages, setMessages] = useState(chats[0].messages)
+
+  // Load chat history from database - group by session_id
+  const loadChatHistory = async (userId: string) => {
+    try {
+      console.log('📥 Loading chat history for user:', userId)
+      
+      // Get all messages for this user
+      const { data: messages, error } = await (supabase as any)
+        .from('chat_history')
+        .select('*')
+        .like('session_id', `%${userId}%`) // Get all sessions for this user
+        .order('created_at', { ascending: true })
+
+      if (error) {
+        console.error('Error loading chat history:', error)
+        return
+      }
+
+      if (!messages || messages.length === 0) {
+        console.log('No chat history found, starting with welcome message')
+        // Keep the default welcome chat
+        return
+      }
+
+      console.log(`📚 Loaded ${messages.length} messages from database`)
+
+      // Group messages by session_id
+      const sessionGroups = messages.reduce((groups: any, msg: any) => {
+        const sessionId = msg.session_id
+        if (!groups[sessionId]) {
+          groups[sessionId] = []
+        }
+        groups[sessionId].push(msg)
+        return groups
+      }, {})
+
+      // Convert each session to a chat object
+      const loadedChats = Object.entries(sessionGroups).map(([sessionId, sessionMessages]: [string, any]) => {
+        const chatMessages = sessionMessages.map((msg: any, index: number) => ({
+          id: index + 1,
+          type: msg.message_type === 'human' ? 'user' : 'bot',
+          content: msg.content,
+          timestamp: new Date(msg.created_at)
+        }))
+
+        // Generate title from first user message
+        const firstUserMessage = chatMessages.find((m: any) => m.type === 'user')
+        const chatTitle = firstUserMessage 
+          ? generateChatTitle(firstUserMessage.content)
+          : 'Conversation'
+
+        return {
+          id: sessionId,
+          title: chatTitle,
+          lastMessage: chatMessages[chatMessages.length - 1]?.content || '',
+          timestamp: new Date(sessionMessages[sessionMessages.length - 1]?.created_at),
+          messages: [
+            {
+              id: 0,
+              type: 'bot',
+              content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+              timestamp: new Date()
+            },
+            ...chatMessages
+          ]
+        }
+      })
+
+      // Sort by most recent first
+      loadedChats.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+
+      if (loadedChats.length > 0) {
+        setChats(loadedChats)
+        setCurrentChatId(loadedChats[0].id)
+        setMessages(loadedChats[0].messages)
+        console.log(`✅ Loaded ${loadedChats.length} chat sessions successfully`)
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+    }
+  }
 
   // Authentication effect
   useEffect(() => {
     auth.getCurrentUser().then((result) => {
       setUser(result.user)
       setIsLoading(false)
+      
+      // Load chat history if user is authenticated
+      if (result.user) {
+        loadChatHistory(result.user.id)
+      }
     })
 
     const { data: { subscription } } = onAuthStateChange((user) => {
       setUser(user)
       setIsLoading(false)
+      
+      // Load chat history when user logs in
+      if (user) {
+        loadChatHistory(user.id)
+      }
     })
 
     return () => subscription.unsubscribe()
   }, [])
 
-  // Create new chat
+  // Auto-scroll to latest message
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  // Create new chat with unique session ID
   const createNewChat = () => {
+    // Generate unique session ID (UUID-like)
+    const sessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    
     const newChat = {
-      id: Date.now().toString(),
+      id: sessionId,
       title: 'New Chat',
       lastMessage: '',
       timestamp: new Date(),
@@ -94,6 +187,7 @@ function AIAssistantContent() {
     setChats([newChat, ...chats])
     setCurrentChatId(newChat.id)
     setMessages(newChat.messages)
+    console.log('✨ Created new chat with session ID:', sessionId)
   }
 
   // Switch to different chat
@@ -118,26 +212,156 @@ function AIAssistantContent() {
     }
   }
 
+  // Handle receipt file upload
+  const handleReceiptUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid image file (JPG, PNG, WebP) or PDF')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert('File size must be less than 10MB')
+      return
+    }
+
+    setUploadedReceipt(file)
+
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setReceiptPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    } else {
+      setReceiptPreview(null) // PDF preview not shown
+    }
+
+    console.log('📸 Receipt uploaded:', file.name)
+  }
+
+  // Clear receipt upload
+  const clearReceiptUpload = () => {
+    setUploadedReceipt(null)
+    setReceiptPreview(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+
+  // Process receipt with OCR
+  const processReceipt = async () => {
+    if (!uploadedReceipt) return
+
+    setIsProcessingReceipt(true)
+    
+    try {
+      const formData = new FormData()
+      formData.append('receipt', uploadedReceipt)
+
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: HeadersInit = {}
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/scan-receipt', {
+        method: 'POST',
+        headers,
+        body: formData
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        // Add receipt data as a message
+        const receiptMessage = {
+          id: Date.now(),
+          type: 'bot',
+          content: `📸 **Receipt Scanned Successfully!**\n\n` +
+                   `**Merchant:** ${data.merchant || 'Unknown'}\n` +
+                   `**Amount:** ₱${data.amount || '0.00'}\n` +
+                   `**Date:** ${data.date || 'Not found'}\n` +
+                   `**Category:** ${data.category || 'General'}\n\n` +
+                   `Would you like me to save this as a transaction?`,
+          timestamp: new Date()
+        }
+
+        setMessages([...messages, receiptMessage])
+        clearReceiptUpload()
+      } else {
+        throw new Error(data.error || 'Failed to process receipt')
+      }
+    } catch (error) {
+      console.error('Receipt processing error:', error)
+      const errorMessage = {
+        id: Date.now(),
+        type: 'bot',
+        content: '❌ Sorry, I had trouble reading that receipt. Please make sure the image is clear and try again, or you can manually enter the transaction details.',
+        timestamp: new Date()
+      }
+      setMessages([...messages, errorMessage])
+    } finally {
+      setIsProcessingReceipt(false)
+    }
+  }
+
+  // Generate smart chat title from user message (ChatGPT-style)
+  const generateChatTitle = (message: string): string => {
+    // Remove common question words and get the core topic
+    const cleaned = message
+      .toLowerCase()
+      .replace(/^(how|what|when|where|why|can|should|could|would|i want to|i need to|help me|tell me about|explain|show me)\s+/i, '')
+      .trim()
+    
+    // Capitalize first letter of each word
+    const titleCase = cleaned
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+    
+    // Limit to 40 characters and add ellipsis if needed
+    if (titleCase.length > 40) {
+      return titleCase.slice(0, 40).trim() + '...'
+    }
+    
+    return titleCase || 'New Conversation'
+  }
+
   // Send message
   const sendMessage = async () => {
     if (!inputMessage.trim()) return
     
+    // Capture the message and clear input immediately to prevent duplicates
+    const messageToSend = inputMessage.trim()
+    setInputMessage('') // Clear input right away
+    
     const newMessage = {
       id: messages.length + 1,
       type: 'user',
-      content: inputMessage,
+      content: messageToSend,
       timestamp: new Date()
     }
     
     const updatedMessages = [...messages, newMessage]
     setMessages(updatedMessages)
     
-    // Update chat title if it's the first user message
+    // Update chat title if it's the first user message (generate smart title)
     const currentChat = chats.find(c => c.id === currentChatId)
     if (currentChat && currentChat.title === 'New Chat') {
+      // Generate a smart title from the first message
+      const smartTitle = generateChatTitle(messageToSend)
       const updatedChats = chats.map(chat => 
         chat.id === currentChatId 
-          ? { ...chat, title: inputMessage.slice(0, 30) + '...', lastMessage: inputMessage }
+          ? { ...chat, title: smartTitle, lastMessage: messageToSend }
           : chat
       )
       setChats(updatedChats)
@@ -153,13 +377,24 @@ function AIAssistantContent() {
     setMessages([...updatedMessages, loadingMessage])
     
     try {
-      const response = await fetch('/api/simple-ai', {
+      // Get auth token for authenticated requests
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+      
+      // Use ai-chat endpoint which has memory system
+      // Pass the current chat session ID
+      const response = await fetch('/api/ai-chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
-          message: inputMessage,
+          message: messageToSend,
+          sessionId: currentChatId, // Pass session ID for proper chat separation
         })
       })
       
@@ -178,7 +413,7 @@ function AIAssistantContent() {
         // Update chat messages
         const updatedChats = chats.map(chat => 
           chat.id === currentChatId 
-            ? { ...chat, messages: finalMessages, lastMessage: inputMessage, timestamp: new Date() }
+            ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
             : chat
         )
         setChats(updatedChats)
@@ -196,8 +431,7 @@ function AIAssistantContent() {
       const finalMessages = [...updatedMessages, errorMessage]
       setMessages(finalMessages)
     }
-    
-    setInputMessage('')
+    // Input already cleared at the start of function
   }
 
   return (
@@ -206,50 +440,64 @@ function AIAssistantContent() {
       
       <div className="h-[calc(100vh-80px)] flex">
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col shadow-lg`}>
-          {/* Sidebar Toggle & Branding */}
-          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-            {/* Plounix AI Branding - Clickable to toggle */}
-            {sidebarOpen && (
-              <div className="flex items-center space-x-3 mb-4 px-2">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="relative group"
-                >
-                  <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200">
-                    <Bot className="w-4 h-4 text-white" />
+        <div className={`${sidebarOpen ? 'w-72' : 'w-16'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col shadow-lg relative`}>
+          {/* Sidebar Toggle Button - Floating */}
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-md transition-all duration-200 hover:scale-110"
+            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+          >
+            {sidebarOpen ? (
+              <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
+            ) : (
+              <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+            )}
+          </button>
+
+          {/* Sidebar Header with Branding */}
+          <div className="p-4 border-b border-gray-100 bg-gradient-to-br from-primary/5 to-blue-50">
+            {sidebarOpen ? (
+              <div className="space-y-4">
+                <div className="flex items-center space-x-3 px-2">
+                  <div className="relative">
+                    <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Bot className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
-                </button>
-                <div>
-                  <h2 className="font-bold text-gray-900 text-sm">Fili</h2>
-                  <p className="text-xs text-gray-500">Financial Assistant</p>
+                  <div>
+                    <h2 className="font-bold text-gray-900 text-base">Fili</h2>
+                    <p className="text-xs text-gray-500">Financial Assistant</p>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {!sidebarOpen && (
-              <div className="flex justify-center mb-4">
-                <button
-                  onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="relative group"
+                {/* New Chat Button */}
+                <Button 
+                  onClick={createNewChat}
+                  className="w-full justify-center bg-primary hover:bg-primary/90 text-white transition-all duration-200 shadow-sm hover:shadow-md"
                 >
-                  <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200">
-                    <Bot className="w-4 h-4 text-white" />
+                  <Plus className="w-4 h-4 mr-2" />
+                  <span className="font-medium">New Chat</span>
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center space-y-3">
+                <div className="relative">
+                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Bot className="w-5 h-5 text-white" />
                   </div>
-                  <div className="absolute -bottom-1 -right-1 w-2.5 h-2.5 bg-green-500 rounded-full border border-white"></div>
-                </button>
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                </div>
+                
+                <Button 
+                  onClick={createNewChat}
+                  className="w-10 h-10 p-0 bg-primary hover:bg-primary/90 text-white transition-all duration-200 shadow-sm"
+                  title="New Chat"
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
               </div>
             )}
-
-            {/* New Chat Button */}
-            <Button 
-              onClick={createNewChat}
-              className={`${sidebarOpen ? 'w-full justify-center' : 'w-8 h-8 p-0 justify-center'} bg-primary hover:bg-primary/90 text-white transition-all duration-200 shadow-sm`}
-            >
-              <Plus className="w-4 h-4" />
-              {sidebarOpen && <span className="ml-2 font-medium">New Chat</span>}
-            </Button>
           </div>
 
           {/* Chat History */}
@@ -295,10 +543,11 @@ function AIAssistantContent() {
           </div>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+          <div className="p-4 border-t border-gray-100 bg-gradient-to-t from-gray-50 to-white">
             {sidebarOpen ? (
               <>
-                <div className="flex items-center space-x-3 mb-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                {/* User Profile Card */}
+                <div className="flex items-center space-x-3 mb-3 p-3 bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl border border-primary/10 shadow-sm">
                   <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center shadow-md">
                     <UserIcon className="w-5 h-5 text-white" />
                   </div>
@@ -314,7 +563,8 @@ function AIAssistantContent() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-full justify-start text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
+                  onClick={() => setSettingsOpen(true)}
+                  className="w-full justify-start text-gray-600 hover:text-primary hover:bg-primary/5 transition-all duration-200"
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
@@ -328,14 +578,138 @@ function AIAssistantContent() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="w-8 h-8 p-0 text-gray-600 hover:text-gray-800 hover:bg-gray-100 transition-all duration-200"
+                  onClick={() => setSettingsOpen(true)}
+                  className="w-8 h-8 p-0 text-gray-600 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-lg"
+                  title="Settings"
                 >
                   <Settings className="w-4 h-4" />
                 </Button>
               </div>
             )}
           </div>
-        </div>      {/* Main Chat Area */}
+        </div>
+
+        {/* Settings Modal */}
+        {settingsOpen && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                    <Settings className="w-5 h-5 text-white" />
+                  </div>
+                  <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSettingsOpen(false)}
+                  className="w-8 h-8 p-0 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6 space-y-6">
+                {/* User Info Section */}
+                <div className="bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl p-4 border border-primary/10">
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-12 h-12 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
+                      {user?.name?.[0] || 'U'}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{user?.name || 'User'}</h3>
+                      <p className="text-sm text-gray-600">{user?.email}</p>
+                    </div>
+                  </div>
+                  <div className="inline-block bg-primary/10 text-primary text-xs font-semibold px-3 py-1 rounded-full">
+                    Premium Member
+                  </div>
+                </div>
+
+                {/* Settings Options */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Preferences</h3>
+                  
+                  {/* Theme Setting */}
+                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-primary/10 transition-all">
+                        <Sun className="w-4 h-4 text-gray-600 group-hover:text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900 text-sm">Appearance</p>
+                        <p className="text-xs text-gray-500">Light mode</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </button>
+
+                  {/* Language Setting */}
+                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-primary/10 transition-all">
+                        <Languages className="w-4 h-4 text-gray-600 group-hover:text-primary" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900 text-sm">Language</p>
+                        <p className="text-xs text-gray-500">English (Taglish)</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </button>
+
+                  {/* Clear History */}
+                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-red-50 transition-all">
+                        <History className="w-4 h-4 text-gray-600 group-hover:text-red-500" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-gray-900 text-sm">Clear chat history</p>
+                        <p className="text-xs text-gray-500">Delete all conversations</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+
+                {/* Account Actions */}
+                <div className="space-y-2 pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Account</h3>
+                  
+                  {/* Logout Button */}
+                  <button 
+                    onClick={async () => {
+                      await auth.signOut()
+                      window.location.href = '/auth/login'
+                    }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center group-hover:bg-red-100 transition-all">
+                        <LogOut className="w-4 h-4 text-red-600" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-medium text-red-600 text-sm">Log out</p>
+                        <p className="text-xs text-gray-500">Sign out of your account</p>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-red-400" />
+                  </button>
+                </div>
+
+                {/* App Info */}
+                <div className="pt-4 border-t border-gray-200 text-center">
+                  <p className="text-xs text-gray-400">Plounix AI Assistant v1.0</p>
+                  <p className="text-xs text-gray-400 mt-1">Made with ❤️ for Filipino youth</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
         <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 p-4 flex items-center justify-between shadow-sm">
@@ -355,6 +729,12 @@ function AIAssistantContent() {
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            {user && (
+              <div className="hidden sm:flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm border border-blue-200 shadow-sm">
+                <Shield className="w-4 h-4" />
+                <span className="font-medium">Memory Active</span>
+              </div>
+            )}
             <div className="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm border border-green-200">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               <span className="font-medium">Online</span>
@@ -443,6 +823,8 @@ function AIAssistantContent() {
                   </div>
                 </div>
               ))}
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
           )}
         </div>
@@ -450,35 +832,118 @@ function AIAssistantContent() {
         {/* Input Area */}
         <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg">
           <div className="max-w-4xl mx-auto">
+            {/* Receipt Preview */}
+            {receiptPreview && (
+              <div className="mb-3 relative inline-block">
+                <div className="relative rounded-lg overflow-hidden border-2 border-primary/20 shadow-md">
+                  <img 
+                    src={receiptPreview} 
+                    alt="Receipt preview" 
+                    className="h-32 w-auto object-contain bg-gray-50"
+                  />
+                  <button
+                    onClick={clearReceiptUpload}
+                    className="absolute top-1 right-1 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors shadow-md"
+                  >
+                    <XIcon className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <div className="mt-2 flex items-center space-x-2">
+                  <Button
+                    onClick={processReceipt}
+                    disabled={isProcessingReceipt}
+                    size="sm"
+                    className="bg-primary hover:bg-primary/90 text-white text-xs"
+                  >
+                    {isProcessingReceipt ? (
+                      <>
+                        <span className="animate-spin mr-2">⏳</span>
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <Receipt className="w-3.5 h-3.5 mr-1" />
+                        Scan Receipt
+                      </>
+                    )}
+                  </Button>
+                  <span className="text-xs text-gray-500">{uploadedReceipt?.name}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Character counter */}
+            {inputMessage.length > 0 && (
+              <div className="flex justify-end mb-2">
+                <span className={`text-xs font-medium ${
+                  inputMessage.length > 2000 
+                    ? 'text-red-500' 
+                    : inputMessage.length > 1800 
+                    ? 'text-orange-500' 
+                    : 'text-gray-400'
+                }`}>
+                  {inputMessage.length} / 2000
+                </span>
+              </div>
+            )}
             <div className="flex items-end space-x-3">
               <div className="flex-1 relative">
-                <div className="relative bg-gray-50 rounded-2xl border border-gray-200 focus-within:border-primary/50 focus-within:bg-white transition-all duration-200">
+                <div className={`relative bg-gray-50 rounded-2xl border transition-all duration-200 ${
+                  inputMessage.length > 2000 
+                    ? 'border-red-500 focus-within:border-red-500' 
+                    : 'border-gray-200 focus-within:border-primary/50'
+                } focus-within:bg-white`}>
                   <Input
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
+                    onChange={(e) => {
+                      const newValue = e.target.value
+                      if (newValue.length <= 2000) {
+                        setInputMessage(newValue)
+                      }
+                    }}
                     placeholder="Ask FILI about budgeting, investments, savings, or any financial question..."
-                    onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault()
+                        if (inputMessage.trim() && inputMessage.length <= 2000) {
+                          sendMessage()
+                        }
+                      }
+                    }}
                     className="border-0 bg-transparent pr-16 py-4 px-4 resize-none focus:ring-0 focus:outline-none placeholder:text-gray-400 text-gray-800 rounded-2xl"
                   />
                   <div className="absolute right-2 bottom-2 flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                        onChange={handleReceiptUpload}
+                        className="hidden"
+                      />
+                      
+                      {/* Receipt upload button */}
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 rounded-lg hover:bg-gray-200 transition-colors"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 transition-colors group"
+                        title="Upload receipt"
                       >
-                        <Paperclip className="w-4 h-4 text-gray-400" />
+                        <Receipt className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                       </Button>
                     </div>
                     <Button
                       onClick={sendMessage}
-                      disabled={!inputMessage.trim()}
+                      disabled={!inputMessage.trim() || inputMessage.length > 2000}
                       size="sm"
                       className={`h-8 w-8 p-0 rounded-lg transition-all duration-200 ${
-                        inputMessage.trim() 
+                        inputMessage.trim() && inputMessage.length <= 2000
                           ? 'bg-primary hover:bg-primary/90 text-white shadow-sm' 
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
+                      title={inputMessage.length > 2000 ? 'Message too long' : 'Send message'}
                     >
                       <ArrowUp className="w-4 h-4" />
                     </Button>

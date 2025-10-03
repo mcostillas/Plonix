@@ -14,8 +14,9 @@ export const supabase = createClient<Database>(
   {
     auth: {
       autoRefreshToken: true,
-      persistSession: false, // Don't persist across browser sessions
+      persistSession: true, // Persist session in localStorage
       detectSessionInUrl: true,
+      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     },
   }
 )

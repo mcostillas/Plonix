@@ -22,7 +22,7 @@ import {
   Globe
 } from 'lucide-react'
 import { PlounixLogo } from './logo'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-hooks'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 

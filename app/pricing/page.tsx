@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-hooks'
 import { Shield, Users, Star, Check, ArrowLeft } from 'lucide-react'
 import { useEffect, useState } from 'react'
 

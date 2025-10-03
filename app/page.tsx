@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Bot, BookOpen, Target, Users, TrendingUp, Calculator, PiggyBank, Search, MessageCircle, ArrowRight, Star, Shield, Zap } from 'lucide-react'
 import { PlounixLogo } from '@/components/ui/logo'
-import { useAuth } from '@/lib/auth'
+import { useAuth } from '@/lib/auth-hooks'
 
 export default function HomePage() {
   const { user, isLoading } = useAuth()

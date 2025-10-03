@@ -1,27 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PlounixAIAgent } from '@/lib/langchain-agent'
 import { getAuthenticatedMemoryContext, addToUserMemory } from '@/lib/authenticated-memory'
-import { getCurrentUser } from '@/lib/auth'
+import { createClient } from '@supabase/supabase-js'
 
 // In-memory storage for chat sessions (use database in production)
 const aiAgents = new Map<string, PlounixAIAgent>()
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, userId } = await request.json()
+    const { message, sessionId } = await request.json()
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
     }
 
-    // Get authenticated user for memory context
+    console.log('📨 Received message for session:', sessionId)
+
+    // Get authenticated user from Authorization header (token-based auth for API routes)
     let authenticatedUser = null
     try {
-      const user = await getCurrentUser()
-      authenticatedUser = user || null
+      const authHeader = request.headers.get('Authorization')
+      console.log('🔑 Auth header present:', !!authHeader)
+      
+      if (authHeader?.startsWith('Bearer ')) {
+        const token = authHeader.substring(7)
+        
+        // Create Supabase client with the token
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL!,
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          {
+            global: {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            }
+          }
+        )
+        
+        // Get user from token
+        const { data: { user }, error } = await supabase.auth.getUser()
+        
+        if (user && !error) {
+          authenticatedUser = {
+            id: user.id,
+            email: user.email!,
+            name: user.user_metadata?.name || user.email?.split('@')[0]
+          }
+          console.log('🔐 Authentication check:', {
+            isAuthenticated: true,
+            userId: authenticatedUser.id,
+            userEmail: authenticatedUser.email
+          })
+        } else {
+          console.log('❌ Token validation failed:', error?.message)
+        }
+      } else {
+        console.log('⚠️ No Authorization header found')
+      }
     } catch (error) {
       // User not authenticated, continue with general mode
-      console.log('User not authenticated, providing general advice')
+      console.log('❌ Authentication error:', error)
     }
 
     // Check if OpenAI API key is available
@@ -39,35 +78,38 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Use authenticated user ID if available, otherwise fall back to provided/default userId
-    const effectiveUserId = authenticatedUser?.id || userId || 'anonymous'
+    // Use authenticated user ID for user identification, sessionId for chat separation
+    const userId = authenticatedUser?.id || 'anonymous'
+    const effectiveSessionId = sessionId || `${userId}_default`
 
-    // Get or create AI agent for this user
-    let agent = aiAgents.get(effectiveUserId)
+    // Get or create AI agent for this session
+    let agent = aiAgents.get(effectiveSessionId)
     if (!agent) {
       agent = new PlounixAIAgent()
-      aiAgents.set(effectiveUserId, agent)
+      aiAgents.set(effectiveSessionId, agent)
     }
 
     // Build smart context with memory (only for authenticated users)
+    // Use sessionId to separate different conversations
     let contextualMessage = message
     if (authenticatedUser) {
       try {
-        contextualMessage = await getAuthenticatedMemoryContext(authenticatedUser.id, message)
+        contextualMessage = await getAuthenticatedMemoryContext(effectiveSessionId, message, authenticatedUser)
       } catch (error) {
-        console.log('Memory not available, using direct message')
+        console.log('Memory not available, using direct message:', error)
       }
     }
 
     // Get AI response with user context
-    const response = await agent.chat(effectiveUserId, contextualMessage, authenticatedUser)
+    const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser)
 
     // Save to memory if user is authenticated
+    // Use sessionId so messages are grouped by chat session
     if (authenticatedUser) {
       try {
-        await addToUserMemory(authenticatedUser.id, message, response)
+        await addToUserMemory(effectiveSessionId, message, response, authenticatedUser)
       } catch (error) {
-        console.log('Could not save to memory, continuing without persistence')
+        console.log('Could not save to memory, continuing without persistence:', error)
       }
     }
 
