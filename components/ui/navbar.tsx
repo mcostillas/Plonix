@@ -25,6 +25,7 @@ import { PlounixLogo } from './logo'
 import { useAuth } from '@/lib/auth-hooks'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
+import { LogoutModal, useLogoutModal } from './logout-modal'
 
 interface NavbarProps {
   currentPage?: string
@@ -49,7 +50,9 @@ export function Navbar({ currentPage }: NavbarProps) {
   const [mounted, setMounted] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const logoutModal = useLogoutModal()
 
   useEffect(() => {
     setMounted(true)
@@ -113,21 +116,37 @@ export function Navbar({ currentPage }: NavbarProps) {
   }
 
   const handleLogout = async () => {
-    if (confirm('Are you sure you want to log out?')) {
-      try {
-        await signOut()
-        // Clear any cached data
-        if (typeof window !== 'undefined') {
-          localStorage.clear()
-          sessionStorage.clear()
+    setIsLoggingOut(true)
+    try {
+      await signOut()
+      // Clear cached data BUT preserve Remember Me credentials
+      if (typeof window !== 'undefined') {
+        // Save Remember Me data before clearing
+        const savedEmail = localStorage.getItem('plounix_saved_email')
+        const savedPassword = localStorage.getItem('plounix_saved_password')
+        const rememberMe = localStorage.getItem('plounix_remember_me')
+        
+        // Clear all storage
+        localStorage.clear()
+        sessionStorage.clear()
+        
+        // Restore Remember Me data if it existed
+        if (rememberMe === 'true' && savedEmail) {
+          localStorage.setItem('plounix_saved_email', savedEmail)
+          localStorage.setItem('plounix_saved_password', savedPassword || '')
+          localStorage.setItem('plounix_remember_me', 'true')
         }
-        // Redirect to login with success message
-        router.push('/auth/login?message=logged-out')
-      } catch (error) {
-        console.error('Logout error:', error)
-        // Fallback: force redirect even if signOut fails
-        router.push('/auth/login')
       }
+      // Close modal and redirect to login with success message
+      logoutModal.close()
+      router.push('/auth/login?message=logged-out')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Fallback: force redirect even if signOut fails
+      logoutModal.close()
+      router.push('/auth/login')
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -275,7 +294,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                   <Button 
                     variant="ghost" 
                     size="sm"
-                    onClick={handleLogout}
+                    onClick={logoutModal.open}
                     className="text-gray-600 hover:text-red-600 h-9"
                   >
                     <LogOut className="w-4 h-4 mr-2" />
@@ -366,7 +385,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                     size="sm"
                     onClick={() => {
                       setIsMobileMenuOpen(false)
-                      handleLogout()
+                      logoutModal.open()
                     }}
                     className="w-full justify-start space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50"
                   >
@@ -383,6 +402,14 @@ export function Navbar({ currentPage }: NavbarProps) {
           </div>
         )}
       </div>
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={logoutModal.isOpen}
+        onClose={logoutModal.close}
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
+      />
     </nav>
   )
 }
