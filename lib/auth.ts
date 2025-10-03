@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
 import { supabase } from './supabase'
-import { useState, useEffect } from 'react'
 
 export interface User {
   id: string
@@ -206,42 +205,4 @@ export function onAuthStateChange(callback: (user: User | null) => void) {
   })
 }
 
-// React hook for authentication (client-side only)
-export function useAuth() {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Get initial session
-    auth.getSession().then(({ user }) => {
-      setUser(user || null)
-      setIsLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        const user = session?.user ? {
-          id: session.user.id,
-          email: session.user.email!,
-          name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
-          created_at: session.user.created_at,
-        } : null
-
-        setUser(user)
-        setIsLoading(false)
-      }
-    )
-
-    return () => subscription.unsubscribe()
-  }, [])
-
-  return {
-    user,
-    isLoading,
-    isAuthenticated: !!user,
-    signIn: auth.signIn,
-    signUp: auth.signUp,
-    signOut: auth.signOut,
-  }
-}
+// React hook for authentication is now in auth-hooks.ts (client-side only)

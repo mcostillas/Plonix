@@ -78,27 +78,30 @@ Monthly total: ₱4,200 (target: ₱3,600). Medyo over budget, try cooking at ho
       ["system", `You are Fili - a Filipino financial assistant for young adults.
 
 PERSONALITY:
-- Speak in Taglish (Filipino + English mix)
-- Use "kuya/ate" friendly tone, but address users by their actual name when provided
-- Reference Filipino culture: 13th month pay, paluwagan, jeepney fare
-- Be encouraging about financial goals
-- Keep responses professional and clean without emojis
+- Speak in Taglish (Filipino + English mix) when appropriate
+- Use natural, conversational tone
+- Reference Filipino culture: 13th month pay, paluwagan, GCash
+- Be encouraging and supportive
+- NO emojis in responses
+
+RESPONSE STYLE:
+- Keep responses SHORT and CONCISE (2-3 sentences max for simple questions)
+- Only give detailed explanations when user specifically asks
+- Get straight to the point
+- Use bullet points only when listing multiple items
 
 CONTEXT:
 - Users earn ₱15,000-30,000 monthly
-- They use GCash, PayMaya, BPI, BDO banks
-- Consider Filipino lifestyle and expenses
+- They use GCash, PayMaya, BPI, BDO
 - Always use Philippine Peso (₱) amounts
 
-CAPABILITIES:
-- Budget analysis using tools
-- Receipt scanning for expense tracking  
-- Generate culturally relevant challenges
-- Provide personalized financial advice
-
-IMPORTANT: When given user context with a name, address them by their name (e.g., "Hi Maria!" instead of "Hi ate!"). Use "kuya/ate" only when no name is provided.
-
-Remember previous conversations and build on user's financial journey.`],
+IMPORTANT RULES:
+1. When given user context with a name, use it naturally (not every message)
+2. Keep responses SHORT - users prefer quick, actionable advice
+3. Match user's language preference (if they speak English, respond in English)
+4. If conversation history is provided, use it ONLY when directly relevant to the current question
+5. Don't force references to past topics - focus on answering the current question naturally
+6. Treat each message as independent unless the user explicitly references previous discussion`],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -121,27 +124,17 @@ Remember previous conversations and build on user's financial journey.`],
     // Initialize agent if not already done
     const agentExecutor = await this.initializeAgent()
 
-    // Get conversation memory
-    const memory = await this.memoryManager.getConversationMemory(userId)
-    const chatHistory = await memory.loadMemoryVariables({})
+    // NOTE: Memory is handled by authenticated-memory.ts at API level
+    // The message already contains full context (user info, transactions, goals, memory)
+    // Just pass it through as-is
 
-    // Build enhanced input with user context
-    let enhancedMessage = message
-    if (userContext) {
-      const userName = userContext.name || userContext.email?.split('@')[0] || 'there'
-      enhancedMessage = `User Context: The user's name is ${userName}. Address them by name when appropriate.
-
-User Message: ${message}`
-    }
-
-    // Run agent with memory context
+    // Run agent with the complete context message from API layer
     const result = await agentExecutor.invoke({
-      input: enhancedMessage,
-      chat_history: chatHistory.history,
+      input: message, // Use message as-is - it already has all context from API layer
+      chat_history: [], // Empty for now, context comes from API layer
     })
 
-    // Add conversation to memory
-    await this.memoryManager.addConversation(userId, message, result.output)
+    // Memory saving is handled at API level in authenticated-memory.ts
 
     return result.output
   }
