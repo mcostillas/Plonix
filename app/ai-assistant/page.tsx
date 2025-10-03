@@ -11,6 +11,8 @@ import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '@/lib/supabase'
+import { LogoutModal, useLogoutModal } from '@/components/ui/logout-modal'
+import { useRouter } from 'next/navigation'
 
 export default function AIAssistantPage() {
   return (
@@ -21,8 +23,10 @@ export default function AIAssistantPage() {
 }
 
 function AIAssistantContent() {
+  const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [currentChatId, setCurrentChatId] = useState('1')
@@ -32,6 +36,7 @@ function AIAssistantContent() {
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const logoutModal = useLogoutModal()
   
   // Chat history state - starts with one default chat with unique session ID
   const defaultSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
@@ -59,11 +64,11 @@ function AIAssistantContent() {
     try {
       console.log('📥 Loading chat history for user:', userId)
       
-      // Get all messages for this user
+      // Get all messages for chat sessions only (not user_id based sessions)
       const { data: messages, error } = await (supabase as any)
         .from('chat_history')
         .select('*')
-        .like('session_id', `%${userId}%`) // Get all sessions for this user
+        .like('session_id', `chat_%`) // Get only session-based chats, not user_id based
         .order('created_at', { ascending: true })
 
       if (error) {
@@ -125,10 +130,18 @@ function AIAssistantContent() {
       loadedChats.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
       if (loadedChats.length > 0) {
+        // Check if there's a saved current chat ID in localStorage
+        const savedChatId = localStorage.getItem('plounix_current_chat_id')
+        const savedChatExists = savedChatId && loadedChats.find(c => c.id === savedChatId)
+        
+        const activeChatId = savedChatExists ? savedChatId : loadedChats[0].id
+        const activeChat = loadedChats.find(c => c.id === activeChatId) || loadedChats[0]
+        
         setChats(loadedChats)
-        setCurrentChatId(loadedChats[0].id)
-        setMessages(loadedChats[0].messages)
+        setCurrentChatId(activeChat.id)
+        setMessages(activeChat.messages)
         console.log(`✅ Loaded ${loadedChats.length} chat sessions successfully`)
+        console.log(`📌 Active session: ${activeChat.id}`)
       }
     } catch (error) {
       console.error('Failed to load chat history:', error)
@@ -165,6 +178,44 @@ function AIAssistantContent() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  // Handle logout
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await auth.signOut()
+      // Clear cached data BUT preserve Remember Me credentials
+      if (typeof window !== 'undefined') {
+        // Save Remember Me data before clearing
+        const savedEmail = localStorage.getItem('plounix_saved_email')
+        const savedPassword = localStorage.getItem('plounix_saved_password')
+        const rememberMe = localStorage.getItem('plounix_remember_me')
+        
+        // Clear all storage
+        localStorage.clear()
+        sessionStorage.clear()
+        
+        // Restore Remember Me data if it existed
+        if (rememberMe === 'true' && savedEmail) {
+          localStorage.setItem('plounix_saved_email', savedEmail)
+          localStorage.setItem('plounix_saved_password', savedPassword || '')
+          localStorage.setItem('plounix_remember_me', 'true')
+        }
+      }
+      // Close modal and redirect
+      logoutModal.close()
+      setSettingsOpen(false)
+      router.push('/auth/login?message=logged-out')
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Fallback: force redirect even if signOut fails
+      logoutModal.close()
+      setSettingsOpen(false)
+      router.push('/auth/login')
+    } finally {
+      setIsLoggingOut(false)
+    }
+  }
+
   // Create new chat with unique session ID
   const createNewChat = () => {
     // Generate unique session ID (UUID-like)
@@ -187,6 +238,7 @@ function AIAssistantContent() {
     setChats([newChat, ...chats])
     setCurrentChatId(newChat.id)
     setMessages(newChat.messages)
+    localStorage.setItem('plounix_current_chat_id', newChat.id) // Save to localStorage
     console.log('✨ Created new chat with session ID:', sessionId)
   }
 
@@ -196,6 +248,7 @@ function AIAssistantContent() {
     if (chat) {
       setCurrentChatId(chatId)
       setMessages(chat.messages)
+      localStorage.setItem('plounix_current_chat_id', chatId) // Save to localStorage
     }
   }
 
@@ -682,10 +735,7 @@ function AIAssistantContent() {
                   
                   {/* Logout Button */}
                   <button 
-                    onClick={async () => {
-                      await auth.signOut()
-                      window.location.href = '/auth/login'
-                    }}
+                    onClick={logoutModal.open}
                     className="w-full flex items-center justify-between p-3 hover:bg-red-50 rounded-lg transition-all duration-200 group"
                   >
                     <div className="flex items-center space-x-3">
@@ -971,6 +1021,14 @@ function AIAssistantContent() {
           </div>
         </div>
       </div>
+
+      {/* Logout Modal */}
+      <LogoutModal
+        isOpen={logoutModal.isOpen}
+        onClose={logoutModal.close}
+        onConfirm={handleLogout}
+        isLoading={isLoggingOut}
+      />
     </div>
     </div>
   )

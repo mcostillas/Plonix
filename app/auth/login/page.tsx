@@ -16,9 +16,23 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  // Load saved credentials on mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('plounix_saved_email')
+    const savedPassword = localStorage.getItem('plounix_saved_password')
+    const wasRemembered = localStorage.getItem('plounix_remember_me') === 'true'
+    
+    if (wasRemembered && savedEmail) {
+      setEmail(savedEmail)
+      setPassword(savedPassword || '')
+      setRememberMe(true)
+    }
+  }, [])
 
   useEffect(() => {
     const message = searchParams.get('message')
@@ -36,6 +50,17 @@ export default function LoginPage() {
       const result = await auth.signIn(email, password)
       
       if (result.success) {
+        // Save or clear credentials based on Remember Me checkbox
+        if (rememberMe) {
+          localStorage.setItem('plounix_saved_email', email)
+          localStorage.setItem('plounix_saved_password', password)
+          localStorage.setItem('plounix_remember_me', 'true')
+        } else {
+          localStorage.removeItem('plounix_saved_email')
+          localStorage.removeItem('plounix_saved_password')
+          localStorage.removeItem('plounix_remember_me')
+        }
+        
         // Get redirect URL from query params or default to dashboard
         const redirectTo = searchParams.get('redirectTo') || '/dashboard'
         router.push(redirectTo)
@@ -129,8 +154,14 @@ export default function LoginPage() {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <label className="flex items-center">
-                      <input type="checkbox" className="mr-2" disabled={isLoading} />
+                    <label className="flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="mr-2 cursor-pointer" 
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        disabled={isLoading} 
+                      />
                       <span className="text-sm text-gray-600">Remember me</span>
                     </label>
                     <Link href="/auth/forgot-password" className="text-sm text-primary hover:text-primary/80">
