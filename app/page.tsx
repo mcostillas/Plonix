@@ -52,24 +52,12 @@ export default function HomePage() {
             <Link href="/pricing" className="text-gray-600 hover:text-primary transition-colors">
               Pricing
             </Link>
-            {!isLoading && (
-              <>
-                {user ? (
-                  <Link href="/dashboard">
-                    <Button>Go to Dashboard</Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link href="/auth/login">
-                      <Button variant="outline">Log In</Button>
-                    </Link>
-                    <Link href="/auth/register">
-                      <Button>Get Started</Button>
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
+            <Link href="/auth/login">
+              <Button variant="outline">Log In</Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button>Get Started</Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -103,21 +91,12 @@ export default function HomePage() {
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
-                {user ? (
-                  <Link href="/ai-assistant">
-                    <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Chat with Fili AI
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link href="/auth/login">
-                    <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
-                      <MessageCircle className="w-5 h-5 mr-2" />
-                      Login to Chat
-                    </Button>
-                  </Link>
-                )}
+                <Link href="/auth/login">
+                  <Button variant="outline" size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Login to Chat
+                  </Button>
+                </Link>
               </div>
               
               <div className="flex items-center space-x-8 text-sm text-gray-600">

@@ -4,6 +4,7 @@ import { ChatMessageHistory } from "langchain/stores/message/in_memory"
 import { HumanMessage, AIMessage } from "@langchain/core/messages"
 import { validateAuthentication } from './auth'
 import { supabase } from './supabase'
+import { crossSessionMemory } from './cross-session-memory'
 
 export class AuthenticatedMemoryManager {
   private llm: ChatOpenAI
@@ -107,8 +108,9 @@ export class AuthenticatedMemoryManager {
         this.validateUser(user)
       }
       
-      // Store in database first
-      await this.saveMessageToDatabase(userId, messageType, content)
+      // Store in database first with actual user ID
+      const actualUserId = user?.id || null
+      await this.saveMessageToDatabase(userId, messageType, content, actualUserId)
       console.log('✅ Message saved to database')
       
       // Get memory
@@ -128,12 +130,26 @@ export class AuthenticatedMemoryManager {
   }
 
   // Save message to Supabase database
-  private async saveMessageToDatabase(userId: string, messageType: 'human' | 'ai', content: string) {
+  private async saveMessageToDatabase(
+    sessionId: string, 
+    messageType: 'human' | 'ai', 
+    content: string, 
+    actualUserId?: string
+  ) {
     try {
-      const { error } = await supabase
+      console.log('💾 Attempting to save to database:', {
+        session_id: sessionId,
+        user_id: actualUserId || 'not_provided',
+        message_type: messageType,
+        contentLength: content.length,
+        timestamp: new Date().toISOString()
+      })
+
+      const { data, error } = await (supabase as any)
         .from('chat_history')
         .insert({
-          session_id: userId,
+          session_id: sessionId,
+          user_id: actualUserId || null, // Save actual user UUID
           message_type: messageType,
           content: content,
           metadata: {
@@ -141,13 +157,17 @@ export class AuthenticatedMemoryManager {
             source: 'authenticated_chat'
           }
         })
+        .select()
 
       if (error) {
-        console.error('Database save error:', error)
+        console.error('❌ Database save error:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
         // Don't throw - let memory continue working even if DB save fails
+      } else {
+        console.log('✅ Successfully saved to database with user_id:', data)
       }
     } catch (error) {
-      console.error('Failed to save message to database:', error)
+      console.error('❌ Failed to save message to database:', error)
     }
   }
 
@@ -226,13 +246,14 @@ export class AuthenticatedMemoryManager {
   }
 
   // Build smart context for AI responses with user profile
-  async buildSmartContext(userId: string, userMessage: string, user: any | null = null): Promise<string> {
+  async buildSmartContext(userId: string, userMessage: string, user: any | null = null, recentMessages: any[] = []): Promise<string> {
     try {
       // Debug logging
       console.log('🔍 buildSmartContext called with:', {
         userId,
         hasUser: !!user,
-        userEmail: user?.email
+        userEmail: user?.email,
+        recentMessagesCount: recentMessages.length
       })
       
       // Validate user if provided
@@ -245,6 +266,20 @@ export class AuthenticatedMemoryManager {
         historyLength: Array.isArray(memoryVariables.history) ? memoryVariables.history.length : 0
       })
       const conversationHistory = memoryVariables.history || []
+      
+      // Get cross-session memories (important facts from ALL previous sessions)
+      let crossSessionContext = ''
+      if (user?.id) {
+        try {
+          const relevantMemories = await crossSessionMemory.getRelevantMemories(user.id, userMessage, 5)
+          if (relevantMemories.length > 0) {
+            crossSessionContext = crossSessionMemory.formatMemoriesForContext(relevantMemories)
+            console.log(`🧠 Loaded ${relevantMemories.length} cross-session memories`)
+          }
+        } catch (error) {
+          console.log('Could not load cross-session memories:', error)
+        }
+      }
       
       // Get user profile for personalization
       const userProfile = await this.getUserProfile(userId, user)
@@ -268,29 +303,46 @@ USER FINANCIAL PROFILE:
         `.trim()
       }
       
-      // Only include recent relevant conversation history (last 3-4 exchanges)
-      const recentHistory = Array.isArray(conversationHistory) 
+      // Build conversation history from two sources:
+      // 1. Database messages (older context)
+      const dbHistory = Array.isArray(conversationHistory) 
         ? conversationHistory.slice(-6).map((msg: any) => `${msg.constructor.name === 'HumanMessage' ? 'User' : 'AI'}: ${msg.content}`).join('\n')
         : ''
+      
+      // 2. Recent session messages (immediate context - most important for continuity)
+      const sessionHistory = recentMessages.length > 0
+        ? recentMessages.map((msg: any) => `${msg.role === 'user' ? 'User' : 'AI'}: ${msg.content}`).join('\n')
+        : ''
+      
+      // Combine both, prioritizing recent session messages
+      const combinedHistory = sessionHistory 
+        ? sessionHistory // Use session messages as primary context
+        : dbHistory // Fallback to database messages if no session context
 
       const userName = user?.name || user?.email?.split('@')[0] || 'there'
       console.log('👤 Building context for user:', userName)
+      console.log('📝 Session history length:', sessionHistory.length)
+      console.log('💾 DB history length:', dbHistory.length)
 
       return `
 CONVERSATION CONTEXT (Authenticated User):
 User Name: ${user?.name || 'User'}
 User Email: ${user?.email || 'Unknown'}
 
-${recentHistory ? `Recent conversation:\n${recentHistory}\n` : ''}
+${crossSessionContext ? `${crossSessionContext}\n` : ''}
+${combinedHistory ? `Recent conversation (THIS SESSION):\n${combinedHistory}\n` : ''}
 ${profileContext ? `${profileContext}\n` : ''}
 Current message: ${userMessage}
 
 IMPORTANT INSTRUCTIONS: 
 - The user's name is "${userName}" - use it naturally in your greeting or response when appropriate
+- CROSS-SESSION MEMORY: Information in "REMEMBERED FROM PREVIOUS CONVERSATIONS" is from past chat sessions - use it naturally if the user asks about it
+- CURRENT SESSION: The "Recent conversation" shows the ongoing chat - use this for immediate context
+- If user asks "how much was that laptop?" or similar, check the remembered information first
+- PAY CLOSE ATTENTION to both remembered facts AND recent conversation
+- If the user says "can you search for me?" or similar, check if they mentioned a topic in previous messages or remembered information
 - Focus on answering the current question naturally and directly
-- Only reference past conversation if DIRECTLY relevant to the current question
-- Don't force connections to previous topics unless the user explicitly asks about them
-- Treat each message as fresh unless context is clearly needed
+- Reference past information when CLEARLY relevant to the current question
 - Be conversational and friendly
       `.trim()
     } catch (error) {
@@ -364,13 +416,22 @@ export const authenticatedMemory = new AuthenticatedMemoryManager()
 // ===== HELPER FUNCTIONS FOR API ROUTES =====
 // These functions now accept a user object that has already been validated at the API route level
 
-export async function getAuthenticatedMemoryContext(userId: string, userMessage: string, user: any | null = null) {
-  return await authenticatedMemory.buildSmartContext(userId, userMessage, user)
+export async function getAuthenticatedMemoryContext(userId: string, userMessage: string, user: any | null = null, recentMessages: any[] = []) {
+  return await authenticatedMemory.buildSmartContext(userId, userMessage, user, recentMessages)
 }
 
 export async function addToUserMemory(userId: string, userMessage: string, aiResponse: string, user: any | null = null) {
   await authenticatedMemory.addMessage(userId, 'human', userMessage, user)
   await authenticatedMemory.addMessage(userId, 'ai', aiResponse, user)
+  
+  // Extract and store cross-session memories
+  if (user?.id) {
+    try {
+      await crossSessionMemory.extractAndStoreMemories(user.id, userId, userMessage, aiResponse)
+    } catch (error) {
+      console.log('Could not extract memories:', error)
+    }
+  }
 }
 
 export async function getUserMemoryVariables(userId: string, user: any | null = null) {

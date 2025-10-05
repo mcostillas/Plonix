@@ -1,20 +1,26 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { PiggyBank, ArrowLeft, FileText, Shield, Users, AlertCircle } from 'lucide-react'
 
 export default function TermsPage() {
+  const router = useRouter()
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-blue-50/30 to-green-50/30">
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors">
+          <button 
+            onClick={() => router.back()}
+            className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors"
+          >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back to Home</span>
-          </Link>
+            <span>Back</span>
+          </button>
           <div className="flex items-center space-x-2">
             <PiggyBank className="w-6 h-6 text-primary" />
             <span className="text-xl font-bold text-primary">Plounix</span>

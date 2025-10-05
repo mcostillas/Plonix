@@ -5,13 +5,14 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon } from 'lucide-react'
+import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon, AlertTriangle } from 'lucide-react'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '@/lib/supabase'
 import { LogoutModal, useLogoutModal } from '@/components/ui/logout-modal'
+import { DeleteChatModal, ClearHistoryModal, DeleteCompletedModal } from '@/components/ui/confirmation-modal'
 import { useRouter } from 'next/navigation'
 
 export default function AIAssistantPage() {
@@ -29,7 +30,11 @@ function AIAssistantContent() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [currentChatId, setCurrentChatId] = useState('1')
+  
+  // Chat history state - starts with one default chat with unique session ID
+  const defaultSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  const [currentChatId, setCurrentChatId] = useState(defaultSessionId)
+  
   const [inputMessage, setInputMessage] = useState('')
   const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
@@ -38,8 +43,12 @@ function AIAssistantContent() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const logoutModal = useLogoutModal()
   
-  // Chat history state - starts with one default chat with unique session ID
-  const defaultSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+  // Modal states for deletion confirmations
+  const [deleteChatModalOpen, setDeleteChatModalOpen] = useState(false)
+  const [clearHistoryModalOpen, setClearHistoryModalOpen] = useState(false)
+  const [deleteCompletedModalOpen, setDeleteCompletedModalOpen] = useState(false)
+  const [chatToDelete, setChatToDelete] = useState<string | null>(null)
+  
   const [chats, setChats] = useState([
     {
       id: defaultSessionId,
@@ -64,25 +73,36 @@ function AIAssistantContent() {
     try {
       console.log('📥 Loading chat history for user:', userId)
       
-      // Get all messages for chat sessions only (not user_id based sessions)
+      // Get all messages for THIS SPECIFIC USER only
+      // Filter by user_id to show only this user's chats
       const { data: messages, error } = await (supabase as any)
         .from('chat_history')
         .select('*')
-        .like('session_id', `chat_%`) // Get only session-based chats, not user_id based
+        .eq('user_id', userId) // ← Filter by user_id!
         .order('created_at', { ascending: true })
 
       if (error) {
-        console.error('Error loading chat history:', error)
+        console.error('❌ Error loading chat history:', error)
         return
       }
 
       if (!messages || messages.length === 0) {
-        console.log('No chat history found, starting with welcome message')
-        // Keep the default welcome chat
+        console.log('⚠️ No chat history found in database')
         return
       }
 
-      console.log(`📚 Loaded ${messages.length} messages from database`)
+      console.log(`📚 Loaded ${messages.length} TOTAL messages from database`)
+      
+      // Debug: Show unique session IDs
+      const uniqueSessions = Array.from(new Set(messages.map((m: any) => m.session_id)))
+      console.log(`🔑 Found ${uniqueSessions.length} unique session IDs:`, uniqueSessions)
+      
+      // Debug: Show sample messages
+      console.log('� Sample messages:', messages.slice(0, 3).map((m: any) => ({
+        session: m.session_id,
+        type: m.message_type,
+        preview: m.content.substring(0, 50)
+      })))
 
       // Group messages by session_id
       const sessionGroups = messages.reduce((groups: any, msg: any) => {
@@ -129,19 +149,19 @@ function AIAssistantContent() {
       // Sort by most recent first
       loadedChats.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
 
+      console.log(`✅ Loaded ${loadedChats.length} chat sessions`)
+      console.log('📋 Chat sessions:', loadedChats.map(c => ({
+        id: c.id,
+        title: c.title,
+        messageCount: c.messages.length,
+        lastMessage: c.lastMessage.substring(0, 30) + '...'
+      })))
+
       if (loadedChats.length > 0) {
-        // Check if there's a saved current chat ID in localStorage
-        const savedChatId = localStorage.getItem('plounix_current_chat_id')
-        const savedChatExists = savedChatId && loadedChats.find(c => c.id === savedChatId)
-        
-        const activeChatId = savedChatExists ? savedChatId : loadedChats[0].id
-        const activeChat = loadedChats.find(c => c.id === activeChatId) || loadedChats[0]
-        
-        setChats(loadedChats)
-        setCurrentChatId(activeChat.id)
-        setMessages(activeChat.messages)
-        console.log(`✅ Loaded ${loadedChats.length} chat sessions successfully`)
-        console.log(`📌 Active session: ${activeChat.id}`)
+        // Load past chats into sidebar but DON'T switch to them
+        // Always keep the current new chat active (like ChatGPT)
+        setChats([chats[0], ...loadedChats]) // Keep new chat at top, add history below
+        console.log(`📌 Starting with new chat (keeping ${loadedChats.length} in sidebar)`)
       }
     } catch (error) {
       console.error('Failed to load chat history:', error)
@@ -238,7 +258,6 @@ function AIAssistantContent() {
     setChats([newChat, ...chats])
     setCurrentChatId(newChat.id)
     setMessages(newChat.messages)
-    localStorage.setItem('plounix_current_chat_id', newChat.id) // Save to localStorage
     console.log('✨ Created new chat with session ID:', sessionId)
   }
 
@@ -248,20 +267,100 @@ function AIAssistantContent() {
     if (chat) {
       setCurrentChatId(chatId)
       setMessages(chat.messages)
-      localStorage.setItem('plounix_current_chat_id', chatId) // Save to localStorage
     }
   }
 
-  // Delete chat
-  const deleteChat = (chatId: string) => {
+  // Open delete chat modal
+  const openDeleteChatModal = (chatId: string) => {
+    if (!user) return
     if (chats.length <= 1) return // Keep at least one chat
+    setChatToDelete(chatId)
+    setDeleteChatModalOpen(true)
+  }
+
+  // Delete chat (called after modal confirmation)
+  const confirmDeleteChat = async () => {
+    if (!user || !chatToDelete) return
     
-    const updatedChats = chats.filter(c => c.id !== chatId)
-    setChats(updatedChats)
+    try {
+      // Delete from database
+      const { error } = await supabase
+        .from('chat_history')
+        .delete()
+        .eq('session_id', chatToDelete)
+        .eq('user_id', user.id) // Safety check: only delete own messages
+      
+      if (error) {
+        console.error('❌ Error deleting chat from database:', error)
+        alert('Failed to delete chat from database. Please try again.')
+        return
+      }
+      
+      console.log('✅ Chat deleted from database:', chatToDelete)
+      
+      // Delete from state
+      const updatedChats = chats.filter(c => c.id !== chatToDelete)
+      setChats(updatedChats)
+      
+      if (currentChatId === chatToDelete) {
+        setCurrentChatId(updatedChats[0].id)
+        setMessages(updatedChats[0].messages)
+      }
+      
+      // Clear the chatToDelete state
+      setChatToDelete(null)
+    } catch (error) {
+      console.error('❌ Error deleting chat:', error)
+      alert('Failed to delete chat. Please try again.')
+    }
+  }
+
+  // Clear all chat history (called after modal confirmation)
+  const confirmClearAllHistory = async () => {
+    if (!user) return
     
-    if (currentChatId === chatId) {
-      setCurrentChatId(updatedChats[0].id)
-      setMessages(updatedChats[0].messages)
+    try {
+      // Delete all chat history from database
+      const { error: chatError } = await supabase
+        .from('chat_history')
+        .delete()
+        .eq('user_id', user.id)
+      
+      if (chatError) {
+        console.error('❌ Error deleting chat history:', chatError)
+        alert('Failed to delete chat history. Please try again.')
+        return
+      }
+      
+      // Optionally delete memories (commented out by default to preserve learning)
+      // const { error: memoryError } = await supabase
+      //   .from('user_memories')
+      //   .delete()
+      //   .eq('user_id', user.id)
+      // 
+      // if (memoryError) {
+      //   console.error('❌ Error deleting memories:', memoryError)
+      // }
+      
+      console.log('✅ All chat history cleared for user:', user.id)
+      
+      // Reset to fresh state
+      const newSessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      setChats([{
+        id: newSessionId,
+        title: 'New Chat',
+        timestamp: new Date(),
+        lastMessage: 'Ask me anything about personal finance...',
+        messages: []
+      }])
+      setCurrentChatId(newSessionId)
+      setMessages([])
+      
+      // Show success modal instead of alert
+      setDeleteCompletedModalOpen(true)
+    } catch (error) {
+      console.error('❌ Error clearing history:', error)
+      alert('Failed to clear history. Please try again.')
     }
   }
 
@@ -369,24 +468,93 @@ function AIAssistantContent() {
 
   // Generate smart chat title from user message (ChatGPT-style)
   const generateChatTitle = (message: string): string => {
+    const lowerMsg = message.toLowerCase()
+    
+    // Detect specific financial topics and create contextual titles
+    
+    // Price inquiries
+    if (lowerMsg.match(/how much|price|cost|magkano/i)) {
+      const itemMatch = message.match(/(?:how much|price|cost|magkano).+?(?:is|for|ng)?\s+(.+?)(?:\?|$)/i)
+      if (itemMatch) {
+        const item = itemMatch[1].trim().split(' ').slice(0, 4).join(' ')
+        return `Price of ${item.charAt(0).toUpperCase() + item.slice(1)}`
+      }
+      return 'Price Inquiry'
+    }
+    
+    // Budget planning
+    if (lowerMsg.match(/budget|spending|expenses|gastos/i)) {
+      return 'Budget Planning'
+    }
+    
+    // Savings goals
+    if (lowerMsg.match(/save|saving|ipon|savings goal/i)) {
+      if (lowerMsg.match(/₱[\d,]+/)) {
+        const amount = message.match(/₱[\d,]+/)?.[0]
+        return `Savings Goal ${amount}`
+      }
+      return 'Savings Plan'
+    }
+    
+    // Investment
+    if (lowerMsg.match(/invest|investment|stocks|crypto|bonds/i)) {
+      return 'Investment Advice'
+    }
+    
+    // Income
+    if (lowerMsg.match(/income|salary|earn|sweldo|kita/i)) {
+      return 'Income Discussion'
+    }
+    
+    // Debt/loans
+    if (lowerMsg.match(/debt|loan|utang|borrow|credit card/i)) {
+      return 'Debt Management'
+    }
+    
+    // Banking
+    if (lowerMsg.match(/bank|gcash|paymaya|bdo|bpi/i)) {
+      return 'Banking & Payments'
+    }
+    
+    // Emergency fund
+    if (lowerMsg.match(/emergency fund|emergency saving/i)) {
+      return 'Emergency Fund'
+    }
+    
+    // Side hustle
+    if (lowerMsg.match(/side hustle|extra income|raket|sideline/i)) {
+      return 'Side Hustle Ideas'
+    }
+    
+    // Generic financial advice
+    if (lowerMsg.match(/advice|help|tips|suggest/i)) {
+      return 'Financial Advice'
+    }
+    
+    // Default: Extract key topic words
     // Remove common question words and get the core topic
     const cleaned = message
       .toLowerCase()
-      .replace(/^(how|what|when|where|why|can|should|could|would|i want to|i need to|help me|tell me about|explain|show me)\s+/i, '')
+      .replace(/^(hi|hello|hey|kumusta|how|what|when|where|why|can you|should|could|would|i want to|i need to|help me with|tell me about|explain|show me|please)\s+/i, '')
+      .replace(/\?+$/g, '')
       .trim()
     
+    // Get first 3-5 meaningful words
+    const words = cleaned.split(/\s+/).filter(word => word.length > 2)
+    const mainTopic = words.slice(0, 5).join(' ')
+    
     // Capitalize first letter of each word
-    const titleCase = cleaned
+    const titleCase = mainTopic
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ')
     
-    // Limit to 40 characters and add ellipsis if needed
-    if (titleCase.length > 40) {
-      return titleCase.slice(0, 40).trim() + '...'
+    // Limit to 50 characters and add ellipsis if needed
+    if (titleCase.length > 50) {
+      return titleCase.slice(0, 50).trim() + '...'
     }
     
-    return titleCase || 'New Conversation'
+    return titleCase || 'General Inquiry'
   }
 
   // Send message
@@ -440,14 +608,51 @@ function AIAssistantContent() {
         headers['Authorization'] = `Bearer ${session.access_token}`
       }
       
+      // Check if session is getting too long and auto-rotate to new session
+      const MAX_MESSAGES_PER_SESSION = 150 // Warning threshold
+      const FORCE_NEW_SESSION_AT = 200 // Hard limit
+      
+      let messagesToUse = updatedMessages
+      let sessionIdToUse = currentChatId
+      
+      if (updatedMessages.length >= FORCE_NEW_SESSION_AT) {
+        // Auto-create new session when limit reached
+        console.log('⚠️ Session too long (200+ messages), auto-rotating to new session')
+        const newSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+        const newChat = {
+          id: newSessionId,
+          title: 'New Chat (Continued)',
+          timestamp: new Date(),
+          lastMessage: messageToSend,
+          messages: [newMessage] // Start fresh with just the current message
+        }
+        setChats([newChat, ...chats])
+        setCurrentChatId(newSessionId)
+        sessionIdToUse = newSessionId
+        messagesToUse = [newMessage] // Fresh start
+        
+        // Remove loading message and update with new session
+        setMessages([newMessage])
+      } else if (updatedMessages.length >= MAX_MESSAGES_PER_SESSION) {
+        // Show warning but allow continuation
+        console.log(`⚠️ Chat session has ${updatedMessages.length} messages. Consider starting a new chat for better performance.`)
+      }
+      
       // Use ai-chat endpoint which has memory system
-      // Pass the current chat session ID
+      // Pass the current chat session ID and recent messages for context
+      // Include last 5 messages for conversation continuity
+      const recentMessages = messagesToUse.slice(-5).map(msg => ({
+        role: msg.type === 'user' ? 'user' : 'assistant',
+        content: msg.content
+      }))
+      
       const response = await fetch('/api/ai-chat', {
         method: 'POST',
         headers,
         body: JSON.stringify({
           message: messageToSend,
-          sessionId: currentChatId, // Pass session ID for proper chat separation
+          sessionId: sessionIdToUse, // Use the appropriate session ID (may be new if rotated)
+          recentMessages: recentMessages // Pass recent chat history for context
         })
       })
       
@@ -579,7 +784,7 @@ function AIAssistantContent() {
                       size="sm"
                       onClick={(e) => {
                         e.stopPropagation()
-                        deleteChat(chat.id)
+                        openDeleteChatModal(chat.id)
                       }}
                       className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 h-6 w-6 p-0 transition-all duration-200"
                     >
@@ -715,7 +920,10 @@ function AIAssistantContent() {
                   </button>
 
                   {/* Clear History */}
-                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                  <button 
+                    onClick={() => setClearHistoryModalOpen(true)}
+                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-red-50 transition-all">
                         <History className="w-4 h-4 text-gray-600 group-hover:text-red-500" />
@@ -882,6 +1090,28 @@ function AIAssistantContent() {
         {/* Input Area */}
         <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg">
           <div className="max-w-4xl mx-auto">
+            {/* Long Session Warning */}
+            {messages.length >= 150 && messages.length < 200 && (
+              <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start space-x-3">
+                <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-orange-900">
+                    Long conversation detected ({messages.length} messages)
+                  </p>
+                  <p className="text-xs text-orange-700 mt-1">
+                    Consider starting a new chat for better performance. Your conversation will auto-rotate at 200 messages.
+                  </p>
+                </div>
+                <Button
+                  onClick={createNewChat}
+                  size="sm"
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3"
+                >
+                  New Chat
+                </Button>
+              </div>
+            )}
+            
             {/* Receipt Preview */}
             {receiptPreview && (
               <div className="mb-3 relative inline-block">
@@ -960,7 +1190,7 @@ function AIAssistantContent() {
                         }
                       }
                     }}
-                    className="border-0 bg-transparent pr-16 py-4 px-4 resize-none focus:ring-0 focus:outline-none placeholder:text-gray-400 text-gray-800 rounded-2xl"
+                    className="border-0 bg-transparent pr-20 py-5 px-6 resize-none focus:ring-0 focus:outline-none placeholder:text-gray-400 text-gray-800 rounded-2xl text-base"
                   />
                   <div className="absolute right-2 bottom-2 flex items-center space-x-2">
                     <div className="flex items-center space-x-1">
@@ -1028,6 +1258,30 @@ function AIAssistantContent() {
         onClose={logoutModal.close}
         onConfirm={handleLogout}
         isLoading={isLoggingOut}
+      />
+
+      {/* Delete Chat Modal */}
+      <DeleteChatModal
+        isOpen={deleteChatModalOpen}
+        onClose={() => {
+          setDeleteChatModalOpen(false)
+          setChatToDelete(null)
+        }}
+        onConfirm={confirmDeleteChat}
+        chatTitle={chats.find(c => c.id === chatToDelete)?.title}
+      />
+
+      {/* Clear History Modal */}
+      <ClearHistoryModal
+        isOpen={clearHistoryModalOpen}
+        onClose={() => setClearHistoryModalOpen(false)}
+        onConfirm={confirmClearAllHistory}
+      />
+
+      {/* Delete Completed Success Modal */}
+      <DeleteCompletedModal
+        isOpen={deleteCompletedModalOpen}
+        onClose={() => setDeleteCompletedModalOpen(false)}
       />
     </div>
     </div>
