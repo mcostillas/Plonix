@@ -1,39 +1,64 @@
+import { tavily } from "@tavily/core";
+
+interface SearchResult {
+  title: string;
+  snippet: string;
+  link: string;
+  source: string;
+  displayLink: string;
+  score?: number;
+}
+
 export class WebSearchService {
-  private apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY // Google API key
-  private searchEngineId = process.env.NEXT_PUBLIC_GOOGLE_CSE_ID // Custom Search Engine ID
+  private tvly: any;
+
+  constructor() {
+    // Initialize Tavily client
+    const apiKey = process.env.TAVILY_API_KEY;
+    console.log('🔑 Tavily API Key status:', apiKey ? `Set (${apiKey.substring(0, 10)}...)` : 'NOT SET')
+    if (apiKey) {
+      this.tvly = tavily({ apiKey });
+      console.log('✅ Tavily client initialized successfully')
+    } else {
+      console.error('❌ TAVILY_API_KEY not found in environment variables')
+    }
+  }
 
   async searchWeb(query: string) {
     try {
-      // Check if API keys are configured
-      if (!this.apiKey || !this.searchEngineId || this.apiKey.includes('your_actual')) {
-        console.log('Google Custom Search API not configured')
+      // Check if API key is configured
+      if (!this.tvly) {
+        console.log('Tavily API not configured')
         return [{
           title: "Search Unavailable",
-          snippet: "Web search is currently unavailable. Please configure Google Custom Search API keys in your environment variables.",
+          snippet: "Web search is currently unavailable. Please configure Tavily API key in your environment variables.",
           link: "#",
           source: "plounix.ai",
           displayLink: "Setup Required"
         }]
       }
 
-      // Using Google Custom Search API (100 searches/day free)
-      const response = await fetch(
-        `https://www.googleapis.com/customsearch/v1?key=${this.apiKey}&cx=${this.searchEngineId}&q=${encodeURIComponent(query)}`
-      )
-      const data = await response.json()
+      // Using Tavily AI Search API (1000 searches/month free)
+      const response = await this.tvly.search(query, {
+        searchDepth: "advanced",
+        maxResults: 5,
+        includeAnswer: false,
+        includeRawContent: false
+      });
       
-      if (data.items) {
-        return data.items.map((item: any) => ({
+      if (response.results && response.results.length > 0) {
+        return response.results.map((item: any) => ({
           title: item.title,
-          snippet: item.snippet,
-          link: item.link,
-          source: this.extractDomain(item.link),
-          displayLink: item.displayLink
+          snippet: item.content,
+          link: item.url,
+          source: this.extractDomain(item.url),
+          displayLink: this.extractDomain(item.url),
+          score: item.score
         }))
       }
       return []
     } catch (error) {
-      console.error('Google Custom Search failed:', error)
+      console.error('Tavily Search failed:', error)
       return []
     }
   }
@@ -43,7 +68,7 @@ export class WebSearchService {
     const results = await this.searchWeb(query)
     
     // Filter for shopping/price-related sites
-    const priceResults = results.filter(result => 
+    const priceResults = results.filter((result: SearchResult) => 
       result.source.includes('lazada') || 
       result.source.includes('shopee') || 
       result.source.includes('price') ||
@@ -59,7 +84,7 @@ export class WebSearchService {
     const results = await this.searchWeb(query)
     
     // Filter for financial sites
-    return results.filter(result => 
+    return results.filter((result: SearchResult) => 
       result.source.includes('bsp.gov.ph') ||
       result.source.includes('bank') ||
       result.source.includes('financial') ||
@@ -77,7 +102,7 @@ export class WebSearchService {
     const results = await this.searchWeb(query)
     
     // Filter for news and financial sites
-    return results.filter(result => 
+    return results.filter((result: SearchResult) => 
       result.source.includes('news') ||
       result.source.includes('inquirer') ||
       result.source.includes('rappler') ||
