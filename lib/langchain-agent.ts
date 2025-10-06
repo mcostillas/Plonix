@@ -426,6 +426,22 @@ ALWAYS PRIORITIZE:
         })
 
         const finalData = await finalResponse.json()
+        console.log('📨 Final response received:', { 
+          hasChoices: !!finalData.choices, 
+          choicesLength: finalData.choices?.length,
+          hasError: !!finalData.error 
+        })
+        
+        if (finalData.error) {
+          console.error('❌ OpenAI API Error:', finalData.error)
+          throw new Error(finalData.error.message || 'OpenAI API error')
+        }
+        
+        if (!finalData.choices || finalData.choices.length === 0) {
+          console.error('❌ No choices in response:', finalData)
+          throw new Error('No response from OpenAI')
+        }
+        
         return finalData.choices[0]?.message?.content || "I'm having trouble generating a response."
       } else {
         // No function call, use the regular response
