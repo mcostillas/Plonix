@@ -9,6 +9,7 @@ import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, Mor
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
+import { PageLoader } from '@/components/ui/page-loader'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '@/lib/supabase'
 import { LogoutModal, useLogoutModal } from '@/components/ui/logout-modal'
@@ -690,6 +691,10 @@ function AIAssistantContent() {
       setMessages(finalMessages)
     }
     // Input already cleared at the start of function
+  }
+
+  if (isLoading) {
+    return <PageLoader message="Loading AI Assistant..." />
   }
 
   return (

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
+import { PageLoader } from '@/components/ui/page-loader'
 import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain, Award, Trophy } from 'lucide-react'
 
 export default function LearningPage() {
@@ -163,6 +164,10 @@ function LearningContent() {
       features: ['Mindset transformation', 'Overcoming money blocks']
     }
   ]
+
+  if (!mounted) {
+    return <PageLoader message="Loading learning modules..." />
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">

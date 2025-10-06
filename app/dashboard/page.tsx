@@ -8,6 +8,7 @@ import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { PageLoader } from '@/components/ui/page-loader'
 import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -121,6 +122,10 @@ function DashboardContent() {
 
     fetchFinancialData()
   }, [user, refreshTrigger])
+
+  if (loading && !mounted) {
+    return <PageLoader message="Loading your dashboard..." />
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
