@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
+import { PageLoader } from '@/components/ui/page-loader'
 import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp, Smartphone, Laptop, Plane, Shield, GraduationCap, Trash2, Edit, Check } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { getCurrentUser, type User } from '@/lib/auth'
@@ -176,6 +177,10 @@ function GoalsContent() {
       custom: { primary: '#6b7280', light: '#f3f4f6' } // gray
     }
     return colorMap[category] || colorMap.custom
+  }
+
+  if (loading && goals.length === 0) {
+    return <PageLoader message="Loading your goals..." />
   }
 
   return (

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { PageLoader } from '@/components/ui/page-loader'
 import { 
   PlusCircle, 
   TrendingUp, 
@@ -543,6 +544,10 @@ export default function TransactionsPage() {
     date: t.date,
     time: new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
   }))
+
+  if (loading && transactions.length === 0) {
+    return <PageLoader message="Loading transactions..." />
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
