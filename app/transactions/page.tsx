@@ -2,10 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
+import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { 
   PlusCircle, 
   TrendingUp, 
@@ -34,6 +36,13 @@ export default function TransactionsPage() {
   const [selectedPeriod, setSelectedPeriod] = useState('this-month')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [showExportDropdown, setShowExportDropdown] = useState(false)
+  const [showDatePicker, setShowDatePicker] = useState(false)
+  const [customStartDate, setCustomStartDate] = useState('')
+  const [customEndDate, setCustomEndDate] = useState('')
+  const [transactions, setTransactions] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+  const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const exportDropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -47,6 +56,106 @@ export default function TransactionsPage() {
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Helper function to get period label
+  const getPeriodLabel = () => {
+    if (selectedPeriod === 'custom' && customStartDate && customEndDate) {
+      return `${new Date(customStartDate).toLocaleDateString()} - ${new Date(customEndDate).toLocaleDateString()}`
+    }
+    switch(selectedPeriod) {
+      case 'this-month': return 'This Month'
+      case 'last-month': return 'Last Month'
+      case 'last-3-months': return 'Last 3 Months'
+      case 'last-6-months': return 'Last 6 Months'
+      case 'this-year': return 'This Year'
+      case 'last-year': return 'Last Year'
+      case 'all-time': return 'All Time'
+      default: return 'This Month'
+    }
+  }
+
+  // Fetch transactions from database
+  useEffect(() => {
+    async function fetchTransactions() {
+      if (!user?.id) return
+      
+      setLoading(true)
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        
+        // Calculate date range based on selected period
+        const now = new Date()
+        let startDate: Date | null = null
+        let endDate: Date | null = null
+        
+        if (selectedPeriod === 'custom') {
+          if (customStartDate && customEndDate) {
+            startDate = new Date(customStartDate)
+            endDate = new Date(customEndDate)
+          } else {
+            // If custom selected but no dates, default to this month
+            startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          }
+        } else {
+          switch(selectedPeriod) {
+            case 'this-month':
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+              break
+            case 'last-month':
+              startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+              endDate = new Date(now.getFullYear(), now.getMonth(), 0)
+              break
+            case 'last-3-months':
+              startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+              break
+            case 'last-6-months':
+              startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
+              break
+            case 'this-year':
+              startDate = new Date(now.getFullYear(), 0, 1)
+              break
+            case 'last-year':
+              startDate = new Date(now.getFullYear() - 1, 0, 1)
+              endDate = new Date(now.getFullYear() - 1, 11, 31)
+              break
+            case 'all-time':
+              // No start date filter for all-time
+              startDate = null
+              break
+            default:
+              startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          }
+        }
+        
+        let query = supabase
+          .from('transactions')
+          .select('*')
+          .eq('user_id', user.id)
+        
+        if (startDate) {
+          query = query.gte('date', startDate.toISOString().split('T')[0])
+        }
+        
+        if (endDate) {
+          query = query.lte('date', endDate.toISOString().split('T')[0])
+        }
+        
+        const { data, error } = await query
+          .order('date', { ascending: false })
+          .order('created_at', { ascending: false })
+
+        if (!error && data) {
+          setTransactions(data)
+        }
+      } catch (err) {
+        console.error('Error fetching transactions:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTransactions()
+  }, [user, selectedPeriod, customStartDate, customEndDate, refreshTrigger])
 
   // Export function to generate CSV
   const exportToCSV = () => {
@@ -66,7 +175,7 @@ export default function TransactionsPage() {
 
     const csvContent = [
       formatCSVRow(headers),
-      ...filteredTransactions.map(transaction => formatCSVRow([
+      ...formattedTransactions.map(transaction => formatCSVRow([
         transaction.date,
         transaction.time,
         transaction.description,
@@ -127,7 +236,7 @@ export default function TransactionsPage() {
       '',
       '=== TRANSACTIONS ===',
       formatCSVRow(transactionHeaders),
-      ...filteredTransactions.map(transaction => formatCSVRow([
+      ...formattedTransactions.map(transaction => formatCSVRow([
         transaction.date,
         transaction.time,
         transaction.description,
@@ -310,7 +419,7 @@ export default function TransactionsPage() {
     doc.setFont('helvetica', 'bold')
     doc.text('All Transactions', margin, 30)
 
-    const allTransactionData = filteredTransactions.map(transaction => [
+    const allTransactionData = formattedTransactions.map(transaction => [
       transaction.date,
       transaction.time,
       transaction.description,
@@ -376,35 +485,46 @@ export default function TransactionsPage() {
     setShowExportDropdown(false)
   }
 
-  // Mock data - this would come from your database
-  const transactions = [
-    { id: 1, type: 'expense', amount: 285, description: 'Jollibee Dinner', category: 'Food & Dining', date: '2025-09-23', time: '19:30' },
-    { id: 2, type: 'income', amount: 2500, description: 'Freelance Payment', category: 'Income', date: '2025-09-22', time: '14:15' },
-    { id: 3, type: 'expense', amount: 24, description: 'Jeepney Fare', category: 'Transportation', date: '2025-09-22', time: '08:30' },
-    { id: 4, type: 'expense', amount: 549, description: 'Netflix Subscription', category: 'Entertainment', date: '2025-09-21', time: '12:00' },
-    { id: 5, type: 'income', amount: 15000, description: 'Monthly Salary', category: 'Income', date: '2025-09-15', time: '09:00' },
-    { id: 6, type: 'expense', amount: 1200, description: 'Groceries', category: 'Food & Dining', date: '2025-09-20', time: '16:45' },
-    { id: 7, type: 'expense', amount: 150, description: 'Coffee Shop', category: 'Food & Dining', date: '2025-09-19', time: '10:20' },
-    { id: 8, type: 'expense', amount: 80, description: 'Bus Fare', category: 'Transportation', date: '2025-09-18', time: '07:45' },
-    { id: 9, type: 'income', amount: 1250, description: 'Weekly Allowance', category: 'Income', date: '2025-09-17', time: '12:00' },
-    { id: 10, type: 'expense', amount: 450, description: 'Phone Bill', category: 'Utilities', date: '2025-09-16', time: '14:30' }
-  ]
-
-  const categories = [
-    { name: 'Food & Dining', amount: 4200, transactions: 15, color: 'bg-blue-500', percentage: 32.8 },
-    { name: 'Transportation', amount: 2800, transactions: 22, color: 'bg-green-500', percentage: 21.9 },
-    { name: 'Entertainment', amount: 1950, transactions: 8, color: 'bg-purple-500', percentage: 15.2 },
-    { name: 'Utilities', amount: 2100, transactions: 6, color: 'bg-yellow-500', percentage: 16.4 },
-    { name: 'Others', amount: 1750, transactions: 12, color: 'bg-orange-500', percentage: 13.7 }
-  ]
-
+  // Calculate summary from real transactions
   const summary = {
-    totalIncome: 18750,
-    totalExpenses: 12800,
-    totalSaved: 8450,
-    netCashflow: 5950,
+    totalIncome: transactions
+      .filter(t => t.transaction_type === 'income')
+      .reduce((sum, t) => sum + Number(t.amount), 0),
+    totalExpenses: transactions
+      .filter(t => t.transaction_type === 'expense')
+      .reduce((sum, t) => sum + Number(t.amount), 0),
+    totalSaved: 0, // Will calculate below
+    netCashflow: 0, // Will calculate below
     transactionCount: transactions.length
   }
+  summary.totalSaved = summary.totalIncome - summary.totalExpenses
+  summary.netCashflow = summary.totalIncome - summary.totalExpenses
+
+  // Calculate category breakdown from real data
+  const categoryMap = new Map<string, { amount: number; count: number }>()
+  transactions
+    .filter(t => t.transaction_type === 'expense')
+    .forEach(t => {
+      const category = t.category || 'Others'
+      const existing = categoryMap.get(category) || { amount: 0, count: 0 }
+      categoryMap.set(category, {
+        amount: existing.amount + Number(t.amount),
+        count: existing.count + 1
+      })
+    })
+
+  const totalExpenseAmount = summary.totalExpenses || 1 // Avoid division by zero
+  const categoryColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
+  
+  const categories = Array.from(categoryMap.entries())
+    .map(([name, data], index) => ({
+      name,
+      amount: data.amount,
+      transactions: data.count,
+      color: categoryColors[index % categoryColors.length],
+      percentage: (data.amount / totalExpenseAmount) * 100
+    }))
+    .sort((a, b) => b.amount - a.amount)
 
   const filteredTransactions = transactions.filter(transaction => {
     if (selectedCategory !== 'all' && transaction.category !== selectedCategory) {
@@ -412,6 +532,17 @@ export default function TransactionsPage() {
     }
     return true
   })
+
+  // Format transaction for display
+  const formattedTransactions = filteredTransactions.map(t => ({
+    id: t.id,
+    type: t.transaction_type,
+    amount: Number(t.amount),
+    description: t.merchant,
+    category: t.category,
+    date: t.date,
+    time: new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+  }))
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -496,15 +627,103 @@ export default function TransactionsPage() {
                   </div>
                 )}
               </div>
-              <Link href="/add-transaction">
-                <Button size="sm">
-                  <PlusCircle className="w-4 h-4 mr-2" />
-                  Add Transaction
-                </Button>
-              </Link>
+              <Button 
+                size="sm"
+                onClick={() => setShowAddTransactionModal(true)}
+              >
+                <PlusCircle className="w-4 h-4 mr-2" />
+                Add Transaction
+              </Button>
             </div>
           </div>
         </div>
+
+        {/* Period Filter */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  <Calendar className="w-4 h-4 inline mr-2" />
+                  Time Period
+                </label>
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setSelectedPeriod(value)
+                    if (value === 'custom') {
+                      setShowDatePicker(true)
+                    } else {
+                      setShowDatePicker(false)
+                      setCustomStartDate('')
+                      setCustomEndDate('')
+                    }
+                  }}
+                  className="w-full md:w-64 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="this-month">This Month</option>
+                  <option value="last-month">Last Month</option>
+                  <option value="last-3-months">Last 3 Months</option>
+                  <option value="last-6-months">Last 6 Months</option>
+                  <option value="this-year">This Year</option>
+                  <option value="last-year">Last Year</option>
+                  <option value="all-time">All Time</option>
+                  <option value="custom">Custom Range...</option>
+                </select>
+              </div>
+              
+              {showDatePicker && (
+                <div className="flex flex-col md:flex-row gap-3 md:items-end flex-1">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">Start Date</label>
+                    <input
+                      type="date"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 mb-2 block">End Date</label>
+                    <input
+                      type="date"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => {
+                      if (customStartDate && customEndDate) {
+                        setShowDatePicker(false)
+                      } else {
+                        alert('Please select both start and end dates')
+                      }
+                    }}
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    Apply
+                  </Button>
+                </div>
+              )}
+              
+              {selectedPeriod === 'custom' && !showDatePicker && customStartDate && customEndDate && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <span className="font-medium">Range: {getPeriodLabel()}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDatePicker(true)}
+                    className="text-purple-600 hover:text-purple-700"
+                  >
+                    Edit
+                  </Button>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Financial Summary Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -513,7 +732,8 @@ export default function TransactionsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-green-600">₱{summary.totalIncome.toLocaleString()}</p>
-                  <p className="text-sm text-green-700 font-medium">Total Income</p>
+                  <p className="text-sm text-green-700 font-medium">Income</p>
+                  <p className="text-xs text-green-600">{getPeriodLabel()}</p>
                 </div>
                 <ArrowUpRight className="w-8 h-8 text-green-500" />
               </div>
@@ -525,7 +745,8 @@ export default function TransactionsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-red-600">₱{summary.totalExpenses.toLocaleString()}</p>
-                  <p className="text-sm text-red-700 font-medium">Total Expenses</p>
+                  <p className="text-sm text-red-700 font-medium">Expenses</p>
+                  <p className="text-xs text-red-600">{getPeriodLabel()}</p>
                 </div>
                 <ArrowDownRight className="w-8 h-8 text-red-500" />
               </div>
@@ -537,7 +758,8 @@ export default function TransactionsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-2xl font-bold text-blue-600">₱{summary.netCashflow.toLocaleString()}</p>
-                  <p className="text-sm text-blue-700 font-medium">Net Cashflow</p>
+                  <p className="text-sm text-blue-700 font-medium">Net Saved</p>
+                  <p className="text-xs text-blue-600">{getPeriodLabel()}</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-blue-500" />
               </div>
@@ -616,35 +838,54 @@ export default function TransactionsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {filteredTransactions.map((transaction) => (
-                  <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-10 h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
-                        {transaction.type === 'income' ? (
-                          <ArrowUpRight className="w-5 h-5 text-green-600" />
-                        ) : (
-                          <ArrowDownRight className="w-5 h-5 text-red-600" />
-                        )}
+              {loading ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                  <p className="mt-2 text-sm">Loading transactions...</p>
+                </div>
+              ) : formattedTransactions.length === 0 ? (
+                <div className="text-center py-8">
+                  <Receipt className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-500 mb-4">No transactions found</p>
+                  <Button 
+                    className="bg-purple-600 hover:bg-purple-700"
+                    onClick={() => setShowAddTransactionModal(true)}
+                  >
+                    <PlusCircle className="w-4 h-4 mr-2" />
+                    Add Your First Transaction
+                  </Button>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {formattedTransactions.map((transaction) => (
+                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
+                          {transaction.type === 'income' ? (
+                            <ArrowUpRight className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <ArrowDownRight className="w-5 h-5 text-red-600" />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{transaction.description}</p>
+                          <p className="text-xs text-gray-600 capitalize">
+                            {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{transaction.description}</p>
-                        <p className="text-xs text-gray-600">
-                          {transaction.category} • {transaction.date} • {transaction.time}
-                        </p>
+                      <div className="flex items-center space-x-2">
+                        <span className={`text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                          {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
+                        </span>
+                        <Button variant="ghost" size="sm">
+                          <Eye className="w-4 h-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
-                      </span>
-                      <Button variant="ghost" size="sm">
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -659,63 +900,69 @@ export default function TransactionsPage() {
             <CardDescription>Detailed analysis of your financial activity</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Income Sources */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-green-600">Income Sources</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Monthly Salary</span>
-                    </div>
-                    <span className="text-sm font-semibold text-green-600">₱15,000</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                      <span className="text-sm font-medium">Freelance Work</span>
-                    </div>
-                    <span className="text-sm font-semibold text-green-600">₱2,500</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-green-300 rounded-full"></div>
-                      <span className="text-sm font-medium">Allowance</span>
-                    </div>
-                    <span className="text-sm font-semibold text-green-600">₱1,250</span>
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-500">Loading breakdown...</p>
+              </div>
+            ) : transactions.length === 0 ? (
+              <div className="text-center py-8">
+                <Calendar className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                <p className="text-gray-500">No transaction data available</p>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-8">
+                {/* Income Sources */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-green-600">
+                    Income Sources ({transactions.filter(t => t.transaction_type === 'income').length})
+                  </h3>
+                  <div className="space-y-3">
+                    {transactions.filter(t => t.transaction_type === 'income').length === 0 ? (
+                      <p className="text-sm text-gray-500 p-3">No income recorded yet</p>
+                    ) : (
+                      transactions
+                        .filter(t => t.transaction_type === 'income')
+                        .slice(0, 5) // Show top 5
+                        .map((tx, index) => (
+                          <div key={tx.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center space-x-3">
+                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `hsl(${120 - index * 10}, 70%, ${50 - index * 5}%)` }}></div>
+                              <span className="text-sm font-medium capitalize">{tx.merchant}</span>
+                            </div>
+                            <span className="text-sm font-semibold text-green-600">₱{Number(tx.amount).toLocaleString()}</span>
+                          </div>
+                        ))
+                    )}
                   </div>
                 </div>
-              </div>
 
-              {/* Top Expenses */}
-              <div>
-                <h3 className="text-lg font-semibold mb-4 text-red-600">Top Expenses</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Food & Dining</span>
-                    </div>
-                    <span className="text-sm font-semibold text-red-600">₱4,200</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Transportation</span>
-                    </div>
-                    <span className="text-sm font-semibold text-red-600">₱2,800</span>
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                      <span className="text-sm font-medium">Utilities</span>
-                    </div>
-                    <span className="text-sm font-semibold text-red-600">₱2,100</span>
+                {/* Top Expenses */}
+                <div>
+                  <h3 className="text-lg font-semibold mb-4 text-red-600">
+                    Top Expenses (by category)
+                  </h3>
+                  <div className="space-y-3">
+                    {categories.length === 0 ? (
+                      <p className="text-sm text-gray-500 p-3">No expenses recorded yet</p>
+                    ) : (
+                      categories.slice(0, 5).map((cat, index) => (
+                        <div key={cat.name} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            <div className={`w-3 h-3 rounded-full ${cat.color.replace('bg-', 'bg-')}`}></div>
+                            <span className="text-sm font-medium capitalize">{cat.name}</span>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-sm font-semibold text-red-600">₱{cat.amount.toLocaleString()}</span>
+                            <p className="text-xs text-gray-500">{cat.transactions} txns</p>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Summary Stats */}
             <div className="mt-8 pt-6 border-t">
@@ -747,6 +994,16 @@ export default function TransactionsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Add Transaction Modal */}
+      <AddTransactionModal
+        isOpen={showAddTransactionModal}
+        onClose={() => setShowAddTransactionModal(false)}
+        onSuccess={() => {
+          // Refresh transactions when a new one is added
+          setRefreshTrigger(prev => prev + 1)
+        }}
+      />
     </div>
   )
 }

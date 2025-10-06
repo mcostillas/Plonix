@@ -26,6 +26,7 @@ import { useAuth } from '@/lib/auth-hooks'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { LogoutModal, useLogoutModal } from './logout-modal'
+import { AddTransactionModal } from '@/components/AddTransactionModal'
 
 interface NavbarProps {
   currentPage?: string
@@ -51,12 +52,38 @@ export function Navbar({ currentPage }: NavbarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
+  const [profilePicture, setProfilePicture] = useState<string>('')
   const dropdownRef = useRef<HTMLDivElement>(null)
   const logoutModal = useLogoutModal()
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Fetch profile picture
+  useEffect(() => {
+    async function fetchProfilePicture() {
+      if (!user?.id) return
+      
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data } = await supabase
+          .from('user_profiles')
+          .select('profile_picture')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        
+        if (data) {
+          setProfilePicture((data as any).profile_picture || '')
+        }
+      } catch (err) {
+        console.error('Error fetching profile picture:', err)
+      }
+    }
+
+    fetchProfilePicture()
+  }, [user])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -83,7 +110,8 @@ export function Navbar({ currentPage }: NavbarProps) {
       icon: BookOpen,
       items: [
         { name: 'Learning Hub', href: '/learning', icon: BookOpen, description: 'Financial education' },
-        { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Complete financial challenges & missions' }
+        { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Complete financial challenges & missions' },
+        { name: 'Goals', href: '/goals', icon: Target, description: 'Set and track goals' }
       ]
     },
     {
@@ -100,8 +128,6 @@ export function Navbar({ currentPage }: NavbarProps) {
       icon: TrendingUp,
       items: [
         { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' },
-        { name: 'Goals', href: '/goals', icon: Target, description: 'Set and track goals' },
-        { name: 'Add Transaction', href: '/add-transaction', icon: Plus, description: 'Record expenses' },
         { name: 'Pricing', href: '/pricing', icon: CreditCard, description: 'Subscription plans' }
       ]
     }
@@ -277,30 +303,41 @@ export function Navbar({ currentPage }: NavbarProps) {
           <div className="hidden lg:flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
-                <span className="text-sm text-gray-600 hidden xl:block">
-                  Hi, {user.name || user.email.split('@')[0]}!
-                </span>
-                <div className="flex items-center space-x-1">
-                  <Link href="/profile">
-                    <Button 
-                      variant={currentPage === "profile" ? "default" : "ghost"} 
-                      size="sm"
-                      className="h-9"
-                    >
-                      <User className="w-4 h-4 mr-2" />
-                      Profile
-                    </Button>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={logoutModal.open}
-                    className="text-gray-600 hover:text-red-600 h-9"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Log Out
-                  </Button>
-                </div>
+                {/* Add Transaction Button */}
+                <Button
+                  onClick={() => setShowAddTransactionModal(true)}
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 h-9 px-3"
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Add
+                </Button>
+                {/* Profile Picture & Name - Clickable to profile */}
+                <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                  {profilePicture ? (
+                    <img
+                      src={profilePicture}
+                      alt="Profile"
+                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
+                      <User className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                  <span className="text-sm text-gray-600 hidden xl:block hover:text-primary font-medium cursor-pointer">
+                    Hi, {user.name || user.email.split('@')[0]}!
+                  </span>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={logoutModal.open}
+                  className="text-gray-600 hover:text-red-600 h-9"
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </Button>
               </div>
             ) : (
               <Link href="/auth/login">
@@ -367,18 +404,42 @@ export function Navbar({ currentPage }: NavbarProps) {
             <div className="border-t pt-4 mt-4 space-y-2">
               {user ? (
                 <>
-                  <div className="px-4 py-2 text-sm text-gray-600">
-                    Hi, {user.name || user.email.split('@')[0]}!
-                  </div>
-                  <Link href="/profile" onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button 
-                      variant={currentPage === "profile" ? "default" : "ghost"}
-                      size="sm"
-                      className="w-full justify-start space-x-3"
-                    >
-                      <User className="w-4 h-4" />
-                      <span>Profile</span>
-                    </Button>
+                  {/* Add Transaction Button - Mobile */}
+                  <Button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false)
+                      setShowAddTransactionModal(true)
+                    }}
+                    size="sm"
+                    className="w-full justify-start space-x-3 bg-green-600 hover:bg-green-700"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Transaction</span>
+                  </Button>
+                  {/* Profile Picture & Name - Clickable to profile */}
+                  <Link 
+                    href="/profile" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors rounded-lg mx-2"
+                  >
+                    {profilePicture ? (
+                      <img
+                        src={profilePicture}
+                        alt="Profile"
+                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
+                        <User className="w-6 h-6 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">
+                        {user.name || user.email.split('@')[0]}
+                      </p>
+                      <p className="text-xs text-gray-500">{user.email}</p>
+                      <p className="text-xs text-primary mt-0.5">View Profile →</p>
+                    </div>
                   </Link>
                   <Button 
                     variant="ghost" 
@@ -409,6 +470,16 @@ export function Navbar({ currentPage }: NavbarProps) {
         onClose={logoutModal.close}
         onConfirm={handleLogout}
         isLoading={isLoggingOut}
+      />
+
+      {/* Add Transaction Modal */}
+      <AddTransactionModal
+        isOpen={showAddTransactionModal}
+        onClose={() => setShowAddTransactionModal(false)}
+        onSuccess={() => {
+          // Optionally refresh data or show success message
+          console.log('Transaction added successfully!')
+        }}
       />
     </nav>
   )

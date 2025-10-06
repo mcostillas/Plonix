@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
-import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp, Smartphone, Laptop, Plane, Shield, GraduationCap, User } from 'lucide-react'
-import { goalManager, FinancialGoal } from '@/lib/goal-manager'
+import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp, Smartphone, Laptop, Plane, Shield, GraduationCap, Trash2, Edit, Check } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
+import { getCurrentUser, type User } from '@/lib/auth'
+import type { Goal } from '@/lib/database.types'
 
 export default function GoalsPage() {
   return (
@@ -20,29 +22,138 @@ export default function GoalsPage() {
 }
 
 function GoalsContent() {
-  const [goals, setGoals] = useState<FinancialGoal[]>([])
+  const [user, setUser] = useState<User | null>(null)
+  const [goals, setGoals] = useState<Goal[]>([])
+  const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     targetAmount: '',
-    timeframe: '',
-    category: ''
+    deadline: '',
+    category: '',
+    icon: '🎯',
+    color: 'blue'
   })
 
-  const handleCreateGoal = () => {
-    if (formData.title && formData.targetAmount && formData.timeframe) {
-      const newGoal = goalManager.createManualGoal({
-        title: formData.title,
-        description: formData.description,
-        targetAmount: Number(formData.targetAmount),
-        timeframe: Number(formData.timeframe),
-        category: formData.category
-      })
+  // Get current user
+  useEffect(() => {
+    getCurrentUser().then(setUser)
+  }, [])
+
+  // Fetch goals
+  useEffect(() => {
+    fetchGoals()
+  }, [user])
+
+  const fetchGoals = async () => {
+    setLoading(true)
+    try {
+      const { data, error } = await (supabase as any)
+        .from('goals')
+        .select('*')
+        .order('created_at', { ascending: false })
       
-      setGoals([...goals, newGoal])
-      setFormData({ title: '', description: '', targetAmount: '', timeframe: '', category: '' })
-      setShowCreateForm(false)
+      if (!error && data) {
+        setGoals(data as Goal[])
+      }
+    } catch (err) {
+      console.error('Error fetching goals:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateGoal = async () => {
+    if (!formData.title || !formData.targetAmount) {
+      alert('Please fill in required fields: Title and Target Amount')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await (supabase as any)
+        .from('goals')
+        .insert([{
+          title: formData.title,
+          description: formData.description || null,
+          target_amount: parseFloat(formData.targetAmount),
+          current_amount: 0,
+          category: formData.category || 'custom',
+          deadline: formData.deadline || null,
+          icon: formData.icon,
+          color: formData.color,
+          status: 'active',
+          user_id: user?.id || null
+        }])
+
+      if (error) {
+        console.error('Error creating goal:', error)
+        alert('Error creating goal: ' + error.message)
+      } else {
+        alert('Goal created successfully!')
+        setFormData({
+          title: '',
+          description: '',
+          targetAmount: '',
+          deadline: '',
+          category: '',
+          icon: '🎯',
+          color: 'blue'
+        })
+        setShowCreateForm(false)
+        fetchGoals()
+      }
+    } catch (err) {
+      console.error('Error:', err)
+      alert('An error occurred while creating the goal')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleUpdateProgress = async (goal: Goal, addAmount: number) => {
+    const newAmount = goal.current_amount + addAmount
+    
+    setLoading(true)
+    try {
+      const { error } = await (supabase as any)
+        .from('goals')
+        .update({ current_amount: newAmount })
+        .eq('id', goal.id)
+
+      if (error) {
+        alert('Error updating progress: ' + error.message)
+      } else {
+        fetchGoals()
+      }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleDeleteGoal = async (goalId: string) => {
+    if (!confirm('Are you sure you want to delete this goal?')) return
+
+    setLoading(true)
+    try {
+      const { error } = await (supabase as any)
+        .from('goals')
+        .delete()
+        .eq('id', goalId)
+
+      if (error) {
+        alert('Error deleting goal: ' + error.message)
+      } else {
+        fetchGoals()
+      }
+    } catch (err) {
+      console.error('Error:', err)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -126,12 +237,11 @@ function GoalsContent() {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Timeframe (months)</label>
+                  <label className="block text-sm font-semibold mb-2 text-gray-700">Deadline (optional)</label>
                   <Input
-                    type="number"
-                    placeholder="e.g., 12"
-                    value={formData.timeframe}
-                    onChange={(e) => setFormData({...formData, timeframe: e.target.value})}
+                    type="date"
+                    value={formData.deadline}
+                    onChange={(e) => setFormData({...formData, deadline: e.target.value})}
                     className="border-2 focus:border-primary"
                   />
                 </div>
@@ -181,7 +291,7 @@ function GoalsContent() {
                 </Button>
                 <Link href="/ai-assistant">
                   <Button variant="outline" className="flex items-center space-x-2">
-                    <User className="w-4 h-4" />
+                    <Target className="w-4 h-4" />
                     <span>Ask Fili for Goal Ideas</span>
                   </Button>
                 </Link>
@@ -191,7 +301,7 @@ function GoalsContent() {
         ) : (
           <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {goals.map((goal) => {
-              const progressPercentage = (goal.currentAmount / goal.targetAmount) * 100;
+              const progressPercentage = (goal.current_amount / goal.target_amount) * 100;
               const category = categories.find(c => c.value === goal.category);
               const IconComponent = category?.icon || Target;
               const categoryColors = getCategoryColors(goal.category);
@@ -234,58 +344,75 @@ function GoalsContent() {
                     {/* Amount Display */}
                     <div className="grid grid-cols-2 gap-3">
                       <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
-                        <p className="text-lg font-bold text-blue-600">₱{goal.currentAmount.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</p>
                         <p className="text-xs font-medium text-blue-700">Saved</p>
                       </div>
                       <div className="bg-green-50 p-3 rounded-lg border border-green-100 text-center">
-                        <p className="text-lg font-bold text-green-600">₱{goal.targetAmount.toLocaleString()}</p>
+                        <p className="text-lg font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</p>
                         <p className="text-xs font-medium text-green-700">Target</p>
                       </div>
                     </div>
 
                     {/* Goal Details */}
                     <div className="space-y-2 text-sm">
-                      <div className="flex items-center justify-between bg-amber-50 p-2 rounded border border-amber-100">
-                        <span className="text-amber-700 font-medium">Monthly Target:</span>
-                        <span className="text-amber-800 font-bold">₱{goal.monthlyTarget.toLocaleString()}</span>
+                      {goal.deadline && (
+                        <div className="flex items-center justify-between text-gray-600">
+                          <span className="flex items-center">
+                            <Calendar className="w-4 h-4 mr-1" />
+                            Deadline:
+                          </span>
+                          <span className="font-medium">{new Date(goal.deadline).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between text-gray-600">
+                        <span className="flex items-center">
+                          <Tag className="w-4 h-4 mr-1" />
+                          Category:
+                        </span>
+                        <span className="font-medium capitalize">{goal.category}</span>
                       </div>
                       <div className="flex items-center justify-between text-gray-600">
                         <span className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          Deadline:
+                          <TrendingUp className="w-4 h-4 mr-1" />
+                          Status:
                         </span>
-                        <span className="font-medium">{new Date(goal.deadline).toLocaleDateString()}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-gray-600">
-                        <span className="flex items-center">
-                          <User className="w-4 h-4 mr-1" />
-                          Created by:
+                        <span className={`font-medium capitalize ${goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}>
+                          {goal.status}
                         </span>
-                        <span className="font-medium">{goal.createdBy === 'ai-assistant' ? 'Fili AI' : 'Manual'}</span>
                       </div>
                     </div>
 
-                    {/* Action Button */}
-                    <Button 
-                      className="w-full h-10 font-medium"
-                      variant="outline"
-                      style={{
-                        borderColor: categoryColors.primary,
-                        color: categoryColors.primary,
-                        borderWidth: '2px'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = categoryColors.primary;
-                        e.currentTarget.style.color = 'white';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = categoryColors.primary;
-                      }}
-                    >
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Update Progress
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1 h-10 font-medium"
+                        variant="outline"
+                        onClick={() => {
+                          const amount = prompt('How much do you want to add to this goal?')
+                          if (amount && !isNaN(Number(amount))) {
+                            handleUpdateProgress(goal, Number(amount))
+                          }
+                        }}
+                        disabled={loading || goal.status === 'completed'}
+                        style={{
+                          borderColor: categoryColors.primary,
+                          color: categoryColors.primary,
+                          borderWidth: '2px'
+                        }}
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Update Progress
+                      </Button>
+                      <Button 
+                        className="h-10"
+                        variant="destructive"
+                        size="icon"
+                        onClick={() => handleDeleteGoal(goal.id)}
+                        disabled={loading}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )

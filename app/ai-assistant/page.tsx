@@ -693,10 +693,10 @@ function AIAssistantContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       <Navbar currentPage="ai assistant" />
       
-      <div className="h-[calc(100vh-80px)] flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-72' : 'w-16'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col shadow-lg relative`}>
           {/* Sidebar Toggle Button - Floating */}
