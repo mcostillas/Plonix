@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
@@ -654,10 +655,9 @@ export default function TransactionsPage() {
                   <Calendar className="w-4 h-4 inline mr-2" />
                   Time Period
                 </label>
-                <select
+                <Select
                   value={selectedPeriod}
-                  onChange={(e) => {
-                    const value = e.target.value
+                  onValueChange={(value) => {
                     setSelectedPeriod(value)
                     if (value === 'custom') {
                       setShowDatePicker(true)
@@ -667,17 +667,21 @@ export default function TransactionsPage() {
                       setCustomEndDate('')
                     }
                   }}
-                  className="w-full md:w-64 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
-                  <option value="this-month">This Month</option>
-                  <option value="last-month">Last Month</option>
-                  <option value="last-3-months">Last 3 Months</option>
-                  <option value="last-6-months">Last 6 Months</option>
-                  <option value="this-year">This Year</option>
-                  <option value="last-year">Last Year</option>
-                  <option value="all-time">All Time</option>
-                  <option value="custom">Custom Range...</option>
-                </select>
+                  <SelectTrigger className="w-full md:w-64">
+                    <SelectValue placeholder="Select time period" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="this-month">This Month</SelectItem>
+                    <SelectItem value="last-month">Last Month</SelectItem>
+                    <SelectItem value="last-3-months">Last 3 Months</SelectItem>
+                    <SelectItem value="last-6-months">Last 6 Months</SelectItem>
+                    <SelectItem value="this-year">This Year</SelectItem>
+                    <SelectItem value="last-year">Last Year</SelectItem>
+                    <SelectItem value="all-time">All Time</SelectItem>
+                    <SelectItem value="custom">Custom Range...</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               
               {showDatePicker && (
@@ -829,18 +833,22 @@ export default function TransactionsPage() {
                   <CardDescription>{filteredTransactions.length} transactions found</CardDescription>
                 </div>
                 <div className="flex space-x-2">
-                  <select 
-                    value={selectedCategory} 
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="text-sm border rounded px-2 py-1"
+                  <Select
+                    value={selectedCategory}
+                    onValueChange={(value) => setSelectedCategory(value)}
                   >
-                    <option value="all">All Categories</option>
-                    <option value="Food & Dining">Food & Dining</option>
-                    <option value="Transportation">Transportation</option>
-                    <option value="Entertainment">Entertainment</option>
-                    <option value="Utilities">Utilities</option>
-                    <option value="Income">Income</option>
-                  </select>
+                    <SelectTrigger className="w-40 text-sm">
+                      <SelectValue placeholder="All Categories" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="Food & Dining">Food & Dining</SelectItem>
+                      <SelectItem value="Transportation">Transportation</SelectItem>
+                      <SelectItem value="Entertainment">Entertainment</SelectItem>
+                      <SelectItem value="Utilities">Utilities</SelectItem>
+                      <SelectItem value="Income">Income</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </CardHeader>
