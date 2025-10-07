@@ -48,7 +48,7 @@ export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
     status.isConnected = true
 
     // Check for vector extension
-    const { data: extensions, error: extError } = await supabase
+    const { data: extensions, error: extError } = await (supabase as any)
       .rpc('sql', { 
         query: "SELECT extname FROM pg_extension WHERE extname = 'vector'" 
       })
@@ -77,13 +77,13 @@ export async function checkDatabaseStatus(): Promise<DatabaseStatus> {
 
     // Check functions exist (simplified check)
     try {
-      const { data: functions, error: funcError } = await supabase
+      const { data: functions, error: funcError } = await (supabase as any)
         .rpc('sql', { 
           query: "SELECT routine_name FROM information_schema.routines WHERE routine_name IN ('match_financial_memories', 'clear_user_memory')" 
         })
 
       if (!funcError && functions) {
-        functions.forEach((func: any) => {
+        (functions as any[]).forEach((func: any) => {
           if (func.routine_name === 'match_financial_memories') {
             status.functions.match_financial_memories = true
           }
@@ -125,7 +125,7 @@ export async function testUserMemoryOperations(userId: string): Promise<{
       metadata: { test: true }
     }
 
-    const { data: chatData, error: chatError } = await supabase
+    const { data: chatData, error: chatError } = await (supabase as any)
       .from('chat_history')
       .insert(testMessage)
       .select()
@@ -163,7 +163,7 @@ export async function testUserMemoryOperations(userId: string): Promise<{
       metadata: { test: true, type: 'test' }
     }
 
-    const { data: memoryData, error: memoryError } = await supabase
+    const { data: memoryData, error: memoryError } = await (supabase as any)
       .from('financial_memories')
       .insert(testMemory)
       .select()

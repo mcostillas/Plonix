@@ -129,7 +129,7 @@ MEMORY INSTRUCTIONS:
   }
 
   async updateUserProfile(userId: string, profile: Partial<UserProfile>) {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('user_profiles')
       .upsert({
         user_id: userId,
@@ -152,7 +152,7 @@ MEMORY INSTRUCTIONS:
   }
 
   async updateUserContext(userId: string, context: Partial<UserContext>) {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('user_context')
       .upsert({
         user_id: userId,
@@ -274,7 +274,7 @@ MEMORY INSTRUCTIONS:
   }
 
   async storeConversationMemory(userId: string, conversationId: string, analysis: any) {
-    const { error } = await supabase
+    const { error } = await (supabase as any)
       .from('conversation_memories')
       .insert({
         user_id: userId,
@@ -322,7 +322,7 @@ MEMORY INSTRUCTIONS:
     messageType: 'text' | 'tool_use' | 'receipt_scan' = 'text',
     metadata?: any
   ): Promise<string | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('messages')
       .insert({
         user_id: userId,
@@ -341,7 +341,7 @@ MEMORY INSTRUCTIONS:
   }
 
   async createConversation(userId: string, title?: string): Promise<string | null> {
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from('conversations')
       .insert({
         user_id: userId,

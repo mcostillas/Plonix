@@ -30,8 +30,8 @@ export default function ColorTest() {
           <div className="bg-card rounded-lg p-6 border">
             <h2 className="text-xl font-semibold mb-4">Logo Colors</h2>
             <div className="space-y-4">
-              <PlounixLogo variant="full" size="lg" theme="green" />
-              <PlounixLogo variant="icon" size="lg" theme="green" />
+              <PlounixLogo size="lg" className="text-primary" />
+              <PlounixLogo size="lg" className="text-green-600" />
               <div className="text-sm text-muted-foreground">
                 Logo should now match the exact system primary color
               </div>
@@ -48,7 +48,7 @@ export default function ColorTest() {
               <span className="text-primary font-medium">System Primary</span>
             </div>
             <div className="flex items-center space-x-3">
-              <PlounixLogo variant="icon" size="sm" theme="green" />
+              <PlounixLogo size="sm" className="text-green-600" />
               <span className="font-medium">Logo Green</span>
             </div>
           </div>
