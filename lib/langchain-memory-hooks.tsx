@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { sessionManager } from '@/lib/user-session'
 import { Spinner } from '@/components/ui/spinner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 export function useLangChainMemory() {
   const [userId, setUserId] = useState<string>('')
@@ -272,15 +273,19 @@ export function EnhancedAIChat() {
               onChange={(e) => setProfile(prev => ({...prev, monthlyIncome: e.target.value}))}
               className="p-2 border rounded"
             />
-            <select
+            <Select
               value={profile.budgetStyle}
-              onChange={(e) => setProfile(prev => ({...prev, budgetStyle: e.target.value}))}
-              className="p-2 border rounded col-span-2"
+              onValueChange={(value) => setProfile(prev => ({...prev, budgetStyle: value}))}
             >
-              <option value="50-30-20">50-30-20 Rule</option>
-              <option value="envelope">Envelope Method</option>
-              <option value="zero-based">Zero-Based Budgeting</option>
-            </select>
+              <SelectTrigger className="col-span-2">
+                <SelectValue placeholder="Select budget style" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="50-30-20">50-30-20 Rule</SelectItem>
+                <SelectItem value="envelope">Envelope Method</SelectItem>
+                <SelectItem value="zero-based">Zero-Based Budgeting</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <button
             type="submit"
