@@ -1,13 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { signUp } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { PiggyBank, Eye, EyeOff, ArrowLeft, Users, CheckCircle, Star } from 'lucide-react'
+import { PiggyBank, Eye, EyeOff, ArrowLeft, Users, CheckCircle, Star, Check, X } from 'lucide-react'
+
+interface PasswordRequirement {
+  label: string
+  met: boolean
+}
+
+const validatePassword = (password: string): PasswordRequirement[] => {
+  return [
+    { label: 'At least 8 characters', met: password.length >= 8 },
+    { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { label: 'Contains number', met: /\d/.test(password) },
+    { label: 'Contains special character (e.g., @, #, $, !, ,)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) }
+  ]
+}
+
+const getPasswordStrength = (requirements: PasswordRequirement[]): { label: string; color: string; percentage: number } => {
+  const metCount = requirements.filter(r => r.met).length
+  const percentage = (metCount / requirements.length) * 100
+
+  if (metCount === requirements.length) return { label: 'Strong', color: 'text-green-600', percentage }
+  if (metCount >= 3) return { label: 'Medium', color: 'text-yellow-600', percentage }
+  return { label: 'Weak', color: 'text-red-600', percentage }
+}
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -22,6 +46,32 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: ''
   })
+  const [passwordRequirements, setPasswordRequirements] = useState<PasswordRequirement[]>(validatePassword(''))
+  const [showRequirements, setShowRequirements] = useState(false)
+
+  // Load form data from sessionStorage on mount
+  useEffect(() => {
+    const savedFormData = sessionStorage.getItem('registerFormData')
+    if (savedFormData) {
+      try {
+        const parsedData = JSON.parse(savedFormData)
+        setFormData(parsedData)
+        if (parsedData.password) {
+          setPasswordRequirements(validatePassword(parsedData.password))
+          setShowRequirements(true)
+        }
+      } catch (error) {
+        console.error('Error loading saved form data:', error)
+      }
+    }
+  }, [])
+
+  // Save form data to sessionStorage whenever it changes
+  useEffect(() => {
+    if (formData.firstName || formData.lastName || formData.email || formData.password || formData.confirmPassword) {
+      sessionStorage.setItem('registerFormData', JSON.stringify(formData))
+    }
+  }, [formData])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -30,20 +80,25 @@ export default function RegisterPage() {
     setMessage('')
 
     // Validation
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      setIsLoading(false)
-      return
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long')
-      setIsLoading(false)
-      return
-    }
-
     if (!formData.firstName || !formData.lastName) {
       setError('Please fill in all fields')
+      setIsLoading(false)
+      return
+    }
+
+    // Check password strength
+    const requirements = validatePassword(formData.password)
+    const allRequirementsMet = requirements.every(req => req.met)
+    
+    if (!allRequirementsMet) {
+      setError('Password does not meet all requirements')
+      setShowRequirements(true)
+      setIsLoading(false)
+      return
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match')
       setIsLoading(false)
       return
     }
@@ -66,6 +121,8 @@ export default function RegisterPage() {
       if (signUpError) {
         setError(signUpError.message)
       } else if (user) {
+        // Clear saved form data on successful registration
+        sessionStorage.removeItem('registerFormData')
         setMessage('Account created successfully! Please check your email to verify your account.')
         // Redirect to login after 3 seconds
         setTimeout(() => {
@@ -220,7 +277,15 @@ export default function RegisterPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Create a strong password"
                         value={formData.password}
-                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        onChange={(e) => {
+                          const newPassword = e.target.value
+                          setFormData({...formData, password: newPassword})
+                          setPasswordRequirements(validatePassword(newPassword))
+                          if (newPassword.length > 0) {
+                            setShowRequirements(true)
+                          }
+                        }}
+                        onFocus={() => setShowRequirements(true)}
                         className="h-11 pr-12"
                         required
                         disabled={isLoading}
@@ -234,6 +299,46 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
+                    
+                    {/* Password Strength Indicator */}
+                    {showRequirements && formData.password && (
+                      <div className="mt-3 space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Password strength:</span>
+                          <span className={`font-medium ${getPasswordStrength(passwordRequirements).color}`}>
+                            {getPasswordStrength(passwordRequirements).label}
+                          </span>
+                        </div>
+                        
+                        {/* Strength Bar */}
+                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${
+                              getPasswordStrength(passwordRequirements).label === 'Strong' ? 'bg-green-500' :
+                              getPasswordStrength(passwordRequirements).label === 'Medium' ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${getPasswordStrength(passwordRequirements).percentage}%` }}
+                          />
+                        </div>
+
+                        {/* Requirements Checklist */}
+                        <div className="space-y-1.5 pt-1">
+                          {passwordRequirements.map((req, index) => (
+                            <div key={index} className="flex items-center space-x-2 text-sm">
+                              {req.met ? (
+                                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                              ) : (
+                                <X className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                              )}
+                              <span className={req.met ? 'text-green-700' : 'text-gray-600'}>
+                                {req.label}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -255,11 +360,11 @@ export default function RegisterPage() {
                     <input type="checkbox" className="mt-1" required disabled={isLoading} />
                     <span className="text-sm text-gray-600">
                       I agree to the{' '}
-                      <Link href="/terms" className="text-primary hover:text-primary/80">
+                      <Link href="/terms" target="_blank" className="text-primary hover:text-primary/80">
                         Terms of Service
                       </Link>{' '}
                       and{' '}
-                      <Link href="/privacy" className="text-primary hover:text-primary/80">
+                      <Link href="/privacy" target="_blank" className="text-primary hover:text-primary/80">
                         Privacy Policy
                       </Link>
                     </span>

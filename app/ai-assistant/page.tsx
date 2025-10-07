@@ -21,6 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import TextareaAutosize from 'react-textarea-autosize'
+import { Spinner } from '@/components/ui/spinner'
 import {
   InputGroup,
   InputGroupAddon,
@@ -52,7 +53,9 @@ function AIAssistantContent() {
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
-  const [recognition, setRecognition] = useState<any>(null)
+  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
+  const [audioChunks, setAudioChunks] = useState<Blob[]>([])
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const logoutModal = useLogoutModal()
@@ -211,36 +214,6 @@ function AIAssistantContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-      if (SpeechRecognition) {
-        const recognitionInstance = new SpeechRecognition()
-        recognitionInstance.continuous = false
-        recognitionInstance.interimResults = false
-        recognitionInstance.lang = 'en-US'
-
-        recognitionInstance.onresult = (event: any) => {
-          const transcript = event.results[0][0].transcript
-          setInputMessage(prev => prev + (prev ? ' ' : '') + transcript)
-          setIsRecording(false)
-        }
-
-        recognitionInstance.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error)
-          setIsRecording(false)
-        }
-
-        recognitionInstance.onend = () => {
-          setIsRecording(false)
-        }
-
-        setRecognition(recognitionInstance)
-      }
-    }
-  }, [])
 
   // Handle logout
   const handleLogout = async () => {
@@ -510,19 +483,78 @@ function AIAssistantContent() {
     }
   }
 
-  // Toggle voice recording
-  const toggleRecording = () => {
-    if (!recognition) {
-      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.')
-      return
-    }
+  // Start recording audio
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const recorder = new MediaRecorder(stream)
+      const chunks: Blob[] = []
 
-    if (isRecording) {
-      recognition.stop()
-      setIsRecording(false)
-    } else {
-      recognition.start()
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data)
+        }
+      }
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' })
+        await transcribeAudio(audioBlob)
+        
+        // Stop all tracks to release microphone
+        stream.getTracks().forEach(track => track.stop())
+      }
+
+      recorder.start()
+      setMediaRecorder(recorder)
+      setAudioChunks(chunks)
       setIsRecording(true)
+    } catch (error) {
+      console.error('Error accessing microphone:', error)
+      alert('Could not access microphone. Please grant permission and try again.')
+    }
+  }
+
+  // Stop recording audio
+  const stopRecording = () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+      mediaRecorder.stop()
+      setIsRecording(false)
+      setIsTranscribing(true)
+    }
+  }
+
+  // Transcribe audio using Whisper API
+  const transcribeAudio = async (audioBlob: Blob) => {
+    try {
+      const formData = new FormData()
+      formData.append('audio', audioBlob, 'recording.webm')
+
+      const response = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (data.success && data.text) {
+        setInputMessage(prev => prev + (prev ? ' ' : '') + data.text)
+      } else {
+        throw new Error(data.error || 'Transcription failed')
+      }
+    } catch (error) {
+      console.error('Transcription error:', error)
+      alert('Failed to transcribe audio. Please try again.')
+    } finally {
+      setIsTranscribing(false)
+    }
+  }
+
+  // Toggle recording
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording()
+    } else {
+      startRecording()
     }
   }
 
@@ -1334,7 +1366,13 @@ function AIAssistantContent() {
                         setInputMessage(newValue)
                       }
                     }}
-                    placeholder="Ask FILI about budgeting, investments, savings, or any financial question..."
+                    placeholder={
+                      isRecording 
+                        ? "Listening..." 
+                        : isTranscribing 
+                        ? "Transcribing..." 
+                        : "Ask FILI about budgeting, investments, savings, or any financial question..."
+                    }
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault()
@@ -1345,7 +1383,8 @@ function AIAssistantContent() {
                     }}
                     minRows={1}
                     maxRows={8}
-                    className="flex field-sizing-content min-h-[40px] w-full resize-none rounded-full bg-transparent px-4 py-2 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-gray-400"
+                    className="flex items-center field-sizing-content min-h-[40px] w-full resize-none rounded-full bg-transparent px-4 py-2.5 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-gray-400 leading-normal"
+                    disabled={isTranscribing}
                   />
                   
                   {/* Voice and Send buttons - Right side */}
@@ -1356,15 +1395,26 @@ function AIAssistantContent() {
                         onClick={toggleRecording}
                         variant="ghost"
                         size="sm"
+                        disabled={isTranscribing}
                         className={`h-8 w-8 p-0 rounded-full transition-colors ${
                           isRecording 
                             ? 'bg-red-100 hover:bg-red-200 text-red-600' 
+                            : isTranscribing
+                            ? 'bg-blue-100 text-blue-600'
                             : 'hover:bg-primary/10'
                         }`}
-                        title={isRecording ? 'Stop recording' : 'Start voice input'}
+                        title={
+                          isRecording 
+                            ? 'Stop recording' 
+                            : isTranscribing 
+                            ? 'Transcribing...' 
+                            : 'Start voice input'
+                        }
                       >
                         {isRecording ? (
                           <MicOff className="w-4 h-4 animate-pulse" />
+                        ) : isTranscribing ? (
+                          <Spinner size="sm" className="text-blue-600" />
                         ) : (
                           <Mic className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                         )}
