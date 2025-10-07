@@ -13,6 +13,8 @@ import { Target, Plus, Calendar, DollarSign, Tag, TrendingUp, Smartphone, Laptop
 import { PageHeader } from '@/components/ui/page-header'
 import { getCurrentUser, type User } from '@/lib/auth'
 import type { Goal } from '@/lib/database.types'
+import { DeleteGoalModal } from '@/components/ui/confirmation-modal'
+import { GoalCreatedModal } from '@/components/ui/success-modal'
 
 export default function GoalsPage() {
   return (
@@ -28,6 +30,12 @@ function GoalsContent() {
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null)
+  const [deletingGoalTitle, setDeletingGoalTitle] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [successModalOpen, setSuccessModalOpen] = useState(false)
+  const [createdGoalTitle, setCreatedGoalTitle] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -93,7 +101,11 @@ function GoalsContent() {
         console.error('Error creating goal:', error)
         alert('Error creating goal: ' + error.message)
       } else {
-        alert('Goal created successfully!')
+        // Show success modal
+        setCreatedGoalTitle(formData.title)
+        setSuccessModalOpen(true)
+        
+        // Reset form
         setFormData({
           title: '',
           description: '',
@@ -136,25 +148,29 @@ function GoalsContent() {
     }
   }
 
-  const handleDeleteGoal = async (goalId: string) => {
-    if (!confirm('Are you sure you want to delete this goal?')) return
+  const handleDeleteGoal = async () => {
+    if (!deletingGoalId) return
 
-    setLoading(true)
+    setIsDeleting(true)
     try {
       const { error } = await (supabase as any)
         .from('goals')
         .delete()
-        .eq('id', goalId)
+        .eq('id', deletingGoalId)
 
       if (error) {
         alert('Error deleting goal: ' + error.message)
       } else {
+        setDeleteModalOpen(false)
         fetchGoals()
       }
     } catch (err) {
       console.error('Error:', err)
+      alert('An error occurred while deleting the goal')
     } finally {
-      setLoading(false)
+      setIsDeleting(false)
+      setDeletingGoalId(null)
+      setDeletingGoalTitle('')
     }
   }
 
@@ -197,6 +213,22 @@ function GoalsContent() {
             icon: Target
           }}
         />
+
+        {/* Create Goal Button - Always visible */}
+        {!showCreateForm && goals.length > 0 && (
+          <div className="mb-6 flex gap-3">
+            <Button onClick={() => setShowCreateForm(true)} size="lg" className="shadow-lg">
+              <Plus className="w-5 h-5 mr-2" />
+              Create New Goal
+            </Button>
+            <Link href="/ai-assistant">
+              <Button variant="outline" size="lg" className="shadow-sm">
+                <Target className="w-5 h-5 mr-2" />
+                Ask Fili for Goal Ideas
+              </Button>
+            </Link>
+          </div>
+        )}
 
         {/* Create Goal Form */}
         {showCreateForm && (
@@ -412,7 +444,11 @@ function GoalsContent() {
                         className="h-10"
                         variant="destructive"
                         size="icon"
-                        onClick={() => handleDeleteGoal(goal.id)}
+                        onClick={() => {
+                          setDeletingGoalId(goal.id)
+                          setDeletingGoalTitle(goal.title)
+                          setDeleteModalOpen(true)
+                        }}
                         disabled={loading}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -495,6 +531,26 @@ function GoalsContent() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Delete Goal Confirmation Modal */}
+      <DeleteGoalModal
+        isOpen={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false)
+          setDeletingGoalId(null)
+          setDeletingGoalTitle('')
+        }}
+        onConfirm={handleDeleteGoal}
+        goalTitle={deletingGoalTitle}
+        isLoading={isDeleting}
+      />
+
+      {/* Goal Created Success Modal */}
+      <GoalCreatedModal
+        isOpen={successModalOpen}
+        onClose={() => setSuccessModalOpen(false)}
+        goalTitle={createdGoalTitle}
+      />
     </div>
   )
 }
