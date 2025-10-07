@@ -19,7 +19,7 @@ export default function LogoShowcase() {
           <section className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 text-center">Hero Logo</h2>
             <div className="flex justify-center items-center py-8">
-              <PlounixLogo variant="full" size="xl" theme="green" />
+              <PlounixLogo size="lg" className="text-green-600 w-16 h-16" />
             </div>
           </section>
 
@@ -33,15 +33,15 @@ export default function LogoShowcase() {
                 <h3 className="text-lg font-medium text-gray-700">Icon Only</h3>
                 <div className="flex justify-center space-x-4">
                   <div className="p-4">
-                    <PlounixLogo variant="icon" size="sm" theme="green" />
+                    <PlounixLogo size="sm" className="text-green-600" />
                     <p className="text-xs text-gray-500 mt-2">Small</p>
                   </div>
                   <div className="p-4">
-                    <PlounixLogo variant="icon" size="md" theme="green" />
+                    <PlounixLogo size="md" className="text-green-600" />
                     <p className="text-xs text-gray-500 mt-2">Medium</p>
                   </div>
                   <div className="p-4">
-                    <PlounixLogo variant="icon" size="lg" theme="green" />
+                    <PlounixLogo size="lg" className="text-green-600" />
                     <p className="text-xs text-gray-500 mt-2">Large</p>
                   </div>
                 </div>
