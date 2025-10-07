@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { sessionManager } from '@/lib/user-session'
+import { Spinner } from '@/components/ui/spinner'
 
 export function useLangChainMemory() {
   const [userId, setUserId] = useState<string>('')
@@ -321,7 +322,7 @@ export function EnhancedAIChat() {
           <div className="message mb-4 text-left">
             <div className="inline-block bg-gray-200 px-4 py-2 rounded-lg">
               <div className="flex items-center space-x-2">
-                <div className="animate-spin w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                <Spinner size="sm" className="text-blue-600" />
                 <span>AI is thinking with enhanced memory...</span>
               </div>
             </div>

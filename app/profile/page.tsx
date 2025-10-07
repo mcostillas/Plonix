@@ -5,7 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
-import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, Upload, Camera, Loader2, MessageSquare } from 'lucide-react'
+import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, Upload, Camera, MessageSquare } from 'lucide-react'
+import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase'
@@ -266,7 +267,7 @@ function ProfileContent() {
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
+              <Spinner size="xl" color="primary" className="mx-auto mb-4" />
               <p className="text-gray-600">Loading profile...</p>
             </div>
           </div>
@@ -340,7 +341,7 @@ function ProfileContent() {
                       >
                         {saving ? (
                           <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            <Spinner size="sm" className="mr-2" />
                             Saving...
                           </>
                         ) : (

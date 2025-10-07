@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
-import { PageLoader } from '@/components/ui/page-loader'
+import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { 
   PlusCircle, 
   TrendingUp, 
@@ -369,10 +369,11 @@ export default function TransactionsPage() {
     
     doc.setFontSize(10)
     doc.setFont('helvetica', 'normal')
-    const savingsRate = ((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)
+    const actualSavingsRate = ((summary.totalSaved / summary.totalIncome) * 100).toFixed(1)
+    const netSavingsRate = ((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)
     const summaryText = [
       `During this period, you had a total income of PHP ${summary.totalIncome.toLocaleString()} and expenses of PHP ${summary.totalExpenses.toLocaleString()}.`,
-      `This resulted in a net cashflow of PHP ${summary.netCashflow.toLocaleString()}, representing a ${savingsRate}% savings rate.`,
+      `You saved PHP ${summary.totalSaved.toLocaleString()} toward your goals (${actualSavingsRate}% savings rate) with a net cashflow of PHP ${summary.netCashflow.toLocaleString()}.`,
       `You completed ${summary.transactionCount} transactions with an average daily spending of PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}.`
     ]
     
@@ -394,7 +395,7 @@ export default function TransactionsPage() {
       ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
       ['Transaction Count', summary.transactionCount.toString()],
-      ['Savings Rate', `${savingsRate}%`],
+      ['Savings Rate', `${actualSavingsRate}%`],
       ['Daily Average Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
       ['Daily Average Income', `PHP ${Math.round(summary.totalIncome / 30).toLocaleString()}`],
       ['Largest Expense', `PHP ${Math.max(...transactions.filter(t => t.type === 'expense').map(t => t.amount)).toLocaleString()}`],
@@ -492,14 +493,15 @@ export default function TransactionsPage() {
       .filter(t => t.transaction_type === 'income')
       .reduce((sum, t) => sum + Number(t.amount), 0),
     totalExpenses: transactions
-      .filter(t => t.transaction_type === 'expense')
+      .filter(t => t.transaction_type === 'expense' && t.category !== 'Savings')
       .reduce((sum, t) => sum + Number(t.amount), 0),
-    totalSaved: 0, // Will calculate below
+    totalSaved: transactions
+      .filter(t => t.transaction_type === 'expense' && t.category === 'Savings')
+      .reduce((sum, t) => sum + Number(t.amount), 0),
     netCashflow: 0, // Will calculate below
     transactionCount: transactions.length
   }
-  summary.totalSaved = summary.totalIncome - summary.totalExpenses
-  summary.netCashflow = summary.totalIncome - summary.totalExpenses
+  summary.netCashflow = summary.totalIncome - summary.totalExpenses - summary.totalSaved
 
   // Calculate category breakdown from real data
   const categoryMap = new Map<string, { amount: number; count: number }>()
@@ -514,7 +516,7 @@ export default function TransactionsPage() {
       })
     })
 
-  const totalExpenseAmount = summary.totalExpenses || 1 // Avoid division by zero
+  const totalExpenseAmount = (summary.totalExpenses + summary.totalSaved) || 1 // Include savings in total for percentage calculation
   const categoryColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-orange-500', 'bg-pink-500', 'bg-indigo-500']
   
   const categories = Array.from(categoryMap.entries())
@@ -546,7 +548,7 @@ export default function TransactionsPage() {
   }))
 
   if (loading && transactions.length === 0) {
-    return <PageLoader message="Loading transactions..." />
+    return <PageSpinner message="Loading transactions..." />
   }
 
   return (
@@ -845,7 +847,7 @@ export default function TransactionsPage() {
             <CardContent>
               {loading ? (
                 <div className="text-center py-8 text-gray-500">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                  <Spinner size="lg" color="primary" className="mx-auto" />
                   <p className="mt-2 text-sm">Loading transactions...</p>
                 </div>
               ) : formattedTransactions.length === 0 ? (
@@ -907,7 +909,7 @@ export default function TransactionsPage() {
           <CardContent>
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                <Spinner size="lg" color="primary" className="mx-auto" />
                 <p className="mt-2 text-sm text-gray-500">Loading breakdown...</p>
               </div>
             ) : transactions.length === 0 ? (

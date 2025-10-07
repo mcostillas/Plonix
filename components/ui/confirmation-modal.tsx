@@ -48,7 +48,7 @@ export function ConfirmationModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -78,7 +78,7 @@ export function ConfirmationModal({
         <div className="p-6">
           <div className={`p-4 rounded-lg ${type === 'danger' ? 'bg-red-50 border border-red-200' : 'bg-orange-50 border border-orange-200'}`}>
             <p className={`text-sm font-medium ${type === 'danger' ? 'text-red-800' : 'text-orange-800'}`}>
-              ⚠️ This action cannot be undone
+              This action cannot be undone
             </p>
             <p className={`text-xs ${type === 'danger' ? 'text-red-600' : 'text-orange-600'} mt-1`}>
               {type === 'danger' 
@@ -156,7 +156,7 @@ export function ClearHistoryModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -186,7 +186,7 @@ export function ClearHistoryModal({
         <div className="p-6 space-y-3">
           <div className="p-4 rounded-lg bg-red-50 border border-red-200">
             <p className="text-sm font-bold text-red-900 mb-2">
-              ⚠️ This action cannot be undone
+              This action cannot be undone
             </p>
             <p className="text-xs text-red-700 mb-3">
               All data will be permanently deleted from the database.
@@ -206,7 +206,7 @@ export function ClearHistoryModal({
           {/* What will be preserved */}
           <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
             <p className="text-xs font-semibold text-blue-900 mb-1">
-              💡 Will be preserved:
+              Will be preserved:
             </p>
             <p className="text-xs text-blue-700">
               Your learned preferences and financial information for personalized advice.
@@ -255,7 +255,7 @@ export function CancelChallengeModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -332,7 +332,7 @@ export function DeleteCompletedModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-sm w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
@@ -391,7 +391,7 @@ export function DeleteGoalModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}

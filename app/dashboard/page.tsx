@@ -9,7 +9,8 @@ import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { PageLoader } from '@/components/ui/page-loader'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, Loader2, X } from 'lucide-react'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { supabase } from '@/lib/supabase'
 import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/success-modal'
 import { AlreadyCheckedInModal } from '@/components/ui/info-modal'
@@ -374,7 +375,7 @@ function DashboardContent() {
               <CardContent>
                 {loading ? (
                   <div className="text-center py-8 text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                    <Spinner size="lg" color="primary" className="mx-auto" />
                     <p className="mt-2 text-sm">Loading goals...</p>
                   </div>
                 ) : topGoals.length === 0 ? (
@@ -389,7 +390,7 @@ function DashboardContent() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     {topGoals.map((goal, index) => {
                       const progressPercentage = (goal.current_amount / goal.target_amount) * 100
                       const colors = ['blue', 'green', 'purple', 'orange', 'pink']
@@ -397,7 +398,7 @@ function DashboardContent() {
                       
                       return (
                         <Link key={goal.id} href="/goals">
-                          <div className={`p-3 bg-gray-50 rounded-lg border-l-4 border-${color}-500 hover:bg-gray-100 transition-colors cursor-pointer`}>
+                          <div className={`p-4 bg-gray-50 rounded-lg border-l-4 border-${color}-500 hover:bg-gray-100 transition-colors cursor-pointer mb-4`}>
                             <div className="flex justify-between items-center mb-2">
                               <div className="flex-1">
                                 <h4 className="font-medium text-gray-800 truncate">{goal.title}</h4>

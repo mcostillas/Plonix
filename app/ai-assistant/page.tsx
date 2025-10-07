@@ -21,7 +21,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import TextareaAutosize from 'react-textarea-autosize'
-import { Spinner } from '@/components/ui/spinner'
+import { Spinner, PageSpinner } from '@/components/ui/spinner'
 import {
   InputGroup,
   InputGroupAddon,
@@ -361,17 +361,24 @@ function AIAssistantContent() {
       
       console.log('✅ All chat history cleared for user:', user.id)
       
-      // Reset to fresh state
+      // Reset to fresh state with welcome message
       const newSessionId = `chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      const welcomeMessage = {
+        id: 1,
+        type: 'bot',
+        content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+        timestamp: new Date()
+      }
+      
       setChats([{
         id: newSessionId,
         title: 'New Chat',
         timestamp: new Date(),
-        lastMessage: 'Ask me anything about personal finance...',
-        messages: []
+        lastMessage: '',
+        messages: [welcomeMessage]
       }])
       setCurrentChatId(newSessionId)
-      setMessages([])
+      setMessages([welcomeMessage])
       
       // Show success modal instead of alert
       setDeleteCompletedModalOpen(true)
@@ -785,7 +792,7 @@ function AIAssistantContent() {
   }
 
   if (isLoading) {
-    return <PageLoader message="Loading AI Assistant..." />
+    return <PageSpinner message="Loading AI Assistant..." />
   }
 
   return (
@@ -1059,7 +1066,11 @@ function AIAssistantContent() {
 
                   {/* Clear History */}
                   <button 
-                    onClick={() => setClearHistoryModalOpen(true)}
+                    onClick={() => {
+                      setSettingsOpen(false)
+                      // Small delay to allow settings modal to close smoothly
+                      setTimeout(() => setClearHistoryModalOpen(true), 100)
+                    }}
                     className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group"
                   >
                     <div className="flex items-center space-x-3">
@@ -1083,7 +1094,11 @@ function AIAssistantContent() {
                   
                   {/* Logout Button */}
                   <button 
-                    onClick={logoutModal.open}
+                    onClick={() => {
+                      setSettingsOpen(false)
+                      // Small delay to allow settings modal to close smoothly
+                      setTimeout(() => logoutModal.open(), 100)
+                    }}
                     className="w-full flex items-center justify-between p-3 hover:bg-red-50 rounded-lg transition-all duration-200 group"
                   >
                     <div className="flex items-center space-x-3">
@@ -1127,26 +1142,7 @@ function AIAssistantContent() {
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {user && (
-              <div className="hidden sm:flex items-center space-x-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm border border-blue-200 shadow-sm">
-                <Shield className="w-4 h-4" />
-                <span className="font-medium">Memory Active</span>
-              </div>
-            )}
-            <div className="hidden sm:flex items-center space-x-2 bg-green-50 text-green-700 px-4 py-2 rounded-full text-sm border border-green-200">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="font-medium">Online</span>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="hidden md:flex border-gray-200 hover:bg-gray-50 text-gray-600 hover:text-gray-800 transition-all duration-200"
-            >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Upgrade to Pro
-            </Button>
-          </div>
+
         </div>
 
         {/* Messages Area */}
@@ -1303,7 +1299,7 @@ function AIAssistantContent() {
                   >
                     {isProcessingReceipt ? (
                       <>
-                        <span className="animate-spin mr-2">⏳</span>
+                        <Spinner size="xs" className="mr-2" />
                         Processing...
                       </>
                     ) : (
