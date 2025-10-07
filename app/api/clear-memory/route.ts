@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { langchainMemory } from '@/lib/langchain-memory'
+// import { langchainMemory } from '@/lib/langchain-memory'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    await langchainMemory.clearUserMemory(userId)
+    // await langchainMemory.clearUserMemory(userId) - temporarily disabled
 
     return NextResponse.json({ 
       success: true,

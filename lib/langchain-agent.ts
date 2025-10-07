@@ -2,12 +2,12 @@ import { ChatOpenAI } from "@langchain/openai"
 import { AgentExecutor, createOpenAIFunctionsAgent } from "langchain/agents"
 import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts"
 import { DynamicTool } from "langchain/tools"
-import { EnhancedLangChainMemory } from './langchain-memory'
+// import { EnhancedLangChainMemory } from './langchain-memory'
 import { WebSearchService } from './web-search'
 
 export class PlounixAIAgent {
   private llm: ChatOpenAI
-  private memoryManager: EnhancedLangChainMemory
+  private memoryManager: any // EnhancedLangChainMemory
   private webSearch: WebSearchService
 
   constructor() {
@@ -21,7 +21,7 @@ export class PlounixAIAgent {
       temperature: 0.7,
       apiKey: process.env.OPENAI_API_KEY,
     })
-    this.memoryManager = new EnhancedLangChainMemory()
+    this.memoryManager = null // new EnhancedLangChainMemory()
     this.webSearch = new WebSearchService()
   }
 

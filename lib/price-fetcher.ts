@@ -43,17 +43,18 @@ export class PriceFetcher {
   }
 
   private static getMockPrices(): PriceData[] {
+    const now = new Date().toISOString()
     return [
-      { item: 'iPhone 15', price: 65000, currency: 'PHP', source: 'Lazada PH' },
-      { item: 'iPhone 15 Pro', price: 75000, currency: 'PHP', source: 'Shopee PH' },
-      { item: 'Samsung Galaxy S24', price: 55000, currency: 'PHP', source: 'Lazada PH' },
-      { item: 'MacBook Air M2', price: 85000, currency: 'PHP', source: 'Power Mac Center' },
-      { item: 'iPad Air', price: 35000, currency: 'PHP', source: 'iStudio' },
-      { item: 'AirPods Pro', price: 12000, currency: 'PHP', source: 'Shopee PH' },
-      { item: 'PlayStation 5', price: 30000, currency: 'PHP', source: 'GameXtreme' },
-      { item: 'Nintendo Switch', price: 18000, currency: 'PHP', source: 'Datablitz' },
-      { item: 'Laptop Asus', price: 45000, currency: 'PHP', source: 'PC Express' },
-      { item: 'Honda Click 150', price: 120000, currency: 'PHP', source: 'Honda PH' }
+      { item: 'iPhone 15', price: 65000, currency: 'PHP', source: 'Lazada PH', lastUpdated: now },
+      { item: 'iPhone 15 Pro', price: 75000, currency: 'PHP', source: 'Shopee PH', lastUpdated: now },
+      { item: 'Samsung Galaxy S24', price: 55000, currency: 'PHP', source: 'Lazada PH', lastUpdated: now },
+      { item: 'MacBook Air M2', price: 85000, currency: 'PHP', source: 'Power Mac Center', lastUpdated: now },
+      { item: 'iPad Air', price: 35000, currency: 'PHP', source: 'iStudio', lastUpdated: now },
+      { item: 'AirPods Pro', price: 12000, currency: 'PHP', source: 'Shopee PH', lastUpdated: now },
+      { item: 'PlayStation 5', price: 30000, currency: 'PHP', source: 'GameXtreme', lastUpdated: now },
+      { item: 'Nintendo Switch', price: 18000, currency: 'PHP', source: 'Datablitz', lastUpdated: now },
+      { item: 'Laptop Asus', price: 45000, currency: 'PHP', source: 'PC Express', lastUpdated: now },
+      { item: 'Honda Click 150', price: 120000, currency: 'PHP', source: 'Honda PH', lastUpdated: now }
     ]
   }
 
