@@ -15,6 +15,17 @@ import { supabase } from '@/lib/supabase'
 import { LogoutModal, useLogoutModal } from '@/components/ui/logout-modal'
 import { DeleteChatModal, ClearHistoryModal, DeleteCompletedModal } from '@/components/ui/confirmation-modal'
 import { useRouter } from 'next/navigation'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import TextareaAutosize from 'react-textarea-autosize'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+} from "@/components/ui/input-group"
 
 export default function AIAssistantPage() {
   return (
@@ -705,177 +716,217 @@ function AIAssistantContent() {
         {/* Sidebar */}
         <div className={`${sidebarOpen ? 'w-72' : 'w-16'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col shadow-lg relative`}>
           {/* Sidebar Toggle Button - Floating */}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-md transition-all duration-200 hover:scale-110"
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            {sidebarOpen ? (
-              <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
-            )}
-          </button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={() => setSidebarOpen(!sidebarOpen)}
+                  className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-md transition-all duration-200 hover:scale-110"
+                >
+                  {sidebarOpen ? (
+                    <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5 text-gray-600" />
+                  )}
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
 
-          {/* Sidebar Header with Branding */}
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-br from-primary/5 to-blue-50">
+          {/* Sidebar Header */}
+          <div className="p-3">
             {sidebarOpen ? (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3 px-2">
-                  <div className="relative">
-                    <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                      <Bot className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                  </div>
-                  <div>
-                    <h2 className="font-bold text-gray-900 text-base">Fili</h2>
-                    <p className="text-xs text-gray-500">Financial Assistant</p>
-                  </div>
-                </div>
-
+              <div className="space-y-2">
                 {/* New Chat Button */}
                 <Button 
                   onClick={createNewChat}
-                  className="w-full justify-center bg-primary hover:bg-primary/90 text-white transition-all duration-200 shadow-sm hover:shadow-md"
+                  variant="ghost"
+                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  <span className="font-medium">New Chat</span>
+                  <Plus className="w-4 h-4 mr-3" />
+                  <span className="font-medium">New chat</span>
+                </Button>
+
+                {/* Search Chats Button */}
+                <Button 
+                  variant="ghost"
+                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                >
+                  <Search className="w-4 h-4 mr-3" />
+                  <span className="font-medium">Search chats</span>
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-3">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Bot className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
-                </div>
+              <div className="flex flex-col items-center space-y-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        onClick={createNewChat}
+                        variant="ghost"
+                        size="icon"
+                        className="w-10 h-10"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>New chat</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 
-                <Button 
-                  onClick={createNewChat}
-                  className="w-10 h-10 p-0 bg-primary hover:bg-primary/90 text-white transition-all duration-200 shadow-sm"
-                  title="New Chat"
-                >
-                  <Plus className="w-4 h-4" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost"
+                        size="icon"
+                        className="w-10 h-10"
+                      >
+                        <Search className="w-4 h-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Search chats</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
 
+          <Separator />
+
           {/* Chat History */}
-          <div className="flex-1 overflow-y-auto p-3 bg-gradient-to-b from-gray-50/30 to-white">
-            {chats.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => switchChat(chat.id)}
-                className={`group flex items-center justify-between p-3 rounded-lg cursor-pointer hover:bg-gray-100 mb-2 transition-all duration-200 border ${
-                  currentChatId === chat.id ? 'bg-primary/5 border-primary/20 shadow-sm' : 'border-transparent hover:border-gray-200'
-                } ${!sidebarOpen ? 'justify-center' : ''}`}
-              >
-                {sidebarOpen ? (
-                  <>
-                    <div className="flex items-center space-x-3 flex-1 min-w-0">
-                      <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-primary' : 'text-gray-400'}`} />
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${currentChatId === chat.id ? 'text-primary' : 'text-gray-800'}`}>
-                          {chat.title}
-                        </p>
-                        <p className="text-xs text-gray-500 truncate">{chat.lastMessage}</p>
-                      </div>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openDeleteChatModal(chat.id)
-                      }}
-                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 h-6 w-6 p-0 transition-all duration-200"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </>
-                ) : (
-                  <div className="flex justify-center">
-                    <MessageSquare className={`w-4 h-4 ${currentChatId === chat.id ? 'text-primary' : 'text-gray-400'}`} />
-                  </div>
-                )}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {sidebarOpen && (
+              <div className="px-3 py-2">
+                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chats</h3>
               </div>
-            ))}
+            )}
+            <ScrollArea className="flex-1 px-2">
+              {chats.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => switchChat(chat.id)}
+                  className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 mb-1 transition-all duration-200 ${
+                    currentChatId === chat.id ? 'bg-gray-100' : ''
+                  } ${!sidebarOpen ? 'justify-center' : ''}`}
+                >
+                  {sidebarOpen ? (
+                    <>
+                      <div className="flex items-center space-x-3 flex-1 min-w-0">
+                        <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-gray-900' : 'text-gray-500'}`} />
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm truncate ${currentChatId === chat.id ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                            {chat.title}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openDeleteChatModal(chat.id)
+                        }}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 hover:bg-red-50 h-6 w-6 p-0 transition-all duration-200"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </>
+                  ) : (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex justify-center">
+                            <MessageSquare className={`w-4 h-4 ${currentChatId === chat.id ? 'text-gray-900' : 'text-gray-500'}`} />
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="right">
+                          <p>{chat.title}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              ))}
+            </ScrollArea>
           </div>
 
+          <Separator />
+
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-100 bg-gradient-to-t from-gray-50 to-white">
+          <div className="p-3">
             {sidebarOpen ? (
-              <>
-                {/* User Profile Card */}
-                <div className="flex items-center space-x-3 mb-3 p-3 bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl border border-primary/10 shadow-sm">
-                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                    <UserIcon className="w-5 h-5 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate text-gray-800">
-                      {user?.name || user?.email?.split('@')[0] || 'Guest User'}
-                    </p>
-                    <p className="text-xs text-primary font-medium">
-                      {user ? 'Premium Member' : 'Free Tier'}
-                    </p>
-                  </div>
-                </div>
+              <div className="space-y-1">
+                {/* User Profile */}
                 <Button
                   variant="ghost"
-                  size="sm"
+                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200 h-12"
                   onClick={() => setSettingsOpen(true)}
-                  className="w-full justify-start text-gray-600 hover:text-primary hover:bg-primary/5 transition-all duration-200"
                 >
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
+                  <div className="flex items-center space-x-3 flex-1 min-w-0">
+                    <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
+                      <UserIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium truncate text-gray-900">
+                        {user?.name || user?.email?.split('@')[0] || 'Guest User'}
+                      </p>
+                      <p className="text-xs text-gray-500">View settings</p>
+                    </div>
+                  </div>
+                  <Settings className="w-4 h-4 text-gray-400" />
                 </Button>
-              </>
+              </div>
             ) : (
-              <div className="flex flex-col items-center space-y-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center shadow-md">
-                  <UserIcon className="w-5 h-5 text-white" />
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSettingsOpen(true)}
-                  className="w-8 h-8 p-0 text-gray-600 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-lg"
-                  title="Settings"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
+              <div className="flex flex-col items-center space-y-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setSettingsOpen(true)}
+                        className="w-10 h-10"
+                      >
+                        <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
+                          <UserIcon className="w-4 h-4 text-white" />
+                        </div>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>{user?.name || 'User settings'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
         </div>
 
         {/* Settings Modal */}
-        {settingsOpen && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSettingsOpen(false)}>
-            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-              {/* Modal Header */}
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                    <Settings className="w-5 h-5 text-white" />
-                  </div>
-                  <h2 className="text-xl font-bold text-gray-900">Settings</h2>
+        <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                  <Settings className="w-5 h-5 text-white" />
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSettingsOpen(false)}
-                  className="w-8 h-8 p-0 hover:bg-gray-100 rounded-lg"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
+                <DialogTitle className="text-xl">Settings</DialogTitle>
               </div>
+              <DialogDescription>
+                Manage your account and preferences
+              </DialogDescription>
+            </DialogHeader>
 
-              {/* Modal Content */}
-              <div className="p-6 space-y-6">
+            {/* Modal Content */}
+            <div className="space-y-6">
                 {/* User Info Section */}
                 <div className="bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl p-4 border border-primary/10">
                   <div className="flex items-center space-x-3 mb-2">
@@ -891,6 +942,8 @@ function AIAssistantContent() {
                     Premium Member
                   </div>
                 </div>
+
+                <Separator />
 
                 {/* Settings Options */}
                 <div className="space-y-2">
@@ -942,8 +995,10 @@ function AIAssistantContent() {
                   </button>
                 </div>
 
+                <Separator />
+
                 {/* Account Actions */}
-                <div className="space-y-2 pt-4 border-t border-gray-200">
+                <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Account</h3>
                   
                   {/* Logout Button */}
@@ -964,15 +1019,16 @@ function AIAssistantContent() {
                   </button>
                 </div>
 
-                {/* App Info */}
-                <div className="pt-4 border-t border-gray-200 text-center">
-                  <p className="text-xs text-gray-400">Plounix AI Assistant v1.0</p>
-                  <p className="text-xs text-gray-400 mt-1">Made with ❤️ for Filipino youth</p>
-                </div>
+              <Separator />
+
+              {/* App Info */}
+              <div className="text-center">
+                <p className="text-xs text-gray-400">Plounix AI Assistant v1.0</p>
+                <p className="text-xs text-gray-400 mt-1">Made with ❤️ for Filipino youth</p>
               </div>
             </div>
-          </div>
-        )}      {/* Main Chat Area */}
+          </DialogContent>
+        </Dialog>      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
         <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 p-4 flex items-center justify-between shadow-sm">
@@ -1014,75 +1070,100 @@ function AIAssistantContent() {
         </div>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto">
+        <ScrollArea className="flex-1">
           {messages.length === 1 ? (
             // Welcome Screen
             <div className="flex items-center justify-center h-full p-8">
-              <div className="text-center max-w-2xl">
-                <div className="w-16 h-16 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <Sparkles className="w-8 h-8 text-white" />
+              <div className="text-center max-w-3xl">
+                <div className="w-20 h-20 bg-gradient-to-r from-primary to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
+                  <Sparkles className="w-10 h-10 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold mb-4 text-gray-900">Welcome to Fili!</h2>
-                <p className="text-gray-600 mb-8 leading-relaxed">
-                  Your personal financial kuya/ate assistant. I'm Fili, and I can help you with budgeting, 
-                  investing, saving strategies, and all things money management designed for Filipino youth.
+                <h2 className="text-3xl font-bold mb-4 text-gray-900">Welcome to Fili</h2>
+                <p className="text-gray-600 mb-10 leading-relaxed text-lg">
+                  Your personal financial assistant for budgeting, investing, and saving strategies.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {[
                     "How should I budget my ₱25,000 salary?",
                     "Best investment options for beginners?",
                     "Help me create an emergency fund plan",
                     "Compare bank savings account rates"
                   ].map((suggestion, index) => (
-                    <button
+                    <Card
                       key={index}
+                      className="p-4 cursor-pointer hover:bg-gray-50 hover:border-primary/40 transition-all duration-200 group"
                       onClick={() => setInputMessage(suggestion)}
-                      className="p-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-left transition-colors border border-gray-200 hover:border-primary/30"
                     >
-                      <div className="flex items-center space-x-3">
-                        <Search className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-700">{suggestion}</span>
+                      <div className="flex items-start gap-3 text-left">
+                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
+                          <MessageSquare className="w-4 h-4 text-gray-500 group-hover:text-primary" />
+                        </div>
+                        <span className="text-sm text-gray-700 leading-relaxed flex-1">{suggestion}</span>
                       </div>
-                    </button>
+                    </Card>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
             // Chat Messages
-            <div className="p-6 space-y-6 max-w-4xl mx-auto">
+            <div className="p-6 space-y-8 max-w-4xl mx-auto">
               {messages.slice(1).map((message, index) => (
-                <div key={message.id} className={`flex space-x-4 ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.type === 'user' 
-                      ? 'bg-primary text-white' 
-                      : 'bg-gray-100 text-gray-600'
-                  }`}>
-                    {message.type === 'user' ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                  </div>
-                  <div className={`flex-1 max-w-3xl ${message.type === 'user' ? 'flex flex-col items-end' : ''}`}>
-                    <div className={`p-4 rounded-2xl ${
+                <div key={message.id} className={`flex gap-4 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                  {/* Avatar */}
+                  <div className="flex-shrink-0 pt-1">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                       message.type === 'user' 
-                        ? 'bg-primary text-white rounded-br-sm' 
-                        : 'bg-gray-50 text-gray-800 rounded-bl-sm'
+                        ? 'bg-primary text-white' 
+                        : 'bg-gray-200 text-gray-700'
                     }`}>
-                      <div className="whitespace-pre-wrap text-sm leading-relaxed prose prose-sm max-w-none prose-headings:text-gray-900 prose-strong:text-gray-900 prose-p:text-gray-700">
-                        <ReactMarkdown 
-                          components={{
-                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                            strong: ({ children }) => <strong className="font-semibold text-gray-900">{children}</strong>,
-                            ul: ({ children }) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
-                            ol: ({ children }) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
-                            li: ({ children }) => <li className="text-sm">{children}</li>
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
+                      {message.type === 'user' ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                    </div>
+                  </div>
+                  
+                  {/* Message Content */}
+                  <div className={`flex-1 space-y-2 ${message.type === 'user' ? 'flex flex-col items-end' : ''}`}>
+                    {/* Sender Name */}
+                    <div className={`text-sm font-semibold text-gray-900 ${message.type === 'user' ? 'text-right' : ''}`}>
+                      {message.type === 'user' ? 'You' : 'Fili'}
+                    </div>
+                    
+                    {/* Message Bubble */}
+                    <div className={`${message.type === 'user' ? 'text-right' : ''}`}>
+                      <div className={`inline-block text-left max-w-[85%] ${
+                        message.type === 'user' 
+                          ? 'bg-primary text-white rounded-3xl rounded-tr-md px-5 py-3' 
+                          : 'text-gray-800'
+                      }`}>
+                        <div className={`prose prose-sm max-w-none ${
+                          message.type === 'user' 
+                            ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white' 
+                            : 'prose-gray prose-p:text-gray-800 prose-headings:text-gray-900 prose-strong:font-semibold'
+                        }`}>
+                          <ReactMarkdown 
+                            components={{
+                              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                              ul: ({ children }) => <ul className="list-disc ml-4 my-3 space-y-2">{children}</ul>,
+                              ol: ({ children }) => <ol className="list-decimal ml-4 my-3 space-y-2">{children}</ol>,
+                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4">{children}</h1>,
+                              h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
+                              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3">{children}</h3>,
+                              code: ({ children }) => <code className="bg-gray-800 text-gray-100 px-1.5 py-0.5 rounded text-sm">{children}</code>,
+                              pre: ({ children }) => <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
+                            }}
+                          >
+                            {message.content}
+                          </ReactMarkdown>
+                        </div>
                       </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-1 px-1">
-                      {message.timestamp.toLocaleTimeString()}
-                    </p>
+                    
+                    {/* Timestamp */}
+                    <div className={`text-xs text-gray-400 px-1 ${message.type === 'user' ? 'text-right' : ''}`}>
+                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1090,7 +1171,7 @@ function AIAssistantContent() {
               <div ref={messagesEndRef} />
             </div>
           )}
-        </div>
+        </ScrollArea>
 
         {/* Input Area */}
         <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg">
@@ -1172,13 +1253,32 @@ function AIAssistantContent() {
               </div>
             )}
             <div className="flex items-end space-x-3">
-              <div className="flex-1 relative">
-                <div className={`relative bg-gray-50 rounded-2xl border transition-all duration-200 ${
-                  inputMessage.length > 2000 
-                    ? 'border-red-500 focus-within:border-red-500' 
-                    : 'border-gray-200 focus-within:border-primary/50'
-                } focus-within:bg-white`}>
-                  <Input
+              <div className="flex-1">
+                <InputGroup className="rounded-full">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                    onChange={handleReceiptUpload}
+                    className="hidden"
+                  />
+                  
+                  {/* Receipt upload button - Left side */}
+                  <InputGroupAddon align="center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-8 w-8 p-0 rounded-full hover:bg-primary/10 transition-colors group"
+                      title="Upload receipt"
+                    >
+                      <Receipt className="w-4 h-4 text-gray-400 group-hover:text-primary" />
+                    </Button>
+                  </InputGroupAddon>
+                  
+                  <TextareaAutosize
+                    data-slot="input-group-control"
                     value={inputMessage}
                     onChange={(e) => {
                       const newValue = e.target.value
@@ -1195,45 +1295,25 @@ function AIAssistantContent() {
                         }
                       }
                     }}
-                    className="border-0 bg-transparent pr-20 py-5 px-6 resize-none focus:ring-0 focus:outline-none placeholder:text-gray-400 text-gray-800 rounded-2xl text-base"
+                    minRows={1}
+                    maxRows={8}
+                    className="flex field-sizing-content min-h-[40px] w-full resize-none rounded-full bg-transparent px-4 py-2 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-gray-400"
                   />
-                  <div className="absolute right-2 bottom-2 flex items-center space-x-2">
-                    <div className="flex items-center space-x-1">
-                      {/* Hidden file input */}
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                        onChange={handleReceiptUpload}
-                        className="hidden"
-                      />
-                      
-                      {/* Receipt upload button */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="h-8 w-8 p-0 rounded-lg hover:bg-primary/10 transition-colors group"
-                        title="Upload receipt"
-                      >
-                        <Receipt className="w-4 h-4 text-gray-400 group-hover:text-primary" />
-                      </Button>
-                    </div>
+                  
+                  {/* Send button - Right side */}
+                  <InputGroupAddon align="center">
                     <Button
                       onClick={sendMessage}
                       disabled={!inputMessage.trim() || inputMessage.length > 2000}
-                      size="sm"
-                      className={`h-8 w-8 p-0 rounded-lg transition-all duration-200 ${
-                        inputMessage.trim() && inputMessage.length <= 2000
-                          ? 'bg-primary hover:bg-primary/90 text-white shadow-sm' 
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
+                      className="ml-auto h-8 w-8 p-0 rounded-full" 
+                      size="sm" 
+                      variant="default"
                       title={inputMessage.length > 2000 ? 'Message too long' : 'Send message'}
                     >
                       <ArrowUp className="w-4 h-4" />
                     </Button>
-                  </div>
-                </div>
+                  </InputGroupAddon>
+                </InputGroup>
               </div>
             </div>
             <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
