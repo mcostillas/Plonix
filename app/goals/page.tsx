@@ -361,125 +361,93 @@ function GoalsContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
             {goals.map((goal) => {
               const progressPercentage = (goal.current_amount / goal.target_amount) * 100;
-              const category = categories.find(c => c.value === goal.category);
-              const IconComponent = category?.icon || Target;
-              const categoryColors = getCategoryColors(goal.category);
               
               return (
-                <Card key={goal.id} className="group hover:shadow-lg transition-all duration-200 border-0 bg-white rounded-2xl overflow-hidden">
-                  {/* Header with gradient */}
-                  <div 
-                    className="h-2 w-full"
-                    style={{background: `linear-gradient(90deg, ${categoryColors.primary}, ${categoryColors.primary}90)`}}
-                  />
-                  
-                  <CardHeader className="pb-4 pt-6">
+                <Card key={goal.id} className="border border-gray-200">
+                  <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl font-semibold text-gray-900 mb-1">{goal.title}</CardTitle>
-                        <p className="text-sm text-gray-500 uppercase tracking-wide">{goal.description}</p>
+                      <div>
+                        <CardTitle className="text-lg font-medium text-gray-900">{goal.title}</CardTitle>
+                        <p className="text-sm text-gray-500">{goal.description}</p>
                       </div>
-                      <div className="ml-4">
-                        <div 
-                          className="w-12 h-12 rounded-xl flex items-center justify-center"
-                          style={{backgroundColor: `${categoryColors.primary}15`}}
-                        >
-                          <IconComponent 
-                            className="w-6 h-6" 
-                            style={{color: categoryColors.primary}}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-6 pb-6">
-                    {/* Progress Section */}
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium text-gray-600">Progress</span>
-                        <span className="text-lg font-bold" style={{color: categoryColors.primary}}>
-                          {progressPercentage.toFixed(1)}%
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-100 rounded-full h-2.5">
-                        <div 
-                          className="h-full rounded-full transition-all duration-700 ease-out"
-                          style={{
-                            width: `${Math.min(progressPercentage, 100)}%`,
-                            background: `linear-gradient(90deg, ${categoryColors.primary}, ${categoryColors.primary}80)`
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Amount Display - Clean horizontal layout */}
-                    <div className="flex justify-between items-center py-4 px-1">
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
-                        <div className="text-xs text-blue-500 font-medium mt-1">Saved</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-2xl font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
-                        <div className="text-xs text-green-500 font-medium mt-1">Target</div>
-                      </div>
-                    </div>
-
-                    {/* Minimal Details */}
-                    <div className="flex items-center justify-between text-sm border-t pt-4">
-                      {goal.deadline && (
-                        <div className="flex items-center text-gray-500">
-                          <Calendar className="w-4 h-4 mr-1.5" />
-                          <span>{new Date(goal.deadline).toLocaleDateString()}</span>
-                        </div>
-                      )}
-                      <div className="flex items-center text-gray-500">
-                        <Tag className="w-4 h-4 mr-1.5" />
-                        <span className="capitalize">{goal.category}</span>
-                      </div>
-                      <div className={`flex items-center font-medium ${goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}>
-                        <TrendingUp className="w-4 h-4 mr-1.5" />
-                        <span className="capitalize">{goal.status}</span>
-                      </div>
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-3 pt-2">
                       <Button 
-                        className="flex-1 h-11 font-medium rounded-xl border-2 hover:scale-[1.02] transition-all duration-200"
-                        variant="outline"
-                        onClick={() => {
-                          setSelectedGoal(goal)
-                          setAmountToAdd('')
-                          setAddAmountModalOpen(true)
-                        }}
-                        disabled={loading || goal.status === 'completed'}
-                        style={{
-                          borderColor: categoryColors.primary,
-                          color: categoryColors.primary,
-                          backgroundColor: `${categoryColors.primary}05`
-                        }}
-                      >
-                        <TrendingUp className="w-4 h-4 mr-2" />
-                        Update Progress
-                      </Button>
-                      <Button 
-                        className="h-11 w-11 rounded-xl hover:scale-105 transition-all duration-200"
-                        variant="destructive"
-                        size="icon"
+                        variant="ghost"
+                        size="sm"
                         onClick={() => {
                           setDeletingGoalId(goal.id)
                           setDeletingGoalTitle(goal.title)
                           setDeleteModalOpen(true)
                         }}
-                        disabled={loading}
+                        className="text-gray-400 hover:text-red-500"
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
+                  </CardHeader>
+                  
+                  <CardContent className="space-y-4">
+                    {/* Progress */}
+                    <div>
+                      <div className="flex justify-between text-sm mb-2">
+                        <span className="text-gray-600">Progress</span>
+                        <span className="font-medium">{progressPercentage.toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-green-500 h-2 rounded-full"
+                          style={{width: `${Math.min(progressPercentage, 100)}%`}}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Amounts */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
+                        <div className="text-xs text-gray-500">Saved</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
+                        <div className="text-xs text-gray-500">Target</div>
+                      </div>
+                    </div>
+
+                    {/* Details */}
+                    <div className="space-y-1 text-sm text-gray-600">
+                      {goal.deadline && (
+                        <div className="flex justify-between">
+                          <span>Deadline:</span>
+                          <span>{new Date(goal.deadline).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Category:</span>
+                        <span className="capitalize">{goal.category}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Status:</span>
+                        <span className={goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
+                          {goal.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Update Button */}
+                    <Button 
+                      className="w-full"
+                      onClick={() => {
+                        setSelectedGoal(goal)
+                        setAmountToAdd('')
+                        setAddAmountModalOpen(true)
+                      }}
+                      disabled={loading || goal.status === 'completed'}
+                    >
+                      <TrendingUp className="w-4 h-4 mr-2" />
+                      Update Progress
+                    </Button>
                   </CardContent>
                 </Card>
               )
