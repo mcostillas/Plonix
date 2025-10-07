@@ -10,16 +10,11 @@ import {
   Home, 
   Plus, 
   Trophy, 
-  Wrench,
   ChevronDown,
   Menu,
   X,
-  Calculator,
-  PiggyBank,
   CreditCard,
-  TrendingUp,
-  Award,
-  Globe
+  TrendingUp
 } from 'lucide-react'
 import { PlounixLogo } from './logo'
 import { useAuth } from '@/lib/auth-hooks'
@@ -112,15 +107,6 @@ export function Navbar({ currentPage }: NavbarProps) {
         { name: 'Learning Hub', href: '/learning', icon: BookOpen, description: 'Financial education' },
         { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Complete financial challenges & missions' },
         { name: 'Goals', href: '/goals', icon: Target, description: 'Set and track goals' }
-      ]
-    },
-    {
-      title: 'Tools',
-      icon: Wrench,
-      items: [
-        { name: 'Digital Tools', href: '/digital-tools', icon: Wrench, description: 'Financial calculators' },
-        { name: 'Budget Calculator', href: '/tools/budget-calculator', icon: Calculator, description: 'Plan your budget' },
-        { name: 'Savings Tracker', href: '/tools/savings-tracker', icon: PiggyBank, description: 'Track your savings' }
       ]
     },
     {

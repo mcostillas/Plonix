@@ -9,7 +9,11 @@ import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { PageLoader } from '@/components/ui/page-loader'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, Loader2, X } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
+import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/success-modal'
+import { AlreadyCheckedInModal } from '@/components/ui/info-modal'
+import { CancelChallengeModal } from '@/components/ui/confirmation-modal'
 
 export default function DashboardPage() {
   return (
@@ -32,6 +36,23 @@ function DashboardContent() {
   const [loading, setLoading] = useState(false)
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  
+  // Challenges state
+  const [activeChallenges, setActiveChallenges] = useState<any[]>([])
+  const [challengesStats, setChallengesStats] = useState({
+    completed: 0,
+    totalSaved: 0,
+    active: 0
+  })
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false)
+  const [checkedInChallengeTitle, setCheckedInChallengeTitle] = useState('')
+  const [alreadyCheckedInModalOpen, setAlreadyCheckedInModalOpen] = useState(false)
+  const [cancelModalOpen, setCancelModalOpen] = useState(false)
+  const [cancelingChallengeId, setCancelingChallengeId] = useState<string | null>(null)
+  const [cancelingChallengeTitle, setCancelingChallengeTitle] = useState('')
+  const [canceledModalOpen, setCanceledModalOpen] = useState(false)
+  const [partialPointsEarned, setPartialPointsEarned] = useState<number>(0)
+  const [isCanceling, setIsCanceling] = useState(false)
 
   // Total modules count (should match learning page)
   const totalModules = 7 // 3 core + 4 essential modules
@@ -123,6 +144,122 @@ function DashboardContent() {
     fetchFinancialData()
   }, [user, refreshTrigger])
 
+  // Fetch challenges data
+  useEffect(() => {
+    async function fetchChallengesData() {
+      if (!user?.id) return
+
+      try {
+        // Fetch active challenges
+        const { data: activeChallengesData } = await supabase
+          .from('user_active_challenges')
+          .select('*')
+          .eq('user_id', user.id)
+          .limit(2) // Show only top 2 on dashboard
+
+        if (activeChallengesData) {
+          setActiveChallenges(activeChallengesData)
+        }
+
+        // Fetch challenge stats
+        const { data: userChallengesData } = await supabase
+          .from('user_challenges')
+          .select('status, points_earned')
+          .eq('user_id', user.id)
+
+        if (userChallengesData) {
+          const completed = userChallengesData.filter((uc: any) => uc.status === 'completed').length
+          const active = userChallengesData.filter((uc: any) => uc.status === 'active').length
+          const totalSaved = userChallengesData.reduce((sum: number, uc: any) => sum + (uc.points_earned || 0), 0) * 10
+
+          setChallengesStats({
+            completed,
+            active,
+            totalSaved
+          })
+        }
+      } catch (error) {
+        console.error('Error fetching challenges data:', error)
+      }
+    }
+
+    fetchChallengesData()
+  }, [user, refreshTrigger])
+
+  // Handle check-in
+  const handleCheckIn = async (challengeId: string, challengeTitle: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch(`/api/challenges/${challengeId}/progress`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          completed: true,
+          checkin_date: new Date().toISOString().split('T')[0]
+        })
+      })
+
+      if (response.ok) {
+        setRefreshTrigger(prev => prev + 1) // Refresh data
+        // Show success modal
+        setCheckedInChallengeTitle(challengeTitle)
+        setCheckInModalOpen(true)
+      } else {
+        const error = await response.json()
+        // Check if already checked in
+        if (error.error?.includes('Already checked in')) {
+          setAlreadyCheckedInModalOpen(true)
+        } else {
+          alert(error.error || 'Failed to check in')
+        }
+      }
+    } catch (error) {
+      console.error('Error checking in:', error)
+      alert('Failed to check in')
+    }
+  }
+
+  const handleCancelChallenge = async () => {
+    if (!cancelingChallengeId) return
+    
+    setIsCanceling(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const response = await fetch(`/api/challenges/${cancelingChallengeId}/abandon`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        setPartialPointsEarned(result.partialPoints || 0)
+        setCancelModalOpen(false)
+        setCanceledModalOpen(true)
+        setRefreshTrigger(prev => prev + 1) // Refresh data
+      } else {
+        const error = await response.json()
+        alert(error.error || 'Failed to cancel challenge')
+      }
+    } catch (error) {
+      console.error('Error canceling challenge:', error)
+      alert('Failed to cancel challenge')
+    } finally {
+      setIsCanceling(false)
+      setCancelingChallengeId(null)
+      setCancelingChallengeTitle('')
+    }
+  }
+
   if (loading && !mounted) {
     return <PageLoader message="Loading your dashboard..." />
   }
@@ -201,28 +338,23 @@ function DashboardContent() {
           {/* Learning Progress - Integrated into top row */}
           <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-purple-500">
             <CardContent className="pt-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600 mb-1">
-                  {mounted ? completedModules.length : 0}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-2xl font-bold text-purple-600">
+                    {mounted ? completedModules.length : 0}
+                  </p>
+                  <p className="text-sm text-gray-600 font-medium">Modules Done</p>
                 </div>
-                <div className="text-xs text-gray-600 mb-2">modules done</div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-500" 
-                    style={{ 
-                      width: mounted ? `${Math.max(2, (completedModules.length / totalModules) * 100)}%` : '2%'
-                    }}
-                  ></div>
-                </div>
+                <BookOpen className="w-8 h-8 text-purple-500" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Main Content Row */}
-        <div className="grid lg:grid-cols-5 gap-6 mb-6">
-          {/* Goal Progress - Takes 2 columns */}
-          <div className="lg:col-span-2">
+        <div className="grid lg:grid-cols-2 gap-6 mb-6">
+          {/* Goal Progress - Takes 1 column */}
+          <div className="lg:col-span-1">
             <Card className="bg-white h-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -264,27 +396,29 @@ function DashboardContent() {
                       const color = colors[index % colors.length]
                       
                       return (
-                        <div key={goal.id} className={`p-3 bg-gray-50 rounded-lg border-l-4 border-${color}-500`}>
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-gray-800 truncate">{goal.title}</h4>
-                              <p className="text-sm text-gray-600">
-                                ₱{goal.current_amount.toLocaleString()} / ₱{goal.target_amount.toLocaleString()}
-                              </p>
+                        <Link key={goal.id} href="/goals">
+                          <div className={`p-3 bg-gray-50 rounded-lg border-l-4 border-${color}-500 hover:bg-gray-100 transition-colors cursor-pointer`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-800 truncate">{goal.title}</h4>
+                                <p className="text-sm text-gray-600">
+                                  ₱{goal.current_amount.toLocaleString()} / ₱{goal.target_amount.toLocaleString()}
+                                </p>
+                              </div>
+                              <div className="text-right ml-2">
+                                <span className={`text-lg font-semibold text-${color}-600`}>
+                                  {progressPercentage.toFixed(0)}%
+                                </span>
+                              </div>
                             </div>
-                            <div className="text-right ml-2">
-                              <span className={`text-lg font-semibold text-${color}-600`}>
-                                {progressPercentage.toFixed(0)}%
-                              </span>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div 
+                                className={`bg-${color}-500 h-2 rounded-full transition-all duration-500`} 
+                                style={{ width: `${Math.min(progressPercentage, 100)}%` }}
+                              ></div>
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div 
-                              className={`bg-${color}-500 h-2 rounded-full transition-all duration-500`} 
-                              style={{ width: `${Math.min(progressPercentage, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
+                        </Link>
                       )
                     })}
                     {activeGoalsCount > 3 && (
@@ -300,62 +434,93 @@ function DashboardContent() {
             </Card>
           </div>
 
-          {/* Challenges Overview - Takes 3 columns */}
-          <div className="lg:col-span-3">
+          {/* Challenges Overview - Takes 1 column */}
+          <div className="lg:col-span-1">
             <Card className="bg-white h-full">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Trophy className="w-5 h-5 mr-2 text-purple-500" />
-                  Challenges Overview
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <Trophy className="w-5 h-5 mr-2 text-purple-500" />
+                    Active Challenges
+                  </CardTitle>
+                  <Link href="/challenges">
+                    <Button variant="ghost" size="sm" className="text-xs">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4 mb-4">
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600 mb-1">7</div>
-                      <div className="text-xs text-gray-600">Completed</div>
-                    </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600 mb-1">₱3,200</div>
-                      <div className="text-xs text-gray-600">Saved</div>
-                    </div>
-                    <div className="text-center p-3 bg-gray-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600 mb-1">2</div>
-                      <div className="text-xs text-gray-600">Active</div>
-                    </div>
+                {activeChallenges.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Trophy className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500 mb-4">No active challenges yet</p>
+                    <Link href="/challenges">
+                      <Button className="bg-purple-600 hover:bg-purple-700">
+                        <PlusCircle className="w-4 h-4 mr-2" />
+                        Browse Challenges
+                      </Button>
+                    </Link>
                   </div>
-
-                  <div className="space-y-3">
-                    <h4 className="font-medium text-gray-800">Active Challenges</h4>
-                    
-                    <div className="p-3 bg-gray-50 rounded-lg border-l-3 border-blue-500">
-                      <div className="flex justify-between items-center mb-2">
-                        <div>
-                          <h5 className="font-medium text-gray-800">₱100 Daily Challenge</h5>
-                          <p className="text-sm text-gray-600">4 days remaining</p>
+                ) : (
+                  <div className="space-y-4">
+                    {activeChallenges.map((challenge: any) => {
+                      const progressPercent = challenge.progress_percent || 0
+                      const daysLeft = challenge.days_left || 0
+                      const borderColor = progressPercent >= 75 ? 'border-green-500' : progressPercent >= 50 ? 'border-blue-500' : 'border-yellow-500'
+                      const bgColor = progressPercent >= 75 ? 'bg-green-500' : progressPercent >= 50 ? 'bg-blue-500' : 'bg-yellow-500'
+                      
+                      return (
+                        <div key={challenge.id} className={`relative p-3 bg-gray-50 rounded-lg border-l-4 ${borderColor} hover:bg-gray-100 transition-colors group`}>
+                          <Link href="/challenges" className="block">
+                            <div className="flex justify-between items-center mb-2 pr-8">
+                              <div className="flex-1">
+                                <h4 className="font-medium text-gray-800 truncate group-hover:text-purple-600 transition-colors">{challenge.title}</h4>
+                                <p className="text-sm text-gray-600">
+                                  {challenge.checkins_completed}/{challenge.checkins_required} check-ins • {daysLeft > 0 ? `${daysLeft} days left` : 'Due today!'}
+                                </p>
+                              </div>
+                              <div className="text-right ml-2">
+                                <span className="text-lg font-semibold text-purple-600">
+                                  {progressPercent}%
+                                </span>
+                              </div>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div className={`${bgColor} h-2 rounded-full transition-all duration-500`} style={{ width: `${progressPercent}%` }}></div>
+                            </div>
+                          </Link>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-3 right-3 h-7 w-7 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50 z-10"
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              setCancelingChallengeId(challenge.id)
+                              setCancelingChallengeTitle(challenge.title)
+                              setCancelModalOpen(true)
+                            }}
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
-                        <span className="text-sm font-semibold text-blue-600">Day 3/7</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-blue-500 h-2 rounded-full" style={{ width: '43%' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="p-3 bg-gray-50 rounded-lg border-l-3 border-green-500">
-                      <div className="flex justify-between items-center mb-2">
-                        <div>
-                          <h5 className="font-medium text-gray-800">Load Smart Challenge</h5>
-                          <p className="text-sm text-gray-600">1 week remaining</p>
-                        </div>
-                        <span className="text-sm font-semibold text-green-600">Week 1/2</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div className="bg-green-500 h-2 rounded-full" style={{ width: '50%' }}></div>
-                      </div>
-                    </div>
+                      )
+                    })}
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => {
+                        if (activeChallenges.length > 0) {
+                          handleCheckIn(activeChallenges[0].id, activeChallenges[0].title)
+                        }
+                      }}
+                      disabled={activeChallenges.length === 0 || activeChallenges[0]?.progress_percent >= 100}
+                    >
+                      Check In Today
+                    </Button>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -438,7 +603,9 @@ function DashboardContent() {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <p className="text-sm text-purple-600 font-medium">Community challenges</p>
-                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">7 Completed</span>
+                  <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded">
+                    {challengesStats.completed} Completed
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -460,21 +627,6 @@ function DashboardContent() {
             </CardContent>
           </Card>
 
-          <Link href="/digital-tools">
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardHeader>
-                <Calculator className="w-12 h-12 text-red-600 mb-4" />
-                <CardTitle>Financial Tools</CardTitle>
-                <CardDescription>
-                  Budget calculator, savings tracker, and more tools
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-red-600 font-medium">Philippine peso optimized</p>
-              </CardContent>
-            </Card>
-          </Link>
-
           <Link href="/resource-hub">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
@@ -489,94 +641,6 @@ function DashboardContent() {
               </CardContent>
             </Card>
           </Link>
-        </div>
-
-        {/* Cashflow Analysis */}
-        <div className="mb-6">
-          <Card className="bg-gradient-to-r from-slate-50 to-blue-50 border-0 shadow-xl">
-            <CardHeader>
-              <CardTitle className="flex items-center text-xl">
-                <TrendingUp className="w-6 h-6 mr-3 text-emerald-500" />
-                Monthly Cashflow Overview
-              </CardTitle>
-              <CardDescription className="text-base">Track your income vs expenses and see your financial flow</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-500">Loading cashflow data...</p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-3 gap-8">
-                  {/* Total Income */}
-                  <div className="text-center p-6 bg-white rounded-xl border border-green-200 shadow-sm">
-                    <div className="flex items-center justify-center mb-3">
-                      <div className="p-3 bg-green-500 rounded-full">
-                        <ArrowUpRight className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold text-green-600 mb-2">
-                      ₱{monthlyIncome.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-green-700 font-semibold">Income</div>
-                    <div className="text-xs text-green-600 mb-2">This Month</div>
-                    <div className="text-xs text-gray-500">
-                      {monthlyIncome > 0 ? 'Money coming in' : 'No income yet'}
-                    </div>
-                  </div>
-
-                  {/* Total Expenses */}
-                  <div className="text-center p-6 bg-white rounded-xl border border-red-200 shadow-sm">
-                    <div className="flex items-center justify-center mb-3">
-                      <div className="p-3 bg-red-500 rounded-full">
-                        <ArrowDownRight className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold text-red-600 mb-2">
-                      ₱{monthlySpent.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-red-700 font-semibold">Expenses</div>
-                    <div className="text-xs text-red-600 mb-2">This Month</div>
-                    <div className="text-xs text-gray-500">
-                      {monthlySpent > 0 ? 'Money spent' : 'No expenses yet'}
-                    </div>
-                  </div>
-
-                  {/* Net Cashflow */}
-                  <div className="text-center p-6 bg-white rounded-xl border border-blue-200 shadow-sm">
-                    <div className="flex items-center justify-center mb-3">
-                      <div className="p-3 bg-blue-500 rounded-full">
-                        <PiggyBank className="w-6 h-6 text-white" />
-                      </div>
-                    </div>
-                    <div className="text-3xl font-bold text-blue-600 mb-2">
-                      ₱{totalSaved.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-blue-700 font-semibold">Net Saved</div>
-                    <div className="text-xs text-blue-600 mb-2">This Month</div>
-                    <div className="mb-4">
-                      <div className="text-sm text-gray-600 mb-3">
-                        {monthlyIncome > 0 
-                          ? `${((totalSaved / monthlyIncome) * 100).toFixed(1)}% of income saved`
-                          : 'Add income to track savings rate'
-                        }
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-blue-500 h-3 rounded-full transition-all duration-500" 
-                          style={{ width: monthlyIncome > 0 ? `${Math.min((totalSaved / monthlyIncome) * 100, 100)}%` : '0%' }}
-                        ></div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-blue-600 font-semibold">
-                      {totalSaved > 0 ? (totalSaved / monthlyIncome > 0.3 ? 'Excellent savings rate! 🎯' : 'Good start! Keep saving 💪') : 'Start tracking to see progress 📊'}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </div>
 
         {/* Bottom Row - Recent Activity */}
@@ -662,6 +726,39 @@ function DashboardContent() {
           // Refresh data when a transaction is added
           setRefreshTrigger(prev => prev + 1)
         }}
+      />
+
+      {/* Check-In Success Modal */}
+      <CheckInSuccessModal
+        isOpen={checkInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        challengeTitle={checkedInChallengeTitle}
+      />
+
+      {/* Already Checked In Modal */}
+      <AlreadyCheckedInModal
+        isOpen={alreadyCheckedInModalOpen}
+        onClose={() => setAlreadyCheckedInModalOpen(false)}
+      />
+
+      {/* Cancel Challenge Confirmation Modal */}
+      <CancelChallengeModal
+        isOpen={cancelModalOpen}
+        onClose={() => {
+          setCancelModalOpen(false)
+          setCancelingChallengeId(null)
+          setCancelingChallengeTitle('')
+        }}
+        onConfirm={handleCancelChallenge}
+        challengeTitle={cancelingChallengeTitle}
+        isLoading={isCanceling}
+      />
+
+      {/* Challenge Canceled Success Modal */}
+      <ChallengeCanceledModal
+        isOpen={canceledModalOpen}
+        onClose={() => setCanceledModalOpen(false)}
+        partialPoints={partialPointsEarned}
       />
     </div>
   )

@@ -6,36 +6,10 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { PageHeader } from '@/components/ui/page-header'
-import { ExternalLink, Calculator, TrendingUp, FileText, Bookmark, Globe, Youtube, BookOpen, Users, Building2, Shield, MessageCircle, Wrench, Target } from 'lucide-react'
+import { ExternalLink, Globe, Youtube, BookOpen, Building2, Shield, MessageCircle, Target, FileText } from 'lucide-react'
 import { resourcesDatabase } from '@/lib/resources-data'
 
 export default function ResourceHubPage() {
-const quickTools = [
-{ 
-name: 'Peso Budget Calculator', 
-icon: Calculator, 
-description: 'Quick budget calculations',
-href: '/tools/budget-calculator'
-},
-{ 
-name: 'Savings Goal Tracker', 
-icon: TrendingUp, 
-description: 'Track your savings progress',
-href: '/tools/savings-tracker'
-},
-{ 
-name: 'Investment Simulator', 
-icon: FileText, 
-description: 'Practice investing virtually',
-href: '/tools/investment-simulator'
-},
-{ 
-name: 'Expense Categorizer', 
-icon: Bookmark, 
-description: 'Organize your expenses',
-href: '/tools/expense-categorizer'
-}
-]
 
 const getCategoryIcon = (category: string) => {
 switch (category) {
@@ -88,47 +62,6 @@ return (
         icon: Globe
       }}
     />
-
-    {/* Digital Financial Tools */}
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">Digital Financial Tools</h2>
-        <Link href="/digital-tools">
-          <Button variant="outline" size="sm">
-            View All Tools
-            <ExternalLink className="w-3 h-3 ml-1" />
-          </Button>
-        </Link>
-      </div>
-      
-      <Card className="bg-gradient-to-r from-primary/5 to-blue-500/5 border-primary/20">
-        <CardContent className="p-6">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-primary/10 rounded-lg">
-              <Wrench className="w-8 h-8 text-primary" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-xl font-semibold mb-2">Complete Suite of Financial Tools</h3>
-              <p className="text-gray-600 mb-4">
-                Access our growing collection of digital financial tools including budget calculators, savings trackers, and more - all designed specifically for Filipino youth.
-              </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">✅ Budget Calculator</span>
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">✅ Savings Tracker</span>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">🔄 Investment Simulator</span>
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">🔄 Expense Categorizer</span>
-              </div>
-              <Link href="/digital-tools">
-                <Button>
-                  Explore Digital Tools
-                  <Wrench className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
 
     {/* Financial Literacy Learning Sources */}
     <div className="mb-8">

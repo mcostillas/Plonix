@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon, AlertTriangle } from 'lucide-react'
+import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon, AlertTriangle, Mic, MicOff } from 'lucide-react'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
@@ -51,6 +51,8 @@ function AIAssistantContent() {
   const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
   const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
+  const [isRecording, setIsRecording] = useState(false)
+  const [recognition, setRecognition] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const logoutModal = useLogoutModal()
@@ -209,6 +211,36 @@ function AIAssistantContent() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
+
+  // Initialize speech recognition
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      if (SpeechRecognition) {
+        const recognitionInstance = new SpeechRecognition()
+        recognitionInstance.continuous = false
+        recognitionInstance.interimResults = false
+        recognitionInstance.lang = 'en-US'
+
+        recognitionInstance.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript
+          setInputMessage(prev => prev + (prev ? ' ' : '') + transcript)
+          setIsRecording(false)
+        }
+
+        recognitionInstance.onerror = (event: any) => {
+          console.error('Speech recognition error:', event.error)
+          setIsRecording(false)
+        }
+
+        recognitionInstance.onend = () => {
+          setIsRecording(false)
+        }
+
+        setRecognition(recognitionInstance)
+      }
+    }
+  }, [])
 
   // Handle logout
   const handleLogout = async () => {
@@ -475,6 +507,22 @@ function AIAssistantContent() {
       setMessages([...messages, errorMessage])
     } finally {
       setIsProcessingReceipt(false)
+    }
+  }
+
+  // Toggle voice recording
+  const toggleRecording = () => {
+    if (!recognition) {
+      alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.')
+      return
+    }
+
+    if (isRecording) {
+      recognition.stop()
+      setIsRecording(false)
+    } else {
+      recognition.start()
+      setIsRecording(true)
     }
   }
 
@@ -1300,18 +1348,40 @@ function AIAssistantContent() {
                     className="flex field-sizing-content min-h-[40px] w-full resize-none rounded-full bg-transparent px-4 py-2 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-gray-400"
                   />
                   
-                  {/* Send button - Right side */}
+                  {/* Voice and Send buttons - Right side */}
                   <InputGroupAddon align="center">
-                    <Button
-                      onClick={sendMessage}
-                      disabled={!inputMessage.trim() || inputMessage.length > 2000}
-                      className="ml-auto h-8 w-8 p-0 rounded-full" 
-                      size="sm" 
-                      variant="default"
-                      title={inputMessage.length > 2000 ? 'Message too long' : 'Send message'}
-                    >
-                      <ArrowUp className="w-4 h-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {/* Microphone button */}
+                      <Button
+                        onClick={toggleRecording}
+                        variant="ghost"
+                        size="sm"
+                        className={`h-8 w-8 p-0 rounded-full transition-colors ${
+                          isRecording 
+                            ? 'bg-red-100 hover:bg-red-200 text-red-600' 
+                            : 'hover:bg-primary/10'
+                        }`}
+                        title={isRecording ? 'Stop recording' : 'Start voice input'}
+                      >
+                        {isRecording ? (
+                          <MicOff className="w-4 h-4 animate-pulse" />
+                        ) : (
+                          <Mic className="w-4 h-4 text-gray-400 group-hover:text-primary" />
+                        )}
+                      </Button>
+                      
+                      {/* Send button */}
+                      <Button
+                        onClick={sendMessage}
+                        disabled={!inputMessage.trim() || inputMessage.length > 2000}
+                        className="h-8 w-8 p-0 rounded-full" 
+                        size="sm" 
+                        variant="default"
+                        title={inputMessage.length > 2000 ? 'Message too long' : 'Send message'}
+                      >
+                        <ArrowUp className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </InputGroupAddon>
                 </InputGroup>
               </div>
