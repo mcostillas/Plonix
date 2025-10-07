@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { langchainMemory } from '@/lib/langchain-memory'
+// import { langchainMemory } from '@/lib/langchain-memory'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 })
     }
 
-    const memorySummary = await langchainMemory.getMemorySummary(userId)
+    const memorySummary = { totalMemories: 0, recentActivity: null, keyTopics: [], status: 'disabled' }
 
     return NextResponse.json({ 
       success: true,

@@ -62,7 +62,7 @@ export async function saveConversationExchange(
 ): Promise<boolean> {
   try {
     // Save user message
-    const { error: userError } = await supabase
+    const { error: userError } = await (supabase as any)
       .from('chat_history')
       .insert({
         session_id: userId,
@@ -77,7 +77,7 @@ export async function saveConversationExchange(
     }
     
     // Save AI response
-    const { error: aiError } = await supabase
+    const { error: aiError } = await (supabase as any)
       .from('chat_history')
       .insert({
         session_id: userId,

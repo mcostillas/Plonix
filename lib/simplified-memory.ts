@@ -81,7 +81,7 @@ export class SimplifiedLangChainMemory {
       if (messageType === 'human') {
         await memory.chatHistory.addUserMessage(content)
       } else {
-        await memory.chatHistory.addAIMessage(content)
+        await memory.chatHistory.addMessage(new AIMessage(content))
       }
       
       // Save to database
@@ -151,7 +151,7 @@ Please provide helpful but general financial advice. Encourage user to create ac
   private async loadExistingMessages(userId: string, chatHistory: ChatMessageHistory) {
     try {
       // Use raw SQL query to avoid type issues
-      const { data, error } = await supabase.rpc('get_chat_messages', {
+      const { data, error } = await (supabase as any).rpc('get_chat_messages', {
         user_id: userId,
         limit_count: 50
       })
@@ -162,7 +162,7 @@ Please provide helpful but general financial advice. Encourage user to create ac
       }
 
       if (data && Array.isArray(data)) {
-        for (const msg of data) {
+        for (const msg of (data as any[])) {
           if (msg.message_type === 'human') {
             await chatHistory.addUserMessage(msg.content)
           } else if (msg.message_type === 'ai') {
@@ -179,7 +179,7 @@ Please provide helpful but general financial advice. Encourage user to create ac
   private async saveMessageToDatabase(userId: string, messageType: 'human' | 'ai', content: string) {
     try {
       // Use raw SQL to avoid type issues
-      const { error } = await supabase.rpc('save_chat_message', {
+      const { error } = await (supabase as any).rpc('save_chat_message', {
         user_id: userId,
         msg_type: messageType,
         msg_content: content,
@@ -204,7 +204,7 @@ Please provide helpful but general financial advice. Encourage user to create ac
       this.conversationMemories.delete(userId)
 
       // Clear from database
-      const { error } = await supabase.rpc('clear_user_chat_history', {
+      const { error } = await (supabase as any).rpc('clear_user_chat_history', {
         user_id: userId
       })
 
