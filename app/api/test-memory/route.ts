@@ -17,11 +17,17 @@ export async function GET(request: NextRequest) {
       .limit(1)
 
     // Test 2: Check vector extension (if user has proper permissions)
-    const { data: vectorTest, error: vectorError } = await supabase
-      .rpc('match_financial_memories', {
-        query_embedding: Array(1536).fill(0), // Dummy vector
-        match_count: 1
-      })
+    let vectorError: any = null
+    try {
+      const { error: rpcError } = await (supabase as any)
+        .rpc('match_financial_memories', {
+          query_embedding: Array(1536).fill(0),
+          match_count: 1
+        })
+      vectorError = rpcError
+    } catch (err) {
+      vectorError = err
+    }
 
     const results = {
       timestamp: new Date().toISOString(),
