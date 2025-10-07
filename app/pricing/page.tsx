@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { Shield, Users, Star, Check, ArrowLeft } from 'lucide-react'
+import { Spinner } from '@/components/ui/spinner'
 import { useEffect, useState } from 'react'
 
 export default function PricingPage() {
@@ -21,7 +22,7 @@ export default function PricingPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex items-center justify-center h-screen">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+          <Spinner size="xl" color="primary" />
         </div>
       </div>
     )

@@ -284,27 +284,6 @@ function LearningContent() {
           </Card>
         </div>
 
-        {/* Learning Path Disclaimer */}
-        <div className="mb-8">
-          <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200">
-            <CardContent className="p-6">
-              <div className="flex items-center space-x-4">
-                <div className="bg-amber-100 p-3 rounded-full">
-                  <Target className="w-8 h-8 text-amber-600" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold mb-1 text-amber-800">📚 How Learning Works</h3>
-                  <p className="text-amber-700 text-sm leading-relaxed">
-                    <strong>Core Modules:</strong> Complete in order (Budgeting → Saving → Investing) • 
-                    <strong>Essential Modules:</strong> Unlock one at a time after finishing 2 core modules • 
-                    <strong>Progress saves automatically</strong> as you complete each module
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* AI Assistant Highlight */}
         <div className="mb-8">
           <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
@@ -626,32 +605,6 @@ function LearningContent() {
           </div>
         </div>
 
-        {/* CTA Section */}
-        <Card className="text-center bg-gradient-to-br from-gray-50 to-primary/10 border-0 shadow-xl">
-          <CardContent className="p-12">
-            <Users className="w-16 h-16 text-primary mx-auto mb-6" />
-            <h3 className="text-3xl lg:text-4xl font-bold mb-6">
-              Ready to Master Your Finances?
-            </h3>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto leading-relaxed">
-              Start with Budgeting to unlock your financial journey. Fili is here to help every step of the way.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/learning/budgeting">
-                <Button size="lg" className="w-full sm:w-auto">
-                  <Calculator className="w-5 h-5 mr-2" />
-                  Start with Budgeting
-                </Button>
-              </Link>
-              <Link href="/ai-assistant">
-                <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                  <Globe className="w-5 h-5 mr-2" />
-                  Get AI Help
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
       </div>
     </div>
   )

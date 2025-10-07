@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from '@/lib/auth-hooks'
+import { Spinner } from '@/components/ui/spinner'
 import { useRouter } from 'next/navigation'
 import { useEffect } from 'react'
 
@@ -27,7 +28,7 @@ export function AuthGuard({ children, redirectTo = '/auth/login' }: AuthGuardPro
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <Spinner size="xl" color="primary" className="mx-auto mb-4" />
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -39,7 +40,7 @@ export function AuthGuard({ children, redirectTo = '/auth/login' }: AuthGuardPro
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <Spinner size="xl" color="primary" className="mx-auto mb-4" />
           <p className="text-gray-600">Redirecting to login...</p>
         </div>
       </div>

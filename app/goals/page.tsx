@@ -15,6 +15,7 @@ import { getCurrentUser, type User } from '@/lib/auth'
 import type { Goal } from '@/lib/database.types'
 import { DeleteGoalModal } from '@/components/ui/confirmation-modal'
 import { GoalCreatedModal } from '@/components/ui/success-modal'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 export default function GoalsPage() {
   return (
@@ -36,6 +37,9 @@ function GoalsContent() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [createdGoalTitle, setCreatedGoalTitle] = useState('')
+  const [addAmountModalOpen, setAddAmountModalOpen] = useState(false)
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null)
+  const [amountToAdd, setAmountToAdd] = useState('')
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -131,16 +135,37 @@ function GoalsContent() {
     
     setLoading(true)
     try {
-      const { error } = await (supabase as any)
+      // Update goal progress
+      const { error: goalError } = await (supabase as any)
         .from('goals')
         .update({ current_amount: newAmount })
         .eq('id', goal.id)
 
-      if (error) {
-        alert('Error updating progress: ' + error.message)
-      } else {
-        fetchGoals()
+      if (goalError) {
+        alert('Error updating progress: ' + goalError.message)
+        return
       }
+
+      // Create a savings transaction record
+      const { error: transactionError } = await (supabase as any)
+        .from('transactions')
+        .insert({
+          user_id: user?.id,
+          amount: addAmount,
+          merchant: `Savings: ${goal.title}`,
+          category: 'Savings',
+          date: new Date().toISOString().split('T')[0],
+          payment_method: 'Transfer',
+          notes: `Added ₱${addAmount.toLocaleString()} to goal: ${goal.title}`,
+          transaction_type: 'expense' // Treating savings as an expense since money is allocated
+        })
+
+      if (transactionError) {
+        console.error('Error creating savings transaction:', transactionError)
+        // Don't show error to user since goal was updated successfully
+      }
+
+      fetchGoals()
     } catch (err) {
       console.error('Error:', err)
     } finally {
@@ -200,10 +225,10 @@ function GoalsContent() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-6 py-10 max-w-7xl">
         {/* Uniform Header */}
         <PageHeader
           title="My Financial Goals"
@@ -336,7 +361,7 @@ function GoalsContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
             {goals.map((goal) => {
               const progressPercentage = (goal.current_amount / goal.target_amount) * 100;
               const category = categories.find(c => c.value === goal.category);
@@ -344,104 +369,105 @@ function GoalsContent() {
               const categoryColors = getCategoryColors(goal.category);
               
               return (
-                <Card key={goal.id} className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary relative overflow-hidden">
-                  <CardHeader className="pb-3">
+                <Card key={goal.id} className="group hover:shadow-lg transition-all duration-200 border-0 bg-white rounded-2xl overflow-hidden">
+                  {/* Header with gradient */}
+                  <div 
+                    className="h-2 w-full"
+                    style={{background: `linear-gradient(90deg, ${categoryColors.primary}, ${categoryColors.primary}90)`}}
+                  />
+                  
+                  <CardHeader className="pb-4 pt-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <CardTitle className="text-lg font-bold text-gray-800">{goal.title}</CardTitle>
-                        <p className="text-sm text-gray-600 mt-1">{goal.description}</p>
+                        <CardTitle className="text-xl font-semibold text-gray-900 mb-1">{goal.title}</CardTitle>
+                        <p className="text-sm text-gray-500 uppercase tracking-wide">{goal.description}</p>
                       </div>
-                      <div 
-                        className="p-3 rounded-full flex items-center justify-center ml-3"
-                        style={{backgroundColor: categoryColors.light}}
-                      >
-                        <IconComponent 
-                          className="w-5 h-5" 
-                          style={{color: categoryColors.primary}}
-                        />
+                      <div className="ml-4">
+                        <div 
+                          className="w-12 h-12 rounded-xl flex items-center justify-center"
+                          style={{backgroundColor: `${categoryColors.primary}15`}}
+                        >
+                          <IconComponent 
+                            className="w-6 h-6" 
+                            style={{color: categoryColors.primary}}
+                          />
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
                   
-                  <CardContent className="space-y-4">
-                    {/* Enhanced Progress Section */}
+                  <CardContent className="space-y-6 pb-6">
+                    {/* Progress Section */}
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-sm font-medium text-gray-600">Progress</span>
-                        <span className="text-sm font-bold text-gray-800">{progressPercentage.toFixed(1)}%</span>
+                        <span className="text-lg font-bold" style={{color: categoryColors.primary}}>
+                          {progressPercentage.toFixed(1)}%
+                        </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                      <div className="w-full bg-gray-100 rounded-full h-2.5">
                         <div 
-                          className="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-green-400 to-green-600"
-                          style={{width: `${Math.min(progressPercentage, 100)}%`}}
+                          className="h-full rounded-full transition-all duration-700 ease-out"
+                          style={{
+                            width: `${Math.min(progressPercentage, 100)}%`,
+                            background: `linear-gradient(90deg, ${categoryColors.primary}, ${categoryColors.primary}80)`
+                          }}
                         />
                       </div>
                     </div>
 
-                    {/* Amount Display */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 text-center">
-                        <p className="text-lg font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</p>
-                        <p className="text-xs font-medium text-blue-700">Saved</p>
+                    {/* Amount Display - Clean horizontal layout */}
+                    <div className="flex justify-between items-center py-4 px-1">
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
+                        <div className="text-xs text-blue-500 font-medium mt-1">Saved</div>
                       </div>
-                      <div className="bg-green-50 p-3 rounded-lg border border-green-100 text-center">
-                        <p className="text-lg font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</p>
-                        <p className="text-xs font-medium text-green-700">Target</p>
+                      <div className="text-center">
+                        <div className="text-2xl font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
+                        <div className="text-xs text-green-500 font-medium mt-1">Target</div>
                       </div>
                     </div>
 
-                    {/* Goal Details */}
-                    <div className="space-y-2 text-sm">
+                    {/* Minimal Details */}
+                    <div className="flex items-center justify-between text-sm border-t pt-4">
                       {goal.deadline && (
-                        <div className="flex items-center justify-between text-gray-600">
-                          <span className="flex items-center">
-                            <Calendar className="w-4 h-4 mr-1" />
-                            Deadline:
-                          </span>
-                          <span className="font-medium">{new Date(goal.deadline).toLocaleDateString()}</span>
+                        <div className="flex items-center text-gray-500">
+                          <Calendar className="w-4 h-4 mr-1.5" />
+                          <span>{new Date(goal.deadline).toLocaleDateString()}</span>
                         </div>
                       )}
-                      <div className="flex items-center justify-between text-gray-600">
-                        <span className="flex items-center">
-                          <Tag className="w-4 h-4 mr-1" />
-                          Category:
-                        </span>
-                        <span className="font-medium capitalize">{goal.category}</span>
+                      <div className="flex items-center text-gray-500">
+                        <Tag className="w-4 h-4 mr-1.5" />
+                        <span className="capitalize">{goal.category}</span>
                       </div>
-                      <div className="flex items-center justify-between text-gray-600">
-                        <span className="flex items-center">
-                          <TrendingUp className="w-4 h-4 mr-1" />
-                          Status:
-                        </span>
-                        <span className={`font-medium capitalize ${goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}>
-                          {goal.status}
-                        </span>
+                      <div className={`flex items-center font-medium ${goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}`}>
+                        <TrendingUp className="w-4 h-4 mr-1.5" />
+                        <span className="capitalize">{goal.status}</span>
                       </div>
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-2">
+                    <div className="flex gap-3 pt-2">
                       <Button 
-                        className="flex-1 h-10 font-medium"
+                        className="flex-1 h-11 font-medium rounded-xl border-2 hover:scale-[1.02] transition-all duration-200"
                         variant="outline"
                         onClick={() => {
-                          const amount = prompt('How much do you want to add to this goal?')
-                          if (amount && !isNaN(Number(amount))) {
-                            handleUpdateProgress(goal, Number(amount))
-                          }
+                          setSelectedGoal(goal)
+                          setAmountToAdd('')
+                          setAddAmountModalOpen(true)
                         }}
                         disabled={loading || goal.status === 'completed'}
                         style={{
                           borderColor: categoryColors.primary,
                           color: categoryColors.primary,
-                          borderWidth: '2px'
+                          backgroundColor: `${categoryColors.primary}05`
                         }}
                       >
                         <TrendingUp className="w-4 h-4 mr-2" />
                         Update Progress
                       </Button>
                       <Button 
-                        className="h-10"
+                        className="h-11 w-11 rounded-xl hover:scale-105 transition-all duration-200"
                         variant="destructive"
                         size="icon"
                         onClick={() => {
@@ -551,6 +577,94 @@ function GoalsContent() {
         onClose={() => setSuccessModalOpen(false)}
         goalTitle={createdGoalTitle}
       />
+
+      {/* Add Amount Modal */}
+      <Dialog open={addAmountModalOpen} onOpenChange={setAddAmountModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl">Add to Goal</DialogTitle>
+            </div>
+            <DialogDescription>
+              {selectedGoal && `Add progress to "${selectedGoal.title}"`}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {selectedGoal && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-4 border border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-green-800">Current Progress</span>
+                  <span className="text-sm text-green-600">
+                    {Math.round((selectedGoal.current_amount / selectedGoal.target_amount) * 100)}%
+                  </span>
+                </div>
+                <div className="text-lg font-bold text-green-900">
+                  ₱{selectedGoal.current_amount.toLocaleString()} / ₱{selectedGoal.target_amount.toLocaleString()}
+                </div>
+                <div className="w-full bg-green-200 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((selectedGoal.current_amount / selectedGoal.target_amount) * 100, 100)}%` }}
+                  ></div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Amount to Add
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₱</span>
+                <Input
+                  type="number"
+                  value={amountToAdd}
+                  onChange={(e) => setAmountToAdd(e.target.value)}
+                  placeholder="0.00"
+                  className="pl-8"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the amount you want to add to this goal
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end space-x-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddAmountModalOpen(false)
+                setSelectedGoal(null)
+                setAmountToAdd('')
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedGoal && amountToAdd && !isNaN(Number(amountToAdd)) && Number(amountToAdd) > 0) {
+                  handleUpdateProgress(selectedGoal, Number(amountToAdd))
+                  setAddAmountModalOpen(false)
+                  setSelectedGoal(null)
+                  setAmountToAdd('')
+                }
+              }}
+              disabled={!amountToAdd || isNaN(Number(amountToAdd)) || Number(amountToAdd) <= 0}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Add Amount
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
