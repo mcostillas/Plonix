@@ -5,9 +5,8 @@ import { createClient } from '@supabase/supabase-js'
 export async function GET(request: NextRequest) {
   try {
     // Get query parameters
-    const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category')
-    const difficulty = searchParams.get('difficulty')
+    const category = request.nextUrl.searchParams.get('category')
+    const difficulty = request.nextUrl.searchParams.get('difficulty')
     
     // Create Supabase client
     const supabase = createClient(
