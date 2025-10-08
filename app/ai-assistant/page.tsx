@@ -1151,7 +1151,7 @@ function AIAssistantContent() {
             // Welcome Screen
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center max-w-3xl">
-                <div className="w-20 h-20 bg-gradient-to-r from-primary to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-8 shadow-lg">
+                <div className="w-20 h-20 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
                   <Sparkles className="w-10 h-10 text-white" />
                 </div>
                 <h2 className="text-3xl font-bold mb-4 text-gray-900">Welcome to Fili</h2>

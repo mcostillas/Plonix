@@ -9,12 +9,13 @@ import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { PageLoader } from '@/components/ui/page-loader'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X } from 'lucide-react'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X, Wallet } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { supabase } from '@/lib/supabase'
 import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/success-modal'
 import { AlreadyCheckedInModal } from '@/components/ui/info-modal'
 import { CancelChallengeModal } from '@/components/ui/confirmation-modal'
+import { AvailableMoneyCard } from '@/components/AvailableMoneyCard'
 
 export default function DashboardPage() {
   return (
@@ -32,6 +33,8 @@ function DashboardContent() {
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0)
   const [totalSaved, setTotalSaved] = useState<number>(0)
   const [activeGoalsCount, setActiveGoalsCount] = useState<number>(0)
+  const [scheduledExpenses, setScheduledExpenses] = useState<number>(0)
+  const [availableMoney, setAvailableMoney] = useState<number>(0)
   const [topGoals, setTopGoals] = useState<any[]>([])
   const [recentTransactions, setRecentTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -92,10 +95,10 @@ function DashboardContent() {
           .gte('date', startOfMonth)
           .lte('date', endOfMonth)
 
+        let spent = 0
+        let income = 0
+        
         if (!error && data) {
-          let spent = 0
-          let income = 0
-          
           data.forEach((tx: any) => {
             const amount = Number(tx.amount) || 0
             if (tx.transaction_type === 'expense') {
@@ -134,6 +137,36 @@ function DashboardContent() {
 
         if (!txError && txData) {
           setRecentTransactions(txData)
+        }
+
+        // Fetch scheduled payments to calculate available money
+        const { data: scheduledData, error: scheduledError } = await supabase
+          .from('scheduled_payments')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        console.log('Scheduled Payments Debug:', {
+          scheduledData,
+          scheduledError,
+          income,
+          userId: user.id
+        })
+
+        if (!scheduledError && scheduledData) {
+          const totalScheduled = scheduledData.reduce((sum: number, payment: any) => sum + payment.amount, 0)
+          console.log('Total scheduled expenses:', totalScheduled)
+          setScheduledExpenses(totalScheduled)
+          // Available money = Net income (income - already spent) - scheduled expenses
+          const netIncome = income - spent
+          setAvailableMoney(netIncome - totalScheduled)
+          console.log('Available money:', netIncome - totalScheduled, '(Net:', netIncome, '- Scheduled:', totalScheduled, ')')
+        } else {
+          console.log('No scheduled payments found or error occurred:', scheduledError)
+          // If no scheduled payments or error (table doesn't exist), available money = net income
+          setScheduledExpenses(0)
+          const netIncome = income - spent
+          setAvailableMoney(netIncome)
         }
       } catch (err) {
         console.error('Error fetching financial data:', err)
@@ -294,16 +327,16 @@ function DashboardContent() {
             </CardContent>
           </Card>
           
-          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500">
+          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-2xl font-bold text-blue-600">
-                    {loading ? '...' : activeGoalsCount}
+                  <p className="text-2xl font-bold text-green-600">
+                    {loading ? '...' : `₱${availableMoney.toLocaleString()}`}
                   </p>
-                  <p className="text-sm text-gray-600 font-medium">Active Goals</p>
+                  <p className="text-sm text-gray-600 font-medium">Available to Spend</p>
                 </div>
-                <Target className="w-8 h-8 text-blue-500" />
+                <Wallet className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>

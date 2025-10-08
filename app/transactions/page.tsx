@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { ScheduledPaymentsManager } from '@/components/ScheduledPaymentsManager'
 import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { 
   PlusCircle, 
@@ -788,6 +789,11 @@ export default function TransactionsPage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Scheduled Payments Management */}
+        <div className="mb-8">
+          <ScheduledPaymentsManager />
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
