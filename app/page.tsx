@@ -52,32 +52,12 @@ export default function HomePage() {
             <Link href="/pricing" className="text-gray-600 hover:text-primary transition-colors">
               Pricing
             </Link>
-            {user ? (
-              <>
-                <Link href="/dashboard">
-                  <Button variant="outline">Dashboard</Button>
-                </Link>
-                <Button 
-                  variant="ghost" 
-                  onClick={() => {
-                    const { signOut } = useAuth()
-                    signOut()
-                  }}
-                  className="text-gray-600 hover:text-red-600"
-                >
-                  Sign Out
-                </Button>
-              </>
-            ) : (
-              <>
-                <Link href="/auth/login">
-                  <Button variant="outline">Log In</Button>
-                </Link>
-                <Link href="/auth/register">
-                  <Button>Get Started</Button>
-                </Link>
-              </>
-            )}
+            <Link href="/auth/login">
+              <Button variant="outline">Log In</Button>
+            </Link>
+            <Link href="/auth/register">
+              <Button>Get Started</Button>
+            </Link>
           </div>
         </div>
       </nav>
