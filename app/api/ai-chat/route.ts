@@ -3,6 +3,9 @@ import { PlounixAIAgent } from '@/lib/langchain-agent'
 import { getAuthenticatedMemoryContext, addToUserMemory } from '@/lib/authenticated-memory'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // In-memory storage for chat sessions (use database in production)
 const aiAgents = new Map<string, PlounixAIAgent>()
 
