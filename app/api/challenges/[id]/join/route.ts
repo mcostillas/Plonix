@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic'
+
 // POST /api/challenges/[id]/join - Join a challenge
 export async function POST(
   request: NextRequest,
