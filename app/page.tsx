@@ -52,12 +52,32 @@ export default function HomePage() {
             <Link href="/pricing" className="text-gray-600 hover:text-primary transition-colors">
               Pricing
             </Link>
-            <Link href="/auth/login">
-              <Button variant="outline">Log In</Button>
-            </Link>
-            <Link href="/auth/register">
-              <Button>Get Started</Button>
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard">
+                  <Button variant="outline">Dashboard</Button>
+                </Link>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => {
+                    const { signOut } = useAuth()
+                    signOut()
+                  }}
+                  className="text-gray-600 hover:text-red-600"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/auth/login">
+                  <Button variant="outline">Log In</Button>
+                </Link>
+                <Link href="/auth/register">
+                  <Button>Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -84,10 +104,10 @@ export default function HomePage() {
               </p>
               
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link href={user ? "/dashboard" : "/auth/register"}>
+                <Link href="/auth/register">
                   <Button size="lg" className="text-lg px-8 py-4 w-full sm:w-auto">
                     <Bot className="w-5 h-5 mr-2" />
-                    {user ? "Go to Dashboard" : "Start Your Journey"}
+                    Start Your Journey
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </Link>
@@ -208,19 +228,11 @@ export default function HomePage() {
             Our AI doesn't just give generic advice. It searches the web for current prices, bank rates, and financial news to give you the most up-to-date information for your financial decisions.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            {user ? (
-              <Link href="/ai-assistant">
-                <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
-                  Try Fili AI Search Now
-                </Button>
-              </Link>
-            ) : (
-              <Link href="/auth/register">
-                <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
-                  Sign Up to Try AI Search
-                </Button>
-              </Link>
-            )}
+            <Link href="/auth/register">
+              <Button variant="secondary" size="lg" className="text-lg w-full sm:w-auto">
+                Sign Up to Try AI Search
+              </Button>
+            </Link>
             <Button variant="outline" size="lg" className="text-lg text-white border-white hover:bg-white hover:text-primary w-full sm:w-auto">
               Watch Demo
             </Button>
@@ -264,29 +276,18 @@ export default function HomePage() {
                 Join thousands of Filipino youth building wealth with AI-powered guidance. No complex jargon, just practical advice that works with our culture and lifestyle.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                {user ? (
-                  <Link href="/dashboard">
-                    <Button size="lg" className="w-full sm:w-auto">
-                      <BookOpen className="w-5 h-5 mr-2" />
-                      Go to Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link href="/auth/register">
-                      <Button size="lg" className="w-full sm:w-auto">
-                        <BookOpen className="w-5 h-5 mr-2" />
-                        Create Free Account
-                      </Button>
-                    </Link>
-                    <Link href="/auth/login">
-                      <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                        <Target className="w-5 h-5 mr-2" />
-                        Already Have Account?
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                <Link href="/auth/register">
+                  <Button size="lg" className="w-full sm:w-auto">
+                    <BookOpen className="w-5 h-5 mr-2" />
+                    Create Free Account
+                  </Button>
+                </Link>
+                <Link href="/auth/login">
+                  <Button variant="outline" size="lg" className="w-full sm:w-auto">
+                    <Target className="w-5 h-5 mr-2" />
+                    Already Have Account?
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -307,11 +308,7 @@ export default function HomePage() {
             <Link href="/learning" className="hover:text-primary">Learn</Link>
             <Link href="/challenges" className="hover:text-primary">Challenges</Link>
             <Link href="/resource-hub" className="hover:text-primary">Resources</Link>
-            {user ? (
-              <Link href="/ai-assistant" className="hover:text-primary">Fili AI</Link>
-            ) : (
-              <Link href="/auth/login" className="hover:text-primary">Login for AI</Link>
-            )}
+            <Link href="/auth/login" className="hover:text-primary">Login for AI</Link>
           </div>
         </div>
       </footer>
