@@ -11,7 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-hooks'
 import { Plus, Loader2, Home, Zap, Smartphone, Car, Shield, CreditCard } from 'lucide-react'
 
-interface AddScheduledPaymentModalProps {
+interface AddMonthlyBillModalProps {
   children?: React.ReactNode
   onPaymentAdded?: () => void
   onShowMessage?: (message: string) => void
@@ -26,14 +26,7 @@ const CATEGORIES = [
   { value: 'Other', label: 'Other', icon: CreditCard, color: 'text-gray-600' },
 ]
 
-const FREQUENCIES = [
-  { value: 'monthly', label: 'Monthly' },
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'quarterly', label: 'Quarterly' },
-  { value: 'yearly', label: 'Yearly' },
-]
-
-export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessage }: AddScheduledPaymentModalProps) {
+export function AddMonthlyBillModal({ children, onPaymentAdded, onShowMessage }: AddMonthlyBillModalProps) {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -42,7 +35,6 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
     amount: '',
     category: '',
     due_day: '',
-    frequency: 'monthly',
     description: ''
   })
 
@@ -60,14 +52,13 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
           amount: parseFloat(formData.amount),
           category: formData.category,
           due_day: parseInt(formData.due_day),
-          frequency: formData.frequency,
           description: formData.description || null,
           is_active: true
         })
 
       if (error) {
-        console.error('Error adding scheduled payment:', error)
-        onShowMessage?.('Failed to add scheduled payment. Please try again.')
+        console.error('Error adding monthly bill:', error)
+        onShowMessage?.('Failed to add monthly bill. Please try again.')
         return
       }
 
@@ -77,7 +68,6 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
         amount: '',
         category: '',
         due_day: '',
-        frequency: 'monthly',
         description: ''
       })
 
@@ -85,10 +75,10 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
       onPaymentAdded?.()
       
       // Show success message
-      onShowMessage?.('Scheduled payment added successfully!')
+      onShowMessage?.('Monthly bill added successfully!')
     } catch (error) {
-      console.error('Error adding scheduled payment:', error)
-      onShowMessage?.('Failed to add scheduled payment. Please try again.')
+      console.error('Error adding monthly bill:', error)
+      onShowMessage?.('Failed to add monthly bill. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -102,23 +92,23 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
         {children || (
           <Button variant="outline" className="w-full">
             <Plus className="w-4 h-4 mr-2" />
-            Add Scheduled Payment
+            Add Monthly Bill
           </Button>
         )}
       </DialogTrigger>
       
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Add Scheduled Payment</DialogTitle>
+          <DialogTitle>Add Monthly Bill</DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Payment Name */}
+          {/* Bill Name */}
           <div className="space-y-2">
-            <Label htmlFor="name">Payment Name *</Label>
+            <Label htmlFor="name">Bill Name *</Label>
             <Input
               id="name"
-              placeholder="e.g., Dormitory Rent, Internet Bill"
+              placeholder="e.g., Dorm Rent, Internet, Netflix"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
@@ -195,25 +185,21 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
             </Select>
           </div>
 
-          {/* Frequency */}
+          {/* Due Day */}
           <div className="space-y-2">
-            <Label htmlFor="frequency">Frequency</Label>
-            <Select 
-              value={formData.frequency} 
-              onValueChange={(value) => setFormData({ ...formData, frequency: value })}
+            <Label htmlFor="due_day">Due Day of Month</Label>
+            <Input
+              id="due_day"
+              type="number"
+              placeholder="e.g., 1, 15, or 28"
+              min="1"
+              max="31"
+              value={formData.due_day}
+              onChange={(e) => setFormData({ ...formData, due_day: e.target.value })}
               disabled={loading}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FREQUENCIES.map((freq) => (
-                  <SelectItem key={freq.value} value={freq.value}>
-                    {freq.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              required
+            />
+            <p className="text-xs text-gray-500">Enter the day (1-31) when this bill is due each month</p>
           </div>
 
           {/* Description */}
@@ -221,7 +207,7 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
             <Label htmlFor="description">Description (Optional)</Label>
             <Textarea
               id="description"
-              placeholder="Additional notes about this payment..."
+              placeholder="Additional notes about this bill..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               disabled={loading}
@@ -231,11 +217,11 @@ export function AddScheduledPaymentModal({ children, onPaymentAdded, onShowMessa
 
           {/* Preview */}
           {formData.name && formData.amount && formData.due_day && (
-            <div className="p-3 bg-gray-50 rounded-lg border">
-              <p className="text-sm font-medium text-gray-800 mb-1">Preview:</p>
-              <p className="text-sm text-gray-600">
+            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="text-sm font-medium text-indigo-900 mb-1">Preview:</p>
+              <p className="text-sm text-indigo-700">
                 <span className="font-medium">{formData.name}</span> - ₱{formData.amount} 
-                {formData.frequency === 'monthly' && ` due every ${formData.due_day}th of the month`}
+                {` due on day ${formData.due_day} of each month`}
               </p>
             </div>
           )}

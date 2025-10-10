@@ -17,6 +17,7 @@ import type { Goal } from '@/lib/database.types'
 import { DeleteGoalModal } from '@/components/ui/confirmation-modal'
 import { GoalCreatedModal } from '@/components/ui/success-modal'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
 
 export default function GoalsPage() {
   return (
@@ -81,7 +82,9 @@ function GoalsContent() {
 
   const handleCreateGoal = async () => {
     if (!formData.title || !formData.targetAmount) {
-      alert('Please fill in required fields: Title and Target Amount')
+      toast.error('Missing required fields', {
+        description: 'Please fill in Title and Target Amount'
+      })
       return
     }
 
@@ -104,7 +107,9 @@ function GoalsContent() {
 
       if (error) {
         console.error('Error creating goal:', error)
-        alert('Error creating goal: ' + error.message)
+        toast.error('Failed to create goal', {
+          description: error.message
+        })
       } else {
         // Show success modal
         setCreatedGoalTitle(formData.title)
@@ -125,7 +130,7 @@ function GoalsContent() {
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('An error occurred while creating the goal')
+      toast.error('An error occurred while creating the goal')
     } finally {
       setLoading(false)
     }
@@ -143,7 +148,9 @@ function GoalsContent() {
         .eq('id', goal.id)
 
       if (goalError) {
-        alert('Error updating progress: ' + goalError.message)
+        toast.error('Failed to update progress', {
+          description: goalError.message
+        })
         return
       }
 
@@ -166,6 +173,9 @@ function GoalsContent() {
         // Don't show error to user since goal was updated successfully
       }
 
+      toast.success('Progress updated', {
+        description: `Added ₱${addAmount.toLocaleString()} to ${goal.title}`
+      })
       fetchGoals()
     } catch (err) {
       console.error('Error:', err)
@@ -185,14 +195,17 @@ function GoalsContent() {
         .eq('id', deletingGoalId)
 
       if (error) {
-        alert('Error deleting goal: ' + error.message)
+        toast.error('Failed to delete goal', {
+          description: error.message
+        })
       } else {
+        toast.success('Goal deleted successfully')
         setDeleteModalOpen(false)
         fetchGoals()
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('An error occurred while deleting the goal')
+      toast.error('An error occurred while deleting the goal')
     } finally {
       setIsDeleting(false)
       setDeletingGoalId(null)

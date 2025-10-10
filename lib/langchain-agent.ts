@@ -4,6 +4,7 @@ import { ChatPromptTemplate, MessagesPlaceholder } from "@langchain/core/prompts
 import { DynamicTool } from "langchain/tools"
 // import { EnhancedLangChainMemory } from './langchain-memory'
 import { WebSearchService } from './web-search'
+import { findLearningResources, getBeginnerFriendlySkills } from './learning-resources'
 
 export class PlounixAIAgent {
   private llm: ChatOpenAI
@@ -86,6 +87,82 @@ export class PlounixAIAgent {
         },
       }),
 
+      // Work and Earning Opportunities Tools
+      new DynamicTool({
+        name: "suggest_work_opportunities",
+        description: "Suggest real freelancing and job opportunities based on user's skills, hobbies, and financial goals. Use this when users ask about earning money, finding jobs, freelancing, or need income to reach savings goals.",
+        func: async (input: string) => {
+          try {
+            console.log('💼 suggest_work_opportunities called with:', input)
+            const workSuggestions = this.generateWorkSuggestions(input)
+            return JSON.stringify(workSuggestions, null, 2)
+          } catch (error) {
+            console.error('❌ Work suggestions error:', error)
+            return "Work opportunity search is temporarily unavailable. Please try again later."
+          }
+        },
+      }),
+
+      // Learning Resources Tool
+      new DynamicTool({
+        name: "suggest_learning_resources",
+        description: "**CRITICAL TOOL** Suggest learning resources (YouTube videos, websites, online courses) when user wants to learn a skill. MUST USE when user mentions: 'learn', 'video editing', 'graphic design', 'web development', 'coding', 'freelancing', 'where to study', 'not good at', or ANY skill learning. Returns ACTUAL CLICKABLE URLs. DO NOT give generic advice like 'search YouTube' - use this tool instead to get real links.",
+        func: async (input: string) => {
+          try {
+            console.log('📚 suggest_learning_resources called with:', input)
+            
+            // Search for relevant learning resources
+            const matches = findLearningResources(input)
+            
+            if (matches.length > 0) {
+              return JSON.stringify({
+                foundSkills: matches.map(skill => ({
+                  skill: skill.skill,
+                  category: skill.category,
+                  description: skill.description,
+                  averageEarning: skill.averageEarning,
+                  timeToLearn: skill.timeToLearn,
+                  topResources: skill.resources.slice(0, 5).map(resource => ({
+                    title: resource.title,
+                    url: resource.url,
+                    type: resource.type,
+                    provider: resource.provider,
+                    difficulty: resource.difficulty,
+                    duration: resource.duration,
+                    isFree: resource.isFree,
+                    description: resource.description
+                  }))
+                })),
+                totalSkillsFound: matches.length
+              }, null, 2)
+            } else {
+              // If no specific match, show beginner-friendly options
+              const beginnerSkills = getBeginnerFriendlySkills()
+              return JSON.stringify({
+                message: "No exact match found. Here are beginner-friendly skills you can learn:",
+                recommendedSkills: beginnerSkills.map(skill => ({
+                  skill: skill.skill,
+                  category: skill.category,
+                  description: skill.description,
+                  averageEarning: skill.averageEarning,
+                  timeToLearn: skill.timeToLearn,
+                  topResources: skill.resources.slice(0, 3).map(resource => ({
+                    title: resource.title,
+                    url: resource.url,
+                    type: resource.type,
+                    difficulty: resource.difficulty,
+                    isFree: resource.isFree
+                  }))
+                }))
+              }, null, 2)
+            }
+          } catch (error) {
+            console.error('❌ Learning resources error:', error)
+            return "Learning resource search is temporarily unavailable. Please try again later."
+          }
+        },
+      }),
+
       // Financial Analysis Tools
       new DynamicTool({
         name: "budget_analyzer",
@@ -158,6 +235,8 @@ You are a FINANCIAL LITERACY assistant. You MUST stay within your scope:
 - Income, expenses, financial planning, goals
 - Philippine financial systems (GCash, banks, paluwagan)
 - Current prices, deals, shopping advice (with savings emphasis)
+- Work opportunities, freelancing, side hustles, earning money (to support financial goals)
+- Job suggestions based on skills and financial targets
 
 ❌ OUT OF SCOPE (Politely decline these):
 - Religion, politics, philosophy (no exceptions)
@@ -185,6 +264,30 @@ When users want to buy something (especially repairs/replacements):
 3. Suggest BUDGETING: How can they afford it without debt?
 4. Look for CHEAPER alternatives (paluwagan, installment, 2nd hand)
 5. ONLY THEN help them find prices/options
+
+WORK OPPORTUNITY FRAMEWORK:
+When users need money or ask about earning:
+1. Ask about their skills, hobbies, and available time
+2. Assess their financial goal (target amount and timeline)
+3. Use suggest_work_opportunities tool for personalized recommendations
+4. Emphasize STARTING SMALL and building reputation
+5. Always mention saving 20% of earnings for taxes/emergency fund
+6. Provide REAL LINKS in underlined/highlighted format for job platforms
+
+LEARNING RESOURCES FRAMEWORK:
+When users want to learn a skill or say they're not good at something:
+1. ALWAYS use suggest_learning_resources tool to find courses and tutorials
+2. Ask what they want to achieve (earning goal, career change, hobby)
+3. Recommend FREE resources first (YouTube, free courses)
+4. Provide CLICKABLE LINKS formatted as: **[Resource Name](URL)** - Description
+5. Mention realistic time commitment and earning potential
+6. Encourage starting with beginner resources and practicing
+7. Connect learning to their financial goals (e.g., "Learning this can help you earn ₱X/month")
+
+Example responses for learning:
+✅ "I see you're interested in freelancing but don't have the skills yet. Let me find learning resources for you..."
+✅ "Great that you want to learn! Here are FREE YouTube courses and websites where you can start..."
+✅ "This skill takes about 2-3 months to learn. Based on your ₱20,000 goal, you could start earning in 3-4 months. Here's where to learn..."
 
 RESPONSE STYLE:
 - Lead with FINANCIAL LITERACY lesson
@@ -258,6 +361,8 @@ You are a FINANCIAL LITERACY assistant. You MUST stay within your scope:
 - Income, expenses, financial planning, goals
 - Philippine financial systems (GCash, banks, paluwagan)
 - Current prices, deals, shopping advice (with savings emphasis)
+- Work opportunities, freelancing, side hustles, earning money (to support financial goals)
+- Job suggestions based on skills and financial targets
 
 ❌ OUT OF SCOPE (Politely decline these):
 - Religion, politics, philosophy (no exceptions)
@@ -286,6 +391,35 @@ When users want to buy something (especially repairs/replacements):
 4. Look for CHEAPER alternatives (paluwagan, installment, 2nd hand)
 5. ONLY THEN help them find prices/options
 
+WORK OPPORTUNITY FRAMEWORK:
+When users need money or ask about earning:
+1. Ask about their skills, hobbies, and available time
+2. Assess their financial goal (target amount and timeline)
+3. Use suggest_work_opportunities tool for personalized recommendations
+4. Emphasize STARTING SMALL and building reputation
+5. Always mention saving 20% of earnings for taxes/emergency fund
+6. Provide REAL LINKS in underlined/highlighted format for job platforms
+
+LEARNING RESOURCES FRAMEWORK:
+When users mention wanting to learn ANY skill (writing, design, coding, video editing, VA, etc.):
+1. **IMMEDIATELY** call suggest_learning_resources tool - DON'T give generic advice
+2. **NEVER** suggest "search YouTube" or "look for Udemy courses" - use the TOOL instead  
+3. Tool returns ACTUAL CLICKABLE LINKS - present them as: **[Resource Name](URL)**
+4. Show earning potential and learning timeline from tool results
+5. Keywords that MUST trigger tool: "learn", "video editing", "graphic design", "coding", "freelancing", "where to study"
+
+**CRITICAL**: If you mention YouTube, Udemy, Coursera WITHOUT providing actual clickable links from the tool, you're doing it WRONG.
+
+✅ CORRECT: Call tool → Get real links → Present: **[DaVinci Resolve Tutorial](https://youtube.com/watch?v=UguJiz00meQ)** - Free software (1 hour)
+❌ WRONG: "Search for Peter McKinnon on YouTube" (no actual link)
+
+The tool has 51 pre-curated resources with REAL URLs. ALWAYS use it!
+
+Example responses for learning:
+✅ "I see you're interested in freelancing but don't have the skills yet. Let me find learning resources for you..."
+✅ "Great that you want to learn! Here are FREE YouTube courses and websites where you can start..."
+✅ "This skill takes about 2-3 months to learn. Based on your ₱20,000 goal, you could start earning in 3-4 months. Here's where to learn..."
+
 For damaged items specifically:
 - Emphasize repair over replacement
 - Calculate TRUE COST vs. savings
@@ -299,6 +433,8 @@ RESPONSE STYLE:
 - Keep responses SHORT but educational (2-4 sentences)
 - Use bullet points for action steps
 - Connect to long-term financial health
+- Format job/work links as: **[Platform Name](URL)** - Description
+- Always highlight/underline important URLs for easy clicking
 
 SEARCH CAPABILITIES:
 - Use search_web for ANY current information, news, or real-time data
@@ -370,6 +506,36 @@ ALWAYS PRIORITIZE:
             name: "search_financial_news",
             description: "Get latest financial news from Philippines",
             parameters: { type: "object", properties: {}, required: [] }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "suggest_work_opportunities",
+            description: "Suggest freelancing platforms and job opportunities based on skills and financial goals",
+            parameters: {
+              type: "object",
+              properties: {
+                skills: { type: "string", description: "User's skills, hobbies, or interests" },
+                query: { type: "string", description: "Additional context about work needs" }
+              },
+              required: ["skills"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "suggest_learning_resources",
+            description: "**USE THIS TOOL** when user wants to learn any skill (video editing, graphic design, coding, writing, etc.). Returns ACTUAL clickable YouTube links, course URLs, and platform links. DO NOT suggest 'search YouTube' or mention courses without using this tool first. Keywords: learn, video editing, graphic design, web development, freelancing, coding, tutorials, courses, where to study.",
+            parameters: {
+              type: "object",
+              properties: {
+                skill: { type: "string", description: "The skill the user wants to learn (e.g., 'video editing', 'graphic design', 'web development', 'freelancing')" },
+                query: { type: "string", description: "Additional context about learning goals" }
+              },
+              required: ["skill"]
+            }
           }
         }
       ]
@@ -443,6 +609,61 @@ ALWAYS PRIORITIZE:
             functionResult = JSON.stringify(newsResults)
             break
           
+          case "suggest_work_opportunities":
+            const workSuggestions = this.generateWorkSuggestions(functionArgs.skills || functionArgs.query || JSON.stringify(functionArgs))
+            functionResult = JSON.stringify(workSuggestions)
+            break
+          
+          case "suggest_learning_resources":
+            console.log('📚 Learning resources requested with args:', functionArgs)
+            const skillQuery = functionArgs.skill || functionArgs.query || JSON.stringify(functionArgs)
+            console.log('📚 Skill query:', skillQuery)
+            const learningMatches = findLearningResources(skillQuery)
+            console.log('📚 Found matches:', learningMatches.length)
+            
+            if (learningMatches.length > 0) {
+              functionResult = JSON.stringify({
+                foundSkills: learningMatches.map(skill => ({
+                  skill: skill.skill,
+                  category: skill.category,
+                  description: skill.description,
+                  averageEarning: skill.averageEarning,
+                  timeToLearn: skill.timeToLearn,
+                  topResources: skill.resources.slice(0, 5).map(resource => ({
+                    title: resource.title,
+                    url: resource.url,
+                    type: resource.type,
+                    provider: resource.provider,
+                    difficulty: resource.difficulty,
+                    duration: resource.duration,
+                    isFree: resource.isFree,
+                    description: resource.description
+                  }))
+                })),
+                totalSkillsFound: learningMatches.length
+              })
+            } else {
+              const beginnerSkills = getBeginnerFriendlySkills()
+              functionResult = JSON.stringify({
+                message: "No exact match found. Here are beginner-friendly skills:",
+                recommendedSkills: beginnerSkills.map(skill => ({
+                  skill: skill.skill,
+                  category: skill.category,
+                  description: skill.description,
+                  averageEarning: skill.averageEarning,
+                  timeToLearn: skill.timeToLearn,
+                  topResources: skill.resources.slice(0, 3).map(resource => ({
+                    title: resource.title,
+                    url: resource.url,
+                    type: resource.type,
+                    difficulty: resource.difficulty,
+                    isFree: resource.isFree
+                  }))
+                }))
+              })
+            }
+            break
+          
           default:
             functionResult = "Function not available"
         }
@@ -499,5 +720,181 @@ ALWAYS PRIORITIZE:
       console.error('❌ Agent error:', error)
       return "I encountered an error processing your request. Please try again."
     }
+  }
+
+  private generateWorkSuggestions(input: string): any {
+    const lowerInput = input.toLowerCase()
+    
+    // Common freelancing platforms and job sites for Philippines
+    const freelancingPlatforms = {
+      general: [
+        { name: 'Upwork', url: 'https://www.upwork.com', description: 'Global freelancing platform with diverse opportunities' },
+        { name: 'Freelancer.com', url: 'https://freelancer.com', description: 'International marketplace for various skills' },
+        { name: 'Fiverr', url: 'https://fiverr.com', description: 'Gig-based platform perfect for specific services' },
+        { name: 'OnlineJobs.ph', url: 'https://onlinejobs.ph', description: 'Philippines dedicated job platform' },
+        { name: 'Kalibrr', url: 'https://kalibrr.com', description: 'Philippine job platform with remote opportunities' }
+      ],
+      writing: [
+        { name: 'ContentFly', url: 'https://contentfly.com', description: 'Content writing platform' },
+        { name: 'WriterAccess', url: 'https://writeraccess.com', description: 'Professional writing marketplace' },
+        { name: 'Contently', url: 'https://contently.com', description: 'Content marketing platform' }
+      ],
+      design: [
+        { name: '99designs', url: 'https://99designs.com', description: 'Design contest and marketplace platform' },
+        { name: 'Dribbble Jobs', url: 'https://dribbble.com/jobs', description: 'Design job board' },
+        { name: 'Behance', url: 'https://behance.net', description: 'Creative portfolio and job platform' }
+      ],
+      tech: [
+        { name: 'GitHub Jobs', url: 'https://github.com/jobs', description: 'Tech jobs from GitHub' },
+        { name: 'Stack Overflow Jobs', url: 'https://stackoverflow.com/jobs', description: 'Developer job board' },
+        { name: 'AngelList', url: 'https://angel.co', description: 'Startup jobs and equity opportunities' }
+      ],
+      tutoring: [
+        { name: 'Preply', url: 'https://preply.com', description: 'Online tutoring platform' },
+        { name: 'iTalki', url: 'https://italki.com', description: 'Language teaching platform' },
+        { name: 'Cambly', url: 'https://cambly.com', description: 'English conversation tutoring' }
+      ],
+      delivery: [
+        { name: 'GrabFood', url: 'https://grab.com/ph/driver/', description: 'Food delivery driver opportunities' },
+        { name: 'Foodpanda', url: 'https://foodpanda.com.ph', description: 'Food delivery platform' },
+        { name: 'Lalamove', url: 'https://lalamove.com', description: 'Logistics and delivery platform' }
+      ]
+    }
+
+    // Analyze input to suggest relevant categories
+    let suggestions: any[] = []
+    let targetEarning = 0
+    
+    // Extract financial goal if mentioned
+    const amountMatch = input.match(/(?:₱|php|pesos?)\s*([0-9,]+)/i)
+    if (amountMatch) {
+      targetEarning = parseInt(amountMatch[1].replace(/,/g, ''))
+    }
+
+    // Skill-based suggestions
+    if (lowerInput.includes('writing') || lowerInput.includes('content') || lowerInput.includes('blog')) {
+      suggestions.push({
+        category: 'Content Writing & Copywriting',
+        platforms: freelancingPlatforms.writing.concat(freelancingPlatforms.general.slice(0, 3)),
+        earningPotential: '₱500-2,000 per article',
+        skills: ['English proficiency', 'Research skills', 'SEO knowledge'],
+        tips: 'Start with blog posts and social media content. Build a portfolio on Medium or personal blog.'
+      })
+    }
+
+    if (lowerInput.includes('design') || lowerInput.includes('graphic') || lowerInput.includes('logo')) {
+      suggestions.push({
+        category: 'Graphic Design & Creative',
+        platforms: freelancingPlatforms.design.concat(freelancingPlatforms.general.slice(0, 3)),
+        earningPotential: '₱1,000-5,000 per project',
+        skills: ['Adobe Creative Suite', 'Canva', 'Design principles'],
+        tips: 'Create sample designs for different industries. Offer logo + business card packages.'
+      })
+    }
+
+    if (lowerInput.includes('programming') || lowerInput.includes('coding') || lowerInput.includes('web') || lowerInput.includes('app')) {
+      suggestions.push({
+        category: 'Programming & Web Development',
+        platforms: freelancingPlatforms.tech.concat(freelancingPlatforms.general.slice(0, 3)),
+        earningPotential: '₱2,000-10,000 per project',
+        skills: ['HTML/CSS', 'JavaScript', 'Python/PHP', 'Database management'],
+        tips: 'Start with simple websites. Learn popular frameworks like React or WordPress.'
+      })
+    }
+
+    if (lowerInput.includes('teaching') || lowerInput.includes('tutor') || lowerInput.includes('english') || lowerInput.includes('math')) {
+      suggestions.push({
+        category: 'Online Tutoring & Teaching',
+        platforms: freelancingPlatforms.tutoring.concat([freelancingPlatforms.general[0]]),
+        earningPotential: '₱300-800 per hour',
+        skills: ['Subject expertise', 'Communication', 'Patience', 'Internet connection'],
+        tips: 'Filipinos are in high demand for English tutoring. Flexible schedule perfect for students.'
+      })
+    }
+
+    if (lowerInput.includes('delivery') || lowerInput.includes('driver') || lowerInput.includes('grab') || lowerInput.includes('motorcycle')) {
+      suggestions.push({
+        category: 'Delivery & Transportation',
+        platforms: freelancingPlatforms.delivery,
+        earningPotential: '₱800-1,500 per day',
+        skills: ['Valid license', 'Own vehicle', 'Navigation skills', 'Time management'],
+        tips: 'Peak hours (lunch, dinner) offer higher earnings. Maintain good ratings for more orders.'
+      })
+    }
+
+    // If no specific skills mentioned, provide general suggestions
+    if (suggestions.length === 0) {
+      suggestions = [
+        {
+          category: 'Data Entry & Virtual Assistant',
+          platforms: freelancingPlatforms.general,
+          earningPotential: '₱15,000-25,000 per month',
+          skills: ['Computer literacy', 'Attention to detail', 'English communication', 'Time management'],
+          tips: 'Perfect for beginners. Start with simple tasks and build reputation gradually.'
+        },
+        {
+          category: 'Social Media Management',
+          platforms: freelancingPlatforms.general.slice(0, 3),
+          earningPotential: '₱8,000-20,000 per month per client',
+          skills: ['Social media knowledge', 'Content creation', 'Basic design', 'Scheduling tools'],
+          tips: 'Offer packages including content creation, posting schedule, and engagement management.'
+        },
+        {
+          category: 'Online Selling & E-commerce',
+          platforms: [
+            { name: 'Shopee', url: 'https://shopee.ph', description: 'Philippines e-commerce platform' },
+            { name: 'Lazada', url: 'https://lazada.com.ph', description: 'Online marketplace' },
+            { name: 'Facebook Marketplace', url: 'https://facebook.com/marketplace', description: 'Social commerce platform' }
+          ],
+          earningPotential: '₱5,000-50,000 per month',
+          skills: ['Product sourcing', 'Customer service', 'Basic photography', 'Marketing'],
+          tips: 'Start with products you understand. Use dropshipping to minimize initial investment.'
+        }
+      ]
+    }
+
+    // Add earning timeline if target amount was mentioned
+    if (targetEarning > 0) {
+      suggestions.forEach(suggestion => {
+        const avgMonthlyEarning = this.extractAvgEarning(suggestion.earningPotential)
+        if (avgMonthlyEarning > 0) {
+          const monthsNeeded = Math.ceil(targetEarning / avgMonthlyEarning)
+          suggestion.timeToGoal = `Approximately ${monthsNeeded} month${monthsNeeded > 1 ? 's' : ''} to reach ₱${targetEarning.toLocaleString()}`
+        }
+      })
+    }
+
+    return {
+      suggestions,
+      generalTips: [
+        'Start with one platform and build your reputation before expanding',
+        'Always deliver quality work on time to get positive reviews',
+        'Set aside 20% of earnings for taxes and emergency fund',
+        'Invest in improving your skills through free online courses',
+        'Network with other freelancers for referrals and tips'
+      ],
+      nextSteps: [
+        'Create professional profiles on suggested platforms',
+        'Build a portfolio showcasing your best work',
+        'Set competitive but fair pricing for your services',
+        'Apply to 5-10 relevant jobs daily to build momentum'
+      ]
+    }
+  }
+
+  private extractAvgEarning(earningText: string): number {
+    // Simple extraction of average earning from text like "₱15,000-25,000 per month"
+    const matches = earningText.match(/₱([0-9,]+)(?:-([0-9,]+))?/g)
+    if (matches && matches.length > 0) {
+      const numbers = matches[0].replace(/₱|,/g, '').match(/\d+/g)
+      if (numbers) {
+        if (numbers.length === 2) {
+          return (parseInt(numbers[0]) + parseInt(numbers[1])) / 2
+        } else {
+          return parseInt(numbers[0])
+        }
+      }
+    }
+    return 0
   }
 }

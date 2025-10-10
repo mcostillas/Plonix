@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-hooks'
-import { AddScheduledPaymentModal } from './AddScheduledPaymentModal'
+import { AddMonthlyBillModal } from './AddMonthlyBillModal'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { toast } from 'sonner'
 import { 
@@ -23,19 +23,18 @@ import {
   Shield, 
   CreditCard,
   Clock,
-  DollarSign
+  DollarSign,
+  AlertCircle
 } from 'lucide-react'
 
-interface ScheduledPayment {
+interface MonthlyBill {
   id: string
   name: string
   amount: number
   category: string
-  due_day: number
-  frequency: string
+  due_day: number  // Day of month (1-31)
   description?: string
   is_active: boolean
-  next_due_date: string
   created_at: string
 }
 
@@ -57,11 +56,13 @@ const CATEGORY_COLORS = {
   'Other': 'text-gray-600 bg-gray-100',
 }
 
-export function ScheduledPaymentsManager() {
+export function MonthlyBillsManager() {
   const { user } = useAuth()
-  const [payments, setPayments] = useState<ScheduledPayment[]>([])
+  const [bills, setBills] = useState<MonthlyBill[]>([])
   const [loading, setLoading] = useState(true)
   const [totalMonthly, setTotalMonthly] = useState(0)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingBill, setEditingBill] = useState<MonthlyBill | undefined>()
   
   // Dialog states
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -70,11 +71,11 @@ export function ScheduledPaymentsManager() {
 
   useEffect(() => {
     if (user?.id) {
-      fetchScheduledPayments()
+      fetchMonthlyBills()
     }
   }, [user?.id])
 
-  const fetchScheduledPayments = async () => {
+  const fetchMonthlyBills = async () => {
     if (!user?.id) return
 
     setLoading(true)
@@ -86,72 +87,72 @@ export function ScheduledPaymentsManager() {
         .order('due_day', { ascending: true })
 
       if (error) {
-        console.error('Error fetching scheduled payments:', error)
+        console.error('Error fetching monthly bills:', error)
         return
       }
 
-      setPayments(data || [])
+      setBills(data || [])
       
-      // Calculate total monthly amount for active payments
+      // Calculate total monthly amount for active bills
       const activeTotal = data
-        ?.filter((payment: ScheduledPayment) => payment.is_active)
-        ?.reduce((sum: number, payment: ScheduledPayment) => sum + Number(payment.amount), 0) || 0
+        ?.filter((bill: MonthlyBill) => bill.is_active)
+        ?.reduce((sum: number, bill: MonthlyBill) => sum + Number(bill.amount), 0) || 0
       setTotalMonthly(activeTotal)
     } catch (error) {
-      console.error('Error fetching scheduled payments:', error)
+      console.error('Error fetching monthly bills:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const togglePaymentStatus = async (paymentId: string, currentStatus: boolean) => {
+  const toggleBillStatus = async (billId: string, currentStatus: boolean) => {
     try {
       const { error } = await (supabase as any)
         .from('scheduled_payments')
         .update({ is_active: !currentStatus })
-        .eq('id', paymentId)
+        .eq('id', billId)
         .eq('user_id', user?.id)
 
       if (error) {
-        console.error('Error toggling payment status:', error)
-        toast.error('Failed to update payment status')
+        console.error('Error toggling bill status:', error)
+        toast.error('Failed to update bill status')
         return
       }
 
       // Refresh data
-      fetchScheduledPayments()
+      fetchMonthlyBills()
     } catch (error) {
-      console.error('Error toggling payment status:', error)
-      toast.error('Failed to update payment status')
+      console.error('Error toggling bill status:', error)
+      toast.error('Failed to update bill status')
     }
   }
 
-  const deletePayment = (paymentId: string, paymentName: string) => {
-    setConfirmMessage(`Are you sure you want to delete "${paymentName}"? This cannot be undone.`)
-    setConfirmAction(() => () => handleDeleteConfirm(paymentId))
+  const deleteBill = (billId: string, billName: string) => {
+    setConfirmMessage(`Are you sure you want to delete "${billName}"? This cannot be undone.`)
+    setConfirmAction(() => () => handleDeleteConfirm(billId))
     setConfirmOpen(true)
   }
 
-  const handleDeleteConfirm = async (paymentId: string) => {
+  const handleDeleteConfirm = async (billId: string) => {
     try {
       const { error } = await (supabase as any)
         .from('scheduled_payments')
         .delete()
-        .eq('id', paymentId)
+        .eq('id', billId)
         .eq('user_id', user?.id)
 
       if (error) {
-        console.error('Error deleting payment:', error)
-        toast.error('Failed to delete payment')
+        console.error('Error deleting bill:', error)
+        toast.error('Failed to delete bill')
         return
       }
 
       // Refresh data
-      fetchScheduledPayments()
-      toast.success('Payment deleted successfully')
+      fetchMonthlyBills()
+      toast.success('Bill deleted successfully')
     } catch (error) {
-      console.error('Error deleting payment:', error)
-      toast.error('Failed to delete payment')
+      console.error('Error deleting bill:', error)
+      toast.error('Failed to delete bill')
     }
   }
 
@@ -170,13 +171,63 @@ export function ScheduledPaymentsManager() {
     return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || 'text-gray-600 bg-gray-100'
   }
 
+  const getDaysUntilDue = (dueDay: number): number => {
+    const today = new Date()
+    const currentDay = today.getDate()
+    const currentMonth = today.getMonth()
+    const currentYear = today.getFullYear()
+    
+    let dueDate = new Date(currentYear, currentMonth, dueDay)
+    if (currentDay > dueDay) {
+      // Already passed this month, use next month
+      dueDate = new Date(currentYear, currentMonth + 1, dueDay)
+    }
+    
+    const diffTime = dueDate.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const getDueDateBadge = (daysUntil: number) => {
+    if (daysUntil === 0) {
+      return (
+        <Badge className="bg-red-100 text-red-700 border-red-200">
+          <AlertCircle className="w-3 h-3 mr-1" />
+          Due Today
+        </Badge>
+      )
+    } else if (daysUntil === 1) {
+      return (
+        <Badge className="bg-orange-100 text-orange-700 border-orange-200">
+          <Clock className="w-3 h-3 mr-1" />
+          Due Tomorrow
+        </Badge>
+      )
+    } else if (daysUntil <= 3) {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+          <Calendar className="w-3 h-3 mr-1" />
+          Due in {daysUntil} days
+        </Badge>
+      )
+    } else if (daysUntil <= 7) {
+      return (
+        <Badge variant="outline" className="text-gray-600">
+          <Calendar className="w-3 h-3 mr-1" />
+          Due in {daysUntil} days
+        </Badge>
+      )
+    }
+    return null // Don't show badge if more than 7 days away
+  }
+
   if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
-            Scheduled Payments
+            Monthly Bills
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -197,7 +248,7 @@ export function ScheduledPaymentsManager() {
           <div>
             <CardTitle className="flex items-center">
               <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
-              Scheduled Payments
+              Monthly Bills
             </CardTitle>
             <div className="flex items-center mt-2">
               <DollarSign className="w-4 h-4 text-green-600 mr-1" />
@@ -206,51 +257,51 @@ export function ScheduledPaymentsManager() {
               </span>
             </div>
           </div>
-          <AddScheduledPaymentModal 
-            onPaymentAdded={fetchScheduledPayments}
+          <AddMonthlyBillModal 
+            onPaymentAdded={fetchMonthlyBills}
             onShowMessage={(message: string) => {
               toast.success(message)
             }}
           >
             <Button className="bg-indigo-600 hover:bg-indigo-700">
               <Plus className="w-4 h-4 mr-2" />
-              Add Payment
+              Add Bill
             </Button>
-          </AddScheduledPaymentModal>
+          </AddMonthlyBillModal>
         </div>
       </CardHeader>
 
       <CardContent>
-        {payments.length === 0 ? (
+        {bills.length === 0 ? (
           <div className="text-center py-8">
             <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No scheduled payments yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No monthly bills yet</h3>
             <p className="text-gray-600 mb-4">
-              Add your recurring expenses like rent, bills, and subscriptions to better track your available money.
+              Add your recurring expenses like rent, utilities, and subscriptions. They'll be automatically deducted from your available money at the start of each month.
             </p>
-            <AddScheduledPaymentModal 
-              onPaymentAdded={fetchScheduledPayments}
+            <AddMonthlyBillModal 
+              onPaymentAdded={fetchMonthlyBills}
               onShowMessage={(message: string) => {
                 toast.success(message)
               }}
             >
               <Button variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Your First Payment
+                Add Your First Bill
               </Button>
-            </AddScheduledPaymentModal>
+            </AddMonthlyBillModal>
           </div>
         ) : (
           <div className="space-y-4">
-            {payments.map((payment) => {
-              const IconComponent = getCategoryIcon(payment.category)
-              const colors = getCategoryColors(payment.category)
+            {bills.map((bill) => {
+              const IconComponent = getCategoryIcon(bill.category)
+              const colors = getCategoryColors(bill.category)
               
               return (
                 <div
-                  key={payment.id}
+                  key={bill.id}
                   className={`p-4 border rounded-lg transition-all ${
-                    payment.is_active 
+                    bill.is_active 
                       ? 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm' 
                       : 'bg-gray-50 border-gray-200 opacity-60'
                   }`}
@@ -262,24 +313,25 @@ export function ScheduledPaymentsManager() {
                         <IconComponent className="w-5 h-5" />
                       </div>
 
-                      {/* Payment Info */}
+                      {/* Bill Info */}
                       <div className="flex-1">
                         <div className="flex items-center space-x-3">
-                          <h4 className="font-medium text-gray-900">{payment.name}</h4>
+                          <h4 className="font-medium text-gray-900">{bill.name}</h4>
                           <Badge variant="secondary" className="text-xs">
-                            {payment.category}
+                            {bill.category}
                           </Badge>
-                          {!payment.is_active && (
+                          {!bill.is_active && (
                             <Badge variant="outline" className="text-xs text-gray-500">
                               Inactive
                             </Badge>
                           )}
+                          {bill.is_active && getDueDateBadge(getDaysUntilDue(bill.due_day))}
                         </div>
                         <div className="flex items-center mt-1 text-sm text-gray-600">
                           <Clock className="w-3 h-3 mr-1" />
-                          <span>Due {payment.due_day}th • {payment.frequency}</span>
-                          {payment.description && (
-                            <span className="ml-2 text-gray-500">• {payment.description}</span>
+                          <span>Due: Day {bill.due_day} of each month</span>
+                          {bill.description && (
+                            <span className="ml-2 text-gray-500">• {bill.description}</span>
                           )}
                         </div>
                       </div>
@@ -287,12 +339,12 @@ export function ScheduledPaymentsManager() {
                       {/* Amount */}
                       <div className="text-right">
                         <div className={`text-lg font-semibold ${
-                          payment.is_active ? 'text-gray-900' : 'text-gray-500'
+                          bill.is_active ? 'text-gray-900' : 'text-gray-500'
                         }`}>
-                          ₱{Number(payment.amount).toLocaleString()}
+                          ₱{Number(bill.amount).toLocaleString()}
                         </div>
                         <div className="text-xs text-gray-500">
-                          /{payment.frequency}
+                          /month
                         </div>
                       </div>
                     </div>
@@ -302,10 +354,10 @@ export function ScheduledPaymentsManager() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => togglePaymentStatus(payment.id, payment.is_active)}
+                        onClick={() => toggleBillStatus(bill.id, bill.is_active)}
                         className="text-gray-600 hover:text-indigo-600"
                       >
-                        {payment.is_active ? (
+                        {bill.is_active ? (
                           <ToggleRight className="w-5 h-5" />
                         ) : (
                           <ToggleLeft className="w-5 h-5" />
@@ -321,7 +373,7 @@ export function ScheduledPaymentsManager() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => deletePayment(payment.id, payment.name)}
+                        onClick={() => deleteBill(bill.id, bill.name)}
                         className="text-gray-600 hover:text-red-600"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -336,7 +388,7 @@ export function ScheduledPaymentsManager() {
             <div className="pt-4 border-t">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-gray-600">
-                  {payments.filter(p => p.is_active).length} active payments
+                  {bills.filter(b => b.is_active).length} active bills
                 </span>
                 <span className="font-semibold text-indigo-600">
                   Total: ₱{totalMonthly.toLocaleString()}/month

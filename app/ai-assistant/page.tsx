@@ -13,8 +13,9 @@ import { PageLoader } from '@/components/ui/page-loader'
 import ReactMarkdown from 'react-markdown'
 import { supabase } from '@/lib/supabase'
 import { LogoutModal, useLogoutModal } from '@/components/ui/logout-modal'
-import { DeleteChatModal, ClearHistoryModal, DeleteCompletedModal } from '@/components/ui/confirmation-modal'
+import { DeleteChatModal, ClearHistoryModal } from '@/components/ui/confirmation-modal'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -63,7 +64,6 @@ function AIAssistantContent() {
   // Modal states for deletion confirmations
   const [deleteChatModalOpen, setDeleteChatModalOpen] = useState(false)
   const [clearHistoryModalOpen, setClearHistoryModalOpen] = useState(false)
-  const [deleteCompletedModalOpen, setDeleteCompletedModalOpen] = useState(false)
   const [chatToDelete, setChatToDelete] = useState<string | null>(null)
   
   const [chats, setChats] = useState([
@@ -380,11 +380,11 @@ function AIAssistantContent() {
       setCurrentChatId(newSessionId)
       setMessages([welcomeMessage])
       
-      // Show success modal instead of alert
-      setDeleteCompletedModalOpen(true)
+      // Show success toast
+      toast.success('Chat history cleared successfully')
     } catch (error) {
       console.error('❌ Error clearing history:', error)
-      alert('Failed to clear history. Please try again.')
+      toast.error('Failed to clear history. Please try again.')
     }
   }
 
@@ -437,6 +437,15 @@ function AIAssistantContent() {
 
     setIsProcessingReceipt(true)
     
+    // Add processing message
+    const processingMessage = {
+      id: Date.now(),
+      type: 'bot',
+      content: '🔍 **Analyzing your receipt...**\n\nI\'m using OCR (Optical Character Recognition) to read the text from your image. This may take a few seconds.',
+      timestamp: new Date()
+    }
+    setMessages(prev => [...prev, processingMessage])
+    
     try {
       const formData = new FormData()
       formData.append('receipt', uploadedReceipt)
@@ -478,13 +487,26 @@ function AIAssistantContent() {
       }
     } catch (error) {
       console.error('Receipt processing error:', error)
-      const errorMessage = {
+      let errorMessage = '❌ Sorry, I had trouble reading that receipt. Please make sure the image is clear and try again, or you can manually enter the transaction details.'
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = '🌐 Network error. Please check your internet connection and try again.'
+        } else if (error.message.includes('401') || error.message.includes('authentication')) {
+          errorMessage = '🔐 Authentication error. Please refresh the page and try again.'
+        } else if (error.message.includes('413') || error.message.includes('too large')) {
+          errorMessage = '📁 File too large. Please use an image smaller than 10MB.'
+        }
+      }
+      
+      const botErrorMessage = {
         id: Date.now(),
         type: 'bot',
-        content: '❌ Sorry, I had trouble reading that receipt. Please make sure the image is clear and try again, or you can manually enter the transaction details.',
+        content: errorMessage + '\n\n💡 **Tips for better scanning:**\n• Use good lighting\n• Keep the receipt flat\n• Ensure text is clearly visible\n• Try JPG or PNG format',
         timestamp: new Date()
       }
-      setMessages([...messages, errorMessage])
+      setMessages([...messages, botErrorMessage])
     } finally {
       setIsProcessingReceipt(false)
     }
@@ -808,7 +830,7 @@ function AIAssistantContent() {
               <TooltipTrigger asChild>
                 <button
                   onClick={() => setSidebarOpen(!sidebarOpen)}
-                  className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-md transition-all duration-200 hover:scale-110"
+                  className="absolute -right-3 top-6 z-10 w-6 h-6 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-green-50 hover:border-green-300 shadow-md transition-all duration-200 hover:scale-110"
                 >
                   {sidebarOpen ? (
                     <ChevronLeft className="w-3.5 h-3.5 text-gray-600" />
@@ -831,7 +853,7 @@ function AIAssistantContent() {
                 <Button 
                   onClick={createNewChat}
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                  className="w-full justify-start text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all duration-200"
                 >
                   <Plus className="w-4 h-4 mr-3" />
                   <span className="font-medium">New chat</span>
@@ -840,7 +862,7 @@ function AIAssistantContent() {
                 {/* Search Chats Button */}
                 <Button 
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200"
+                  className="w-full justify-start text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all duration-200"
                 >
                   <Search className="w-4 h-4 mr-3" />
                   <span className="font-medium">Search chats</span>
@@ -900,8 +922,8 @@ function AIAssistantContent() {
                 <div
                   key={chat.id}
                   onClick={() => switchChat(chat.id)}
-                  className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-gray-100 mb-1 transition-all duration-200 ${
-                    currentChatId === chat.id ? 'bg-gray-100' : ''
+                  className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-green-50 hover:border hover:border-green-200 mb-1 transition-all duration-200 ${
+                    currentChatId === chat.id ? 'bg-green-100 border border-green-200' : ''
                   } ${!sidebarOpen ? 'justify-center' : ''}`}
                 >
                   {sidebarOpen ? (
@@ -954,7 +976,7 @@ function AIAssistantContent() {
                 {/* User Profile */}
                 <Button
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-gray-100 transition-all duration-200 h-12"
+                  className="w-full justify-start text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all duration-200 h-12"
                   onClick={() => setSettingsOpen(true)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -1226,6 +1248,16 @@ function AIAssistantContent() {
                               h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4">{children}</h1>,
                               h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
                               h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3">{children}</h3>,
+                              a: ({ href, children }) => (
+                                <a 
+                                  href={href} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-primary/80 underline font-medium"
+                                >
+                                  {children}
+                                </a>
+                              ),
                               code: ({ children }) => <code className="bg-gray-800 text-gray-100 px-1.5 py-0.5 rounded text-sm">{children}</code>,
                               pre: ({ children }) => <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
                             }}
@@ -1477,12 +1509,6 @@ function AIAssistantContent() {
         isOpen={clearHistoryModalOpen}
         onClose={() => setClearHistoryModalOpen(false)}
         onConfirm={confirmClearAllHistory}
-      />
-
-      {/* Delete Completed Success Modal */}
-      <DeleteCompletedModal
-        isOpen={deleteCompletedModalOpen}
-        onClose={() => setDeleteCompletedModalOpen(false)}
       />
     </div>
     </div>

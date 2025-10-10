@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Plus, Receipt, DollarSign, Calendar as CalendarIcon, Tag, X, CreditCard, FileText } from 'lucide-react'
 import { getCurrentUser, type User } from '@/lib/auth'
 import type { Transaction } from '@/lib/database.types'
+import { toast } from 'sonner'
 
 interface AddTransactionModalProps {
   isOpen: boolean
@@ -114,12 +115,16 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
   // Save transaction to Supabase
   const handleSubmit = async () => {
     if (!transactionData.amount || !transactionData.merchant || !transactionData.category) {
-      alert('Please fill in required fields: Amount, Description, and Category')
+      toast.error('Missing required fields', {
+        description: 'Please fill in Amount, Description, and Category'
+      })
       return
     }
 
     if (!user?.id) {
-      alert('Please sign in to add transactions')
+      toast.error('Authentication required', {
+        description: 'Please sign in to add transactions'
+      })
       return
     }
 
@@ -140,9 +145,14 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
 
       if (error) {
         console.error('Error adding transaction:', error)
-        alert('Error adding transaction: ' + error.message)
+        toast.error('Failed to add transaction', {
+          description: error.message
+        })
       } else {
         // Success
+        toast.success('Transaction added successfully', {
+          description: `₱${transactionData.amount} ${transactionType} in ${transactionData.category}`
+        })
         if (onSuccess) {
           onSuccess()
         }
@@ -150,7 +160,7 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
       }
     } catch (err) {
       console.error('Error:', err)
-      alert('An error occurred while adding the transaction')
+      toast.error('An error occurred while adding the transaction')
     } finally {
       setLoading(false)
     }

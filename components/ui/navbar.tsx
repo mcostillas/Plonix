@@ -22,6 +22,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState, useRef } from 'react'
 import { LogoutModal, useLogoutModal } from './logout-modal'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { NotificationBell } from './notification-bell'
 
 interface NavbarProps {
   currentPage?: string
@@ -289,6 +290,8 @@ export function Navbar({ currentPage }: NavbarProps) {
           <div className="hidden lg:flex items-center space-x-3">
             {user ? (
               <div className="flex items-center space-x-3">
+                {/* Notification Bell */}
+                <NotificationBell />
                 {/* Add Transaction Button */}
                 <Button
                   onClick={() => setShowAddTransactionModal(true)}
@@ -390,6 +393,10 @@ export function Navbar({ currentPage }: NavbarProps) {
             <div className="border-t pt-4 mt-4 space-y-2">
               {user ? (
                 <>
+                  {/* Notification Bell - Mobile */}
+                  <div className="flex justify-center mb-2">
+                    <NotificationBell />
+                  </div>
                   {/* Add Transaction Button - Mobile */}
                   <Button
                     onClick={() => {
