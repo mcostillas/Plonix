@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
-import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, Upload, Camera, MessageSquare } from 'lucide-react'
+import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, Upload, Camera, MessageSquare, Bell } from 'lucide-react'
 import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+import { NotificationSettingsModal } from '@/components/NotificationSettingsModal'
 
 export default function ProfilePage() {
   return (
@@ -27,6 +29,7 @@ function ProfileContent() {
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false)
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -178,14 +181,16 @@ function ProfileContent() {
         } as any)
 
       if (error) {
-        alert('Error saving profile: ' + error.message)
+        toast.error('Failed to save profile', {
+          description: error.message
+        })
       } else {
-        alert('Profile updated successfully!')
+        toast.success('Profile updated successfully')
         setIsEditing(false)
       }
     } catch (err) {
       console.error('Error saving profile:', err)
-      alert('An error occurred while saving')
+      toast.error('An error occurred while saving')
     } finally {
       setSaving(false)
     }
@@ -198,13 +203,17 @@ function ProfileContent() {
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
-      alert('Please upload an image file')
+      toast.error('Invalid file type', {
+        description: 'Please upload an image file'
+      })
       return
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB')
+      toast.error('File too large', {
+        description: 'Image size should be less than 5MB'
+      })
       return
     }
 
@@ -225,7 +234,9 @@ function ProfileContent() {
 
       if (uploadError) {
         console.error('Upload error:', uploadError)
-        alert('Failed to upload image: ' + uploadError.message)
+        toast.error('Failed to upload image', {
+          description: uploadError.message
+        })
         return
       }
 
@@ -248,13 +259,15 @@ function ProfileContent() {
 
       if (dbError) {
         console.error('Database error:', dbError)
-        alert('Failed to save profile picture: ' + dbError.message)
+        toast.error('Failed to save profile picture', {
+          description: dbError.message
+        })
       } else {
-        alert('Profile picture updated successfully!')
+        toast.success('Profile picture updated successfully')
       }
     } catch (err) {
       console.error('Error uploading profile picture:', err)
-      alert('An error occurred while uploading')
+      toast.error('An error occurred while uploading')
     } finally {
       setSaving(false)
     }
@@ -606,8 +619,12 @@ function ProfileContent() {
                 <CardTitle>Account Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
-                  <Mail className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => setNotificationSettingsOpen(true)}
+                >
+                  <Bell className="w-4 h-4 mr-2" />
                   Notification Settings
                 </Button>
                 <Button variant="outline" className="w-full justify-start">
@@ -621,6 +638,12 @@ function ProfileContent() {
             </Card>
           </div>
         </div>
+
+        {/* Notification Settings Modal */}
+        <NotificationSettingsModal
+          open={notificationSettingsOpen}
+          onOpenChange={setNotificationSettingsOpen}
+        />
       </div>
     </div>
   )

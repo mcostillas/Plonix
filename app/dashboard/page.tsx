@@ -16,6 +16,7 @@ import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/suc
 import { AlreadyCheckedInModal } from '@/components/ui/info-modal'
 import { CancelChallengeModal } from '@/components/ui/confirmation-modal'
 import { AvailableMoneyCard } from '@/components/AvailableMoneyCard'
+import { toast } from 'sonner'
 
 export default function DashboardPage() {
   return (
@@ -139,31 +140,31 @@ function DashboardContent() {
           setRecentTransactions(txData)
         }
 
-        // Fetch scheduled payments to calculate available money
-        const { data: scheduledData, error: scheduledError } = await supabase
+        // Fetch monthly bills to calculate available money
+        const { data: monthlyBillsData, error: billsError } = await supabase
           .from('scheduled_payments')
           .select('amount')
           .eq('user_id', user.id)
           .eq('is_active', true)
 
-        console.log('Scheduled Payments Debug:', {
-          scheduledData,
-          scheduledError,
+        console.log('Monthly Bills Debug:', {
+          monthlyBillsData,
+          billsError,
           income,
           userId: user.id
         })
 
-        if (!scheduledError && scheduledData) {
-          const totalScheduled = scheduledData.reduce((sum: number, payment: any) => sum + payment.amount, 0)
-          console.log('Total scheduled expenses:', totalScheduled)
-          setScheduledExpenses(totalScheduled)
-          // Available money = Net income (income - already spent) - scheduled expenses
+        if (!billsError && monthlyBillsData) {
+          const totalMonthlyBills = monthlyBillsData.reduce((sum: number, bill: any) => sum + bill.amount, 0)
+          console.log('Total monthly bills:', totalMonthlyBills)
+          setScheduledExpenses(totalMonthlyBills)
+          // Available money = Net income (income - already spent) - monthly bills
           const netIncome = income - spent
-          setAvailableMoney(netIncome - totalScheduled)
-          console.log('Available money:', netIncome - totalScheduled, '(Net:', netIncome, '- Scheduled:', totalScheduled, ')')
+          setAvailableMoney(netIncome - totalMonthlyBills)
+          console.log('Available money:', netIncome - totalMonthlyBills, '(Net:', netIncome, '- Monthly Bills:', totalMonthlyBills, ')')
         } else {
-          console.log('No scheduled payments found or error occurred:', scheduledError)
-          // If no scheduled payments or error (table doesn't exist), available money = net income
+          console.log('No monthly bills found or error occurred:', billsError)
+          // If no monthly bills or error (table doesn't exist), available money = net income
           setScheduledExpenses(0)
           const netIncome = income - spent
           setAvailableMoney(netIncome)
@@ -249,12 +250,14 @@ function DashboardContent() {
         if (error.error?.includes('Already checked in')) {
           setAlreadyCheckedInModalOpen(true)
         } else {
-          alert(error.error || 'Failed to check in')
+          toast.error('Failed to check in', {
+            description: error.error || 'Please try again'
+          })
         }
       }
     } catch (error) {
       console.error('Error checking in:', error)
-      alert('Failed to check in')
+      toast.error('Failed to check in')
     }
   }
 
@@ -282,11 +285,13 @@ function DashboardContent() {
         setRefreshTrigger(prev => prev + 1) // Refresh data
       } else {
         const error = await response.json()
-        alert(error.error || 'Failed to cancel challenge')
+        toast.error('Failed to cancel challenge', {
+          description: error.error || 'Please try again'
+        })
       }
     } catch (error) {
       console.error('Error canceling challenge:', error)
-      alert('Failed to cancel challenge')
+      toast.error('Failed to cancel challenge')
     } finally {
       setIsCanceling(false)
       setCancelingChallengeId(null)
