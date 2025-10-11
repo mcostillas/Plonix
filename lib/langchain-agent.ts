@@ -1515,22 +1515,30 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           
           case "get_financial_summary":
             console.log('💼 Getting financial summary for user:', functionArgs.userId)
+            console.log('💼 UserContext:', userContext)
+            console.log('💼 UserId from chat:', userId)
             try {
               const { supabase } = await import('@/lib/supabase')
               const queryUserId = functionArgs.userId || userContext?.id || userId
               
+              console.log('💼 Final queryUserId:', queryUserId)
+              
               // Fetch all financial data
-              const { data: transactions } = await supabase
+              const { data: transactions, error: transError } = await supabase
                 .from('transactions')
                 .select('*')
                 .eq('user_id', queryUserId)
                 .order('date', { ascending: false })
               
-              const { data: goals } = await supabase
+              console.log('💼 Transactions fetched:', transactions?.length || 0, 'Error:', transError)
+              
+              const { data: goals, error: goalsError } = await supabase
                 .from('goals')
                 .select('*')
                 .eq('user_id', queryUserId)
                 .order('created_at', { ascending: false })
+              
+              console.log('💼 Goals fetched:', goals?.length || 0, 'Error:', goalsError)
               
               const { data: learningProgress } = await supabase
                 .from('learning_reflections')
