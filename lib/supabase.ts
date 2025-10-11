@@ -1,18 +1,14 @@
 import { createClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// Validate environment variables at runtime, not build time
-// This allows the build to succeed even if env vars aren't set during build
-if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseKey)) {
-  console.error('Missing Supabase environment variables. Please check your .env.local file.')
-}
+// Use placeholder values if env vars not available (e.g., during build)
+// The actual values will be available at runtime on Vercel
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTIwMDAsImV4cCI6MTk2MDU2ODAwMH0.placeholder'
 
 export const supabase = createClient<Database>(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseKey || 'placeholder-key',
+  supabaseUrl,
+  supabaseKey,
   {
     auth: {
       autoRefreshToken: true,
