@@ -6,6 +6,16 @@ import { DynamicTool } from "langchain/tools"
 import { WebSearchService } from './web-search'
 import { findLearningResources, getBeginnerFriendlySkills } from './learning-resources'
 
+// Helper function to get the correct API base URL for server-side calls
+function getApiBaseUrl(): string {
+  // On Vercel, use VERCEL_URL (automatically set)
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  // Fallback to NEXT_PUBLIC_SITE_URL or localhost
+  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+}
+
 export class PlounixAIAgent {
   private llm: ChatOpenAI
   private memoryManager: any // EnhancedLangChainMemory
@@ -182,7 +192,7 @@ export class PlounixAIAgent {
             }
 
             // Make API call to create goal
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/goals/create`, {
+            const response = await fetch(`${getApiBaseUrl()}/api/goals/create`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -237,7 +247,7 @@ export class PlounixAIAgent {
               })
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+            const response = await fetch(`${getApiBaseUrl()}/api/transactions/add`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -289,7 +299,7 @@ export class PlounixAIAgent {
               })
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+            const response = await fetch(`${getApiBaseUrl()}/api/transactions/add`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -605,7 +615,7 @@ export class PlounixAIAgent {
               })
             }
 
-            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/monthly-bills/add`, {
+            const response = await fetch(`${getApiBaseUrl()}/api/monthly-bills/add`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -1649,7 +1659,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 aiGenerated: true
               }
               
-              const goalResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/goals/create`, {
+              const goalResponse = await fetch(`${getApiBaseUrl()}/api/goals/create`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1690,7 +1700,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 transactionType: 'expense'
               }
               
-              const expenseResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+              const expenseResponse = await fetch(`${getApiBaseUrl()}/api/transactions/add`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1731,7 +1741,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 transactionType: 'income'
               }
               
-              const incomeResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+              const incomeResponse = await fetch(`${getApiBaseUrl()}/api/transactions/add`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
@@ -1771,7 +1781,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 userId: userContext?.id || functionArgs.userId
               }
               
-              const billResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/monthly-bills/add`, {
+              const billResponse = await fetch(`${getApiBaseUrl()}/api/monthly-bills/add`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',
