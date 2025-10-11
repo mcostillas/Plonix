@@ -65,9 +65,9 @@ export default function OnboardingPage() {
         .from('user_profiles')
         .select('age, monthly_income')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
-      if (profile && profile.age && profile.monthly_income) {
+      if (profile && (profile as any).age && (profile as any).monthly_income) {
         // Already onboarded, redirect to dashboard
         router.push('/dashboard')
       }
@@ -111,9 +111,9 @@ export default function OnboardingPage() {
 
     try {
       // Update user profile
-      const { error: profileError } = await supabase
+      const { error: profileError } = await (supabase
         .from('user_profiles')
-        .update({
+        .update as any)({
           age: parseInt(formData.age),
           monthly_income: parseFloat(formData.monthlyIncome),
           profile_picture: formData.profilePicture,
@@ -124,9 +124,9 @@ export default function OnboardingPage() {
       if (profileError) throw profileError
 
       // Update user_context with income
-      const { error: contextError } = await supabase
+      const { error: contextError } = await (supabase
         .from('user_context')
-        .update({
+        .update as any)({
           income: parseFloat(formData.monthlyIncome),
           updated_at: new Date().toISOString(),
         })
@@ -149,9 +149,9 @@ export default function OnboardingPage() {
           }
         })
 
-        const { error: goalsError } = await supabase
+        const { error: goalsError } = await (supabase
           .from('goals')
-          .insert(goals)
+          .insert as any)(goals)
 
         if (goalsError) console.error('Error creating goals:', goalsError)
       }

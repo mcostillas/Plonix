@@ -96,12 +96,13 @@ export function NotificationSettingsModal({ open, onOpenChange }: NotificationSe
         .maybeSingle()
 
       if (data && !error) {
+        const prefs = data as any
         setPreferences({
-          bill_reminders: data.bill_reminders ?? true,
-          budget_alerts: data.budget_alerts ?? true,
-          learning_prompts: data.learning_prompts ?? true,
-          achievements: data.achievements ?? true,
-          reminder_days_before: data.reminder_days_before ?? 7
+          bill_reminders: prefs.bill_reminders ?? true,
+          budget_alerts: prefs.budget_alerts ?? true,
+          learning_prompts: prefs.learning_prompts ?? true,
+          achievements: prefs.achievements ?? true,
+          reminder_days_before: prefs.reminder_days_before ?? 7
         })
       }
     } catch (err) {
@@ -116,9 +117,9 @@ export function NotificationSettingsModal({ open, onOpenChange }: NotificationSe
 
     setSaving(true)
     try {
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('user_notification_preferences')
-        .upsert({
+        .upsert as any)({
           user_id: user.id,
           bill_reminders: preferences.bill_reminders,
           budget_alerts: preferences.budget_alerts,

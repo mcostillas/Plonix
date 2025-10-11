@@ -88,9 +88,9 @@ export function NotificationCenter({
   const markAsRead = async (notificationId: string) => {
     try {
       const { supabase } = await import('@/lib/supabase')
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update as any)({ is_read: true })
         .eq('id', notificationId)
 
       if (error) throw error
@@ -109,9 +109,9 @@ export function NotificationCenter({
   const markAllAsRead = async () => {
     try {
       const { supabase } = await import('@/lib/supabase')
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('notifications')
-        .update({ is_read: true })
+        .update as any)({ is_read: true })
         .eq('user_id', user!.id)
         .eq('is_read', false)
 
@@ -137,9 +137,9 @@ export function NotificationCenter({
     // Track click
     try {
       const { supabase } = await import('@/lib/supabase')
-      await supabase
+      await (supabase
         .from('notifications')
-        .update({ clicked_at: new Date().toISOString() })
+        .update as any)({ clicked_at: new Date().toISOString() })
         .eq('id', notification.id)
     } catch (error) {
       console.error('Error tracking click:', error)
