@@ -95,15 +95,16 @@ export default function NotificationSettingsPage() {
         if (error) throw error
 
         if (data) {
+          const prefs = data as any
           setPreferences({
-            bill_reminders: data.bill_reminders,
-            budget_alerts: data.budget_alerts,
-            learning_prompts: data.learning_prompts,
-            achievements: data.achievements,
-            reminder_days_before: data.reminder_days_before,
-            email_enabled: data.email_enabled,
-            quiet_hours_start: data.quiet_hours_start,
-            quiet_hours_end: data.quiet_hours_end
+            bill_reminders: prefs.bill_reminders ?? true,
+            budget_alerts: prefs.budget_alerts ?? true,
+            learning_prompts: prefs.learning_prompts ?? true,
+            achievements: prefs.achievements ?? true,
+            reminder_days_before: prefs.reminder_days_before ?? 7,
+            email_enabled: prefs.email_enabled ?? false,
+            quiet_hours_start: prefs.quiet_hours_start ?? null,
+            quiet_hours_end: prefs.quiet_hours_end ?? null
           })
         }
       } catch (error) {
@@ -137,7 +138,7 @@ export default function NotificationSettingsPage() {
           user_id: user.id,
           ...preferences,
           updated_at: new Date().toISOString()
-        }, {
+        } as any, {
           onConflict: 'user_id'
         })
 
