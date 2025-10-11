@@ -1515,13 +1515,14 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           
           case "get_financial_summary":
             console.log('💼 Getting financial summary for user:', functionArgs.userId)
-            console.log('💼 UserContext:', userContext)
+            console.log('💼 UserContext:', JSON.stringify(userContext))
             console.log('💼 UserId from chat:', userId)
             try {
               const { supabase } = await import('@/lib/supabase')
               const queryUserId = functionArgs.userId || userContext?.id || userId
               
               console.log('💼 Final queryUserId:', queryUserId)
+              console.log('💼 About to query transactions table with user_id:', queryUserId)
               
               // Fetch all financial data
               const { data: transactions, error: transError } = await supabase
@@ -1530,7 +1531,10 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 .eq('user_id', queryUserId)
                 .order('date', { ascending: false })
               
-              console.log('💼 Transactions fetched:', transactions?.length || 0, 'Error:', transError)
+              console.log('💼 Transactions query result:')
+              console.log('  - Count:', transactions?.length || 0)
+              console.log('  - Error:', transError)
+              console.log('  - Sample data:', transactions?.slice(0, 2))
               
               const { data: goals, error: goalsError } = await supabase
                 .from('goals')
@@ -1538,7 +1542,9 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 .eq('user_id', queryUserId)
                 .order('created_at', { ascending: false })
               
-              console.log('💼 Goals fetched:', goals?.length || 0, 'Error:', goalsError)
+              console.log('💼 Goals query result:')
+              console.log('  - Count:', goals?.length || 0)
+              console.log('  - Error:', goalsError)
               
               const { data: learningProgress } = await supabase
                 .from('learning_reflections')
