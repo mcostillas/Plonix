@@ -1518,7 +1518,13 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
             console.log('💼 UserContext:', JSON.stringify(userContext))
             console.log('💼 UserId from chat:', userId)
             try {
-              const { supabase } = await import('@/lib/supabase')
+              // Use service role to bypass RLS
+              const { createClient } = await import('@supabase/supabase-js')
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).trim()
+              )
+              
               const queryUserId = functionArgs.userId || userContext?.id || userId
               
               console.log('💼 Final queryUserId:', queryUserId)
