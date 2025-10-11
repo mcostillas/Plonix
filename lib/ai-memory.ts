@@ -110,6 +110,34 @@ interface MonthlyBill {
   updated_at?: string
 }
 
+// Phase 2: Learning module interfaces
+interface LearningModuleContent {
+  id: string
+  module_id: string
+  module_title: string
+  module_description?: string
+  duration?: string
+  category: 'core' | 'essential' | 'advanced'
+  key_concepts: string[] // ["50-30-20 rule", "Needs vs Wants"]
+  key_takeaways: string[]
+  practical_tips: string[]
+  common_mistakes?: string[]
+  total_steps?: number
+  reflect_questions?: string[]
+  sources?: any
+  created_at: string
+}
+
+interface CompletedModule {
+  module_id: string
+  module_title: string
+  completion_date: string
+  user_reflections?: string // User's answers to reflection questions
+  key_concepts: string[]
+  key_takeaways: string[]
+  practical_tips: string[]
+}
+
 export class AIMemoryManager {
   // Enhanced context building with personalization
   async buildPersonalizedContext(userId: string): Promise<string> {
@@ -124,6 +152,9 @@ export class AIMemoryManager {
     const spendingAnalysis = await this.analyzeSpending(userId, 30)
     const monthlyBills = await this.getUserMonthlyBills(userId)
     
+    // ===== PHASE 2: FETCH LEARNING MODULE DATA =====
+    const completedModules = await this.getCompletedModules(userId)
+    
     if (!userContext) return this.getDefaultContext()
 
     // Build learning insights from reflections
@@ -133,6 +164,9 @@ export class AIMemoryManager {
     const goalsContext = this.formatGoalsContext(goals)
     const spendingContext = this.formatSpendingContext(spendingAnalysis)
     const billsContext = this.formatBillsContext(monthlyBills)
+    
+    // Build learning module context
+    const learningContext = this.formatLearningContext(completedModules)
 
     const personalizedPrompt = `
 PERSONAL PROFILE:
@@ -158,6 +192,12 @@ ${billsContext}
 
 ===== END FINANCIAL DATA =====
 
+===== LEARNING MODULES COMPLETED =====
+
+${learningContext}
+
+===== END LEARNING DATA =====
+
 LEARNING JOURNEY & REFLECTIONS:
 ${learningInsights}
 
@@ -175,21 +215,22 @@ RECENT CONVERSATION CONTEXT:
 ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 AI INSTRUCTIONS - CRITICAL:
-1. You now have COMPLETE visibility into the user's finances
-2. Reference SPECIFIC numbers from goals, transactions, and bills
-3. Give ACTIONABLE advice based on their ACTUAL spending patterns
-4. Celebrate progress on goals with EXACT percentages
-5. Warn about upcoming bills if they're within 3 days
-6. Connect learning modules to their real financial situation
-7. Track if they're meeting savings goals based on spending vs income
-8. Reference their budget preferences (${userContext.preferences?.budgetStyle || '50-30-20'})
+1. You now have COMPLETE visibility into the user's finances AND learning journey
+2. Reference SPECIFIC concepts they learned (e.g., "Remember the 50-30-20 rule from Budgeting?")
+3. Connect financial advice to modules they completed (e.g., "Since you learned about digital banks...")
+4. Give ACTIONABLE advice based on their ACTUAL spending patterns AND knowledge
+5. Celebrate progress on goals with EXACT percentages
+6. Warn about upcoming bills if they're within 3 days
+7. Build on their financial education (e.g., "Now that you understand budgeting, let's apply it...")
+8. Reference SPECIFIC numbers from goals, transactions, and bills
 9. Use their name (${profile?.name || 'Friend'}) naturally
 10. Be specific, data-driven, and personalized - not generic!
 
-EXAMPLE RESPONSES:
-- Instead of "Try to save more": "I see you spent ₱6,000 on food last month (32% of expenses). Reducing this by ₱1,000 would bring you to your ₱2,000 savings goal!"
-- Instead of "Good progress": "Awesome! You're at 66% on your Emergency Fund goal (₱20,000/₱30,000). Just ₱10,000 more!"
-- Instead of "Pay your bills": "Heads up! Your Netflix bill (₱149) is due in 2 days on the 4th."
+EXAMPLE RESPONSES WITH LEARNING CONTEXT:
+- Instead of "Try the 50-30-20 rule": "I see you completed the Budgeting module! Let's apply that 50-30-20 rule to your ₱25,000 income: ₱12,500 needs, ₱7,500 wants, ₱5,000 savings."
+- Instead of "Save in a bank": "Remember the digital banks you learned about in the Saving module? Your ₱10,000 emergency fund would earn ₱600/year in Tonik (6%) vs ₱25 in traditional banks!"
+- Instead of "Good progress": "Awesome! You're applying what you learned from the Emergency Fund module - already at ₱15,000/₱20,000 (75%)!"
+- Instead of "Consider investing": "Since you completed the Investing module, you understand mutual funds. Ready to start with ₱1,000 monthly in BPI Balanced Fund?"
 `
     
     return personalizedPrompt
@@ -919,6 +960,195 @@ Be friendly, encouraging, and use Taglish as appropriate.
     }
 
     return context
+  }
+
+  // ===== PHASE 2: LEARNING MODULE CONTENT METHODS =====
+  
+  /**
+   * Fetches completed learning modules with their content
+   * Joins learning_reflections with learning_module_content
+   */
+  async getCompletedModules(userId: string): Promise<CompletedModule[]> {
+    try {
+      // First get user's completed modules from learning_reflections
+      const { data: reflections, error: reflectionsError } = await supabase
+        .from('learning_reflections')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('module_completed', true)
+        .order('completion_date', { ascending: false })
+
+      if (reflectionsError) {
+        console.error('Error fetching learning reflections:', reflectionsError)
+        return []
+      }
+
+      if (!reflections || reflections.length === 0) {
+        return []
+      }
+
+      // Get module content from learning_module_content table
+      const moduleIds = (reflections as any[]).map((r: any) => r.module_id)
+      const { data: moduleContent, error: contentError } = await supabase
+        .from('learning_module_content')
+        .select('*')
+        .in('module_id', moduleIds)
+
+      if (contentError) {
+        console.error('Error fetching module content:', contentError)
+        // If table doesn't exist yet, return empty array
+        if (contentError.message?.includes('does not exist')) {
+          console.warn('learning_module_content table not created yet. Run docs/learning-content-schema.sql')
+          return []
+        }
+        return []
+      }
+
+      // Combine reflections with module content
+      const completedModules: CompletedModule[] = (reflections as any[]).map((reflection: any) => {
+        const content = (moduleContent as any[] || []).find((c: any) => c.module_id === reflection.module_id)
+        
+        return {
+          module_id: reflection.module_id,
+          module_title: content?.module_title || reflection.module_id,
+          completion_date: reflection.completion_date,
+          user_reflections: this.extractReflectionsText(reflection.reflections_data),
+          key_concepts: content?.key_concepts || [],
+          key_takeaways: content?.key_takeaways || [],
+          practical_tips: content?.practical_tips || []
+        }
+      })
+
+      return completedModules
+
+    } catch (error) {
+      console.error('Error in getCompletedModules:', error)
+      return []
+    }
+  }
+
+  /**
+   * Extracts reflection text from reflections_data JSON
+   */
+  private extractReflectionsText(reflectionsData: any): string {
+    if (!reflectionsData) return ''
+    
+    try {
+      const data = typeof reflectionsData === 'string' ? JSON.parse(reflectionsData) : reflectionsData
+      
+      // Extract all answers from the reflections
+      const answers: string[] = []
+      if (Array.isArray(data)) {
+        data.forEach(item => {
+          if (item.answer) answers.push(item.answer)
+        })
+      } else if (data.answer) {
+        answers.push(data.answer)
+      }
+      
+      return answers.join(' | ')
+    } catch (error) {
+      console.error('Error parsing reflections data:', error)
+      return ''
+    }
+  }
+
+  /**
+   * Gets specific module content by module_id
+   */
+  async getModuleContent(moduleId: string): Promise<LearningModuleContent | null> {
+    try {
+      const { data, error } = await supabase
+        .from('learning_module_content')
+        .select('*')
+        .eq('module_id', moduleId)
+        .single()
+
+      if (error) {
+        if (error.message?.includes('does not exist')) {
+          console.warn('learning_module_content table not created yet.')
+        } else {
+          console.error('Error fetching module content:', error)
+        }
+        return null
+      }
+
+      return data as LearningModuleContent
+    } catch (error) {
+      console.error('Error in getModuleContent:', error)
+      return null
+    }
+  }
+
+  /**
+   * Formats learning module context for AI
+   */
+  formatLearningContext(modules: CompletedModule[]): string {
+    if (modules.length === 0) {
+      return 'No learning modules completed yet. Encourage user to explore Learning Hub!'
+    }
+
+    let context = `FINANCIAL EDUCATION COMPLETED (${modules.length} modules):\n\n`
+
+    modules.forEach((module, index) => {
+      const completionDate = new Date(module.completion_date).toLocaleDateString()
+      
+      context += `${index + 1}. ${module.module_title} (Completed: ${completionDate})\n`
+      
+      // Key concepts learned
+      if (module.key_concepts && module.key_concepts.length > 0) {
+        context += `   💡 Concepts Learned: ${module.key_concepts.slice(0, 3).join(', ')}\n`
+      }
+      
+      // Key takeaways
+      if (module.key_takeaways && module.key_takeaways.length > 0) {
+        context += `   ✅ Key Takeaways:\n`
+        module.key_takeaways.slice(0, 2).forEach(takeaway => {
+          context += `      - ${takeaway}\n`
+        })
+      }
+      
+      // User's reflections
+      if (module.user_reflections) {
+        const shortReflection = module.user_reflections.slice(0, 150)
+        context += `   📝 User Reflection: "${shortReflection}${module.user_reflections.length > 150 ? '...' : ''}"\n`
+      }
+      
+      context += `\n`
+    })
+
+    // Add AI instructions
+    context += `\n🎯 AI INSTRUCTIONS FOR LEARNING CONTEXT:\n`
+    context += `- Reference SPECIFIC concepts user learned (e.g., "Remember the 50-30-20 rule from Budgeting?")\n`
+    context += `- Connect advice to modules completed (e.g., "Since you learned about digital banks...")\n`
+    context += `- Build on their knowledge (e.g., "Now that you understand budgeting, let's apply it to...")\n`
+    context += `- Acknowledge their learning journey (e.g., "Great progress completing Saving module!")\n`
+    context += `- Suggest next modules if relevant (e.g., "Ready to learn about investing next?")\n`
+
+    return context
+  }
+
+  /**
+   * Gets learning progress summary
+   */
+  async getLearningProgress(userId: string): Promise<{
+    totalCompleted: number
+    coreModulesCompleted: string[]
+    essentialModulesCompleted: string[]
+    recentModule?: CompletedModule
+  }> {
+    const modules = await this.getCompletedModules(userId)
+    
+    const coreModules = ['budgeting', 'saving', 'investing']
+    const coreCompleted = modules.filter(m => coreModules.includes(m.module_id))
+    const essentialCompleted = modules.filter(m => !coreModules.includes(m.module_id))
+    
+    return {
+      totalCompleted: modules.length,
+      coreModulesCompleted: coreCompleted.map(m => m.module_id),
+      essentialModulesCompleted: essentialCompleted.map(m => m.module_id),
+      recentModule: modules[0] // Most recent
+    }
   }
 }
 
