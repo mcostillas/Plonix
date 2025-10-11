@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -29,6 +29,7 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const { user } = useAuth()
+  const router = useRouter()
   const searchParams = useSearchParams()
   const [completedModules, setCompletedModules] = useState<string[]>([])
   const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
@@ -64,6 +65,34 @@ function DashboardContent() {
 
   // Total modules count (should match learning page)
   const totalModules = 7 // 3 core + 4 essential modules
+
+  // Check if user needs onboarding
+  useEffect(() => {
+    async function checkOnboarding() {
+      if (!user?.id) return
+      
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('age, monthly_income')
+          .eq('user_id', user.id)
+          .maybeSingle()
+        
+        console.log('🔍 Dashboard: Checking onboarding status', { profile })
+        
+        // Redirect to onboarding if profile is incomplete
+        if (!profile || !(profile as any).age || !(profile as any).monthly_income) {
+          console.log('❌ Dashboard: Profile incomplete, redirecting to onboarding')
+          router.push('/onboarding')
+        }
+      } catch (error) {
+        console.error('Error checking onboarding:', error)
+      }
+    }
+    
+    checkOnboarding()
+  }, [user, router])
 
   // Load completed modules from localStorage
   useEffect(() => {
