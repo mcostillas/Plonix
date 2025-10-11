@@ -41,9 +41,9 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 2,
     title: "Chat with Your AI Financial Assistant",
-    description: "Ask anything about budgeting, saving, investing, or Filipino banks. Our AI can analyze your expenses, scan receipts, and even search the web for real-time financial data!",
+    description: "Ask anything about budgeting, saving, investing, or Filipino banks. Our AI can analyze your expenses and even search the web for real-time financial data!", // scan receipts removed
     icon: <MessageCircle className="w-12 h-12 text-blue-600" />,
-    highlight: "💡 Try: 'Help me create a budget' or 'Scan my grocery receipt'"
+    highlight: "💡 Try: 'Help me create a budget' or 'Show me my spending trends'" // receipt removed
   },
   {
     id: 3,
@@ -55,7 +55,7 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   {
     id: 4,
     title: "Smart Expense Tracking",
-    description: "Log your transactions manually or use our AI to scan receipts. See where your money goes with beautiful charts and insights.",
+    description: "Log your transactions manually or use our AI assistant to help categorize expenses. See where your money goes with beautiful charts and insights.", // receipt scanning removed
     icon: <Receipt className="w-12 h-12 text-purple-600" />,
     highlight: "📊 Automatic categorization and monthly summaries"
   },
@@ -96,6 +96,10 @@ export default function OnboardingTourPage() {
         return
       }
       setUser(user)
+      
+      // Complete onboarding immediately and redirect to dashboard
+      // The interactive tour will start there
+      await completeOnboarding()
     }
 
     checkUser()
@@ -140,12 +144,16 @@ export default function OnboardingTourPage() {
         console.log('⚠️ Column might not exist yet, storing in localStorage', error)
         // Fallback: Store in localStorage if column doesn't exist
         localStorage.setItem('plounix_onboarding_completed', 'true')
+        localStorage.setItem('plounix_onboarding_time', Date.now().toString())
       } else {
         console.log('✅ Onboarding marked complete in database')
       }
 
-      // Also store in localStorage as backup
+      // Also store in localStorage as backup with timestamp
       localStorage.setItem('plounix_onboarding_completed', 'true')
+      localStorage.setItem('plounix_onboarding_time', Date.now().toString())
+      // Don't set tour_shown yet - let it show on dashboard
+      localStorage.removeItem('plounix_tour_shown')
 
       // Redirect to dashboard with welcome message
       router.push('/dashboard?onboarding=complete')
@@ -153,6 +161,7 @@ export default function OnboardingTourPage() {
       console.error('Onboarding completion error:', err)
       // Fallback to localStorage
       localStorage.setItem('plounix_onboarding_completed', 'true')
+      localStorage.setItem('plounix_onboarding_time', Date.now().toString())
       // Redirect anyway
       router.push('/dashboard')
     } finally {
@@ -230,15 +239,20 @@ export default function OnboardingTourPage() {
                   <p className="text-sm font-medium text-gray-800">Smart AI</p>
                   <p className="text-xs text-gray-600">Understands context</p>
                 </div>
-                <div className="bg-green-50 p-4 rounded-lg text-center">
+                {/* <div className="bg-green-50 p-4 rounded-lg text-center">
                   <Receipt className="w-8 h-8 text-green-600 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-800">Scan Receipts</p>
                   <p className="text-xs text-gray-600">Auto-categorize</p>
-                </div>
+                </div> */}
                 <div className="bg-purple-50 p-4 rounded-lg text-center">
                   <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-800">Web Search</p>
                   <p className="text-xs text-gray-600">Real-time data</p>
+                </div>
+                <div className="bg-orange-50 p-4 rounded-lg text-center">
+                  <TrendingUp className="w-8 h-8 text-orange-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-800">Quick Tracking</p>
+                  <p className="text-xs text-gray-600">Simple & fast</p>
                 </div>
               </div>
             )}

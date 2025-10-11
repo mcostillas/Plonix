@@ -62,7 +62,7 @@ function ProfileContent() {
     learningStreak: 0,
     totalConversations: 0,
     totalMessages: 0,
-    receiptsScanned: 0
+    // receiptsScanned: 0 // TODO: Re-enable with image API
   })
   
   // Goals state
@@ -172,7 +172,7 @@ function ProfileContent() {
         learningStreak: 0, // TODO: Implement streak calculation
         totalConversations: 0, // TODO: Count unique sessions
         totalMessages: chatHistory?.length || 0,
-        receiptsScanned: 0 // TODO: Implement receipt tracking
+        // receiptsScanned: 0 // TODO: Re-enable with image API
       })
     } catch (err) {
       console.error('Error calculating stats:', err)

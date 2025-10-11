@@ -53,7 +53,7 @@ interface Message {
   id: string
   content: string
   role: 'user' | 'assistant'
-  messageType: 'text' | 'tool_use' | 'receipt_scan'
+  messageType: 'text' | 'tool_use' // | 'receipt_scan' // TODO: Re-enable with image API
   metadata?: any
   timestamp: Date
   sentiment?: 'positive' | 'neutral' | 'negative'
@@ -678,7 +678,7 @@ EXAMPLE RESPONSES WITH BEHAVIORAL PATTERNS:
     conversationId: string,
     content: string, 
     role: 'user' | 'assistant',
-    messageType: 'text' | 'tool_use' | 'receipt_scan' = 'text',
+    messageType: 'text' | 'tool_use' = 'text', // | 'receipt_scan' // TODO: Re-enable with image API
     metadata?: any
   ): Promise<string | null> {
     const { data, error } = await (supabase as any)

@@ -74,7 +74,7 @@ export default function PrivacyPage() {
                 <li><strong>Profile Information:</strong> Age, location, financial goals, preferences</li>
                 <li><strong>Financial Data:</strong> Budget information, savings goals, expense categories, transaction data</li>
                 <li><strong>AI Conversations:</strong> Messages exchanged with our AI financial assistant</li>
-                <li><strong>Receipt Data:</strong> Images and extracted text from receipts you upload</li>
+                {/* <li><strong>Receipt Data:</strong> Images and extracted text from receipts you upload</li> */}
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">2.2 Automatically Collected Information</h3>

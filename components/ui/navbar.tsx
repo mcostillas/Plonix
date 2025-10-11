@@ -339,7 +339,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                   Add
                 </Button>
                 {/* Profile Picture & Name - Clickable to profile */}
-                <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity" data-tour="profile">
                   {(() => {
                     const avatarData = getAvatarGradient(profilePicture)
                     
