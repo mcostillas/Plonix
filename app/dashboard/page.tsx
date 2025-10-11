@@ -71,15 +71,28 @@ function DashboardContent() {
     async function checkOnboarding() {
       if (!user?.id) return
       
+      // Check localStorage first as fallback
+      const localCompleted = localStorage.getItem('plounix_onboarding_completed')
+      if (localCompleted === 'true') {
+        console.log('✅ Dashboard: Onboarding completed (localStorage)')
+        return
+      }
+      
       try {
         const { supabase } = await import('@/lib/supabase')
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('user_profiles')
           .select('onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle()
         
-        console.log('🔍 Dashboard: Checking onboarding status', { profile })
+        console.log('🔍 Dashboard: Checking onboarding status', { profile, error })
+        
+        // If column doesn't exist or error, skip check
+        if (error && error.message?.includes('column')) {
+          console.log('⚠️ Column does not exist, skipping onboarding check')
+          return
+        }
         
         // Redirect to onboarding if not completed
         if (!profile || !(profile as any).onboarding_completed) {
@@ -88,6 +101,7 @@ function DashboardContent() {
         }
       } catch (error) {
         console.error('Error checking onboarding:', error)
+        // Don't redirect on error, just log it
       }
     }
     
