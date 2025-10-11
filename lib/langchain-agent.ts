@@ -987,6 +987,9 @@ User mentions receiving money, getting paid, or earning:
 - "Received 5000 from freelance"
 - "My salary came in"
 - "Earned 1000 from side gig"
+- "**add 250000 as income**" ← IMPORTANT: Always extract the number and call add_income
+- "**add my income of 50000**" ← Extract amount and call add_income
+- Any phrase like "add [number] as/to income" → Extract number, call add_income immediately
 
 **Transaction Flow:**
 1. Acknowledge the transaction
@@ -1007,6 +1010,13 @@ Response: "Great! ✓ I've recorded your ₱25,000 salary. Now's a perfect time 
 - Pay any bills or debts
 - Budget for the month ahead
 Want help creating a budget plan?"
+
+User: "add 250000 as income"
+Response: "Wow, ₱250,000! ✓ I've recorded your income of ₱250,000. That's a significant amount! Consider:
+- Building an emergency fund (3-6 months expenses)
+- Investing for long-term growth
+- Setting aside for major goals
+Would you like help creating a financial plan for this?"
 
 **When to use add_monthly_bill:**
 User mentions recurring monthly expenses, bills that repeat every month:
@@ -1484,7 +1494,7 @@ Response: "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you 
           type: "function",
           function: {
             name: "add_income",
-            description: "Add an income transaction for the user. Use when user mentions receiving money, getting paid, earning, salary, freelance payment, or any income source. Required: amount. Optional: merchant (source), category, paymentMethod, notes, date (YYYY-MM-DD).",
+            description: "Add an income transaction for the user. **USE THIS WHEN**: user says 'add [amount] as income', 'I received [amount]', 'I earned [amount]', 'I got paid [amount]', 'my salary is [amount]', 'add my income of [amount]', or any mention of receiving/earning money. ALWAYS extract the amount from the message and call this tool. Required: amount. Optional: merchant (source), category, paymentMethod, notes, date (YYYY-MM-DD).",
             parameters: {
               type: "object",
               properties: {
