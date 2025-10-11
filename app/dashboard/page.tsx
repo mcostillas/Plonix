@@ -66,22 +66,54 @@ function DashboardContent() {
   // Total modules count (should match learning page)
   const totalModules = 7 // 3 core + 4 essential modules
 
-  // Check if user needs onboarding
-  // Check if user is new and show Joyride tour
+  // Check if user needs to see the interactive tour
   useEffect(() => {
     if (!user?.id) return
     
-    // Check if tour was already shown
-    const tourShown = localStorage.getItem('plounix_tour_shown')
-    console.log('🎯 Tour shown status:', tourShown)
-    
-    if (tourShown !== 'true') {
-      console.log('🚀 New user detected, showing Joyride tour')
-      setIsNewUser(true)
-      setShowTour(true)
-    } else {
-      console.log('✅ Tour already shown, skipping')
+    async function checkTourStatus() {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        
+        // Check database first for cross-device persistence
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('tour_completed')
+          .eq('user_id', user!.id)
+          .single()
+        
+        if (!error && data && (data as any).tour_completed) {
+          console.log('✅ Tour already completed (from database)')
+          return
+        }
+        
+        // Fallback to localStorage for existing users
+        const tourShown = localStorage.getItem('plounix_tour_shown')
+        
+        if (tourShown === 'true') {
+          console.log('✅ Tour already shown (from localStorage)')
+          // Update database to sync
+          ;(supabase as any)
+            .from('user_profiles')
+            .update({ tour_completed: true })
+            .eq('user_id', user!.id)
+          return
+        }
+        
+        // Show tour for new users
+        console.log('🚀 New user detected, showing interactive tour')
+        setIsNewUser(true)
+        setShowTour(true)
+      } catch (error) {
+        console.error('Error checking tour status:', error)
+        // Fallback to localStorage only
+        const tourShown = localStorage.getItem('plounix_tour_shown')
+        if (tourShown !== 'true') {
+          setShowTour(true)
+        }
+      }
     }
+    
+    checkTourStatus()
   }, [user])
 
   // Load completed modules from localStorage
@@ -302,10 +334,31 @@ function DashboardContent() {
     }
   }
 
-  const handleTourComplete = () => {
-    console.log('✅ Tour completed, setting localStorage')
+  const handleTourComplete = async () => {
+    console.log('✅ Tour completed, saving to database')
     setShowTour(false)
+    
+    // Save to localStorage for immediate effect
     localStorage.setItem('plounix_tour_shown', 'true')
+    
+    // Save to database for cross-device persistence
+    if (user?.id) {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { error } = await (supabase as any)
+          .from('user_profiles')
+          .update({ tour_completed: true })
+          .eq('user_id', user.id)
+        
+        if (error) {
+          console.error('Error saving tour status to database:', error)
+        } else {
+          console.log('✅ Tour status saved to database')
+        }
+      } catch (error) {
+        console.error('Error updating tour status:', error)
+      }
+    }
   }
 
   if (loading && !mounted) {

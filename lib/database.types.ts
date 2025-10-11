@@ -42,6 +42,7 @@ export interface Database {
           preferences: any // JSONB
           ai_insights: any // JSONB
           persona_data: any // JSONB
+          tour_completed: boolean | null
           created_at: string
           updated_at: string
         }
@@ -55,6 +56,7 @@ export interface Database {
           preferences?: any
           ai_insights?: any
           persona_data?: any
+          tour_completed?: boolean | null
           created_at?: string
           updated_at?: string
         }
@@ -68,6 +70,7 @@ export interface Database {
           preferences?: any
           ai_insights?: any
           persona_data?: any
+          tour_completed?: boolean | null
           created_at?: string
           updated_at?: string
         }
