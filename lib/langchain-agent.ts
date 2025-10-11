@@ -8,12 +8,21 @@ import { findLearningResources, getBeginnerFriendlySkills } from './learning-res
 
 // Helper function to get the correct API base URL for server-side calls
 function getApiBaseUrl(): string {
+  let url: string
+  
   // On Vercel, use VERCEL_URL (automatically set)
   if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`
+    url = `https://${process.env.VERCEL_URL}`
+  } else {
+    // Fallback to NEXT_PUBLIC_SITE_URL or localhost
+    url = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
   }
-  // Fallback to NEXT_PUBLIC_SITE_URL or localhost
-  return process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  
+  console.log('🌐 API Base URL:', url)
+  console.log('  VERCEL_URL:', process.env.VERCEL_URL || 'not set')
+  console.log('  NEXT_PUBLIC_SITE_URL:', process.env.NEXT_PUBLIC_SITE_URL || 'not set')
+  
+  return url
 }
 
 export class PlounixAIAgent {
@@ -192,7 +201,9 @@ export class PlounixAIAgent {
             }
 
             // Make API call to create goal
-            const response = await fetch(`${getApiBaseUrl()}/api/goals/create`, {
+            const apiUrl = `${getApiBaseUrl()}/api/goals/create`
+            console.log('📡 Calling API:', apiUrl)
+            const response = await fetch(apiUrl, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -203,12 +214,22 @@ export class PlounixAIAgent {
               })
             })
 
+            console.log('📥 Response status:', response.status, response.statusText)
+            
             if (!response.ok) {
-              const error = await response.json()
+              const errorText = await response.text()
+              console.log('❌ Error response:', errorText)
+              let error
+              try {
+                error = JSON.parse(errorText)
+              } catch {
+                error = { error: errorText }
+              }
               return JSON.stringify({
                 success: false,
                 error: error.error || 'Failed to create goal',
-                details: error.details
+                details: error.details,
+                status: response.status
               })
             }
 
