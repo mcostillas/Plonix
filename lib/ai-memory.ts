@@ -219,6 +219,70 @@ interface SavingsVelocity {
   pace: 'ahead' | 'on-track' | 'behind'
 }
 
+// ===== PHASE 5: BEHAVIORAL PATTERNS =====
+interface SpendingTrigger {
+  trigger_type: 'emotional' | 'social' | 'temporal' | 'environmental'
+  trigger_name: string // "Weekend spending", "Post-stress shopping", "Payday splurge"
+  occurrences: number
+  average_amount: number
+  total_impact: number
+  confidence: number // 0-100
+  pattern_description: string
+  last_occurrence: string
+  recommended_action: string
+}
+
+interface PaydayEffect {
+  has_payday_pattern: boolean
+  payday_dates: number[] // [15, 30] - days of month
+  average_pre_payday_spending: number
+  average_post_payday_spending: number
+  spending_spike_percentage: number
+  days_until_spike_ends: number
+  total_payday_overspending: number // Extra spending due to payday effect
+  recommendation: string
+}
+
+interface DayOfWeekPattern {
+  highest_spending_day: string // "Friday"
+  lowest_spending_day: string // "Tuesday"
+  day_averages: { day: string; average: number; transaction_count: number }[]
+  weekend_vs_weekday_ratio: number // 1.5 = 50% more on weekends
+  pattern_strength: 'strong' | 'moderate' | 'weak'
+  recommendation: string
+}
+
+interface RiskProfile {
+  profile_type: 'conservative' | 'moderate' | 'aggressive'
+  emergency_fund_months: number
+  savings_allocation: { category: string; percentage: number }[]
+  spending_volatility: number // Standard deviation of monthly spending
+  financial_stability_score: number // 0-100
+  personality_traits: string[]
+  recommended_strategies: string[]
+}
+
+interface HabitFormation {
+  detected_habits: {
+    habit_name: string
+    frequency: 'daily' | 'weekly' | 'monthly'
+    streak_days: number
+    consistency_score: number // 0-100
+    financial_impact: number // Positive or negative
+    habit_type: 'positive' | 'negative' | 'neutral'
+    formed_date: string
+    recommendation: string
+  }[]
+  breaking_habits: {
+    habit_name: string
+    previous_frequency: string
+    days_since_last: number
+    success_probability: number
+  }[]
+  habit_formation_speed: number // Days to form habits
+  overall_habit_score: number // 0-100
+}
+
 export class AIMemoryManager {
   // Enhanced context building with personalization
   async buildPersonalizedContext(userId: string): Promise<string> {
@@ -247,6 +311,13 @@ export class AIMemoryManager {
     const spendingTrends = await this.detectSpendingTrends(userId)
     const savingsVelocity = await this.calculateSavingsVelocity(userId)
     
+    // ===== PHASE 5: FETCH BEHAVIORAL PATTERNS =====
+    const spendingTriggers = await this.analyzeSpendingTriggers(userId)
+    const paydayEffect = await this.detectPaydayEffect(userId)
+    const dayOfWeekPattern = await this.analyzeDayOfWeekPatterns(userId)
+    const riskProfile = await this.profileRiskTolerance(userId)
+    const habitFormation = await this.trackHabitFormation(userId)
+    
     if (!userContext) return this.getDefaultContext()
 
     // Build learning insights from reflections
@@ -265,6 +336,9 @@ export class AIMemoryManager {
     
     // Build analytics context
     const analyticsContext = this.formatAnalyticsContext(netWorth, burnRate, budgetVsActual, spendingTrends, savingsVelocity)
+    
+    // Build behavioral patterns context
+    const behavioralContext = this.formatBehavioralContext(spendingTriggers, paydayEffect, dayOfWeekPattern, riskProfile, habitFormation)
 
     const personalizedPrompt = `
 PERSONAL PROFILE:
@@ -308,6 +382,12 @@ ${analyticsContext}
 
 ===== END ANALYTICS DATA =====
 
+===== BEHAVIORAL PATTERNS & PREDICTIONS =====
+
+${behavioralContext}
+
+===== END BEHAVIORAL DATA =====
+
 LEARNING JOURNEY & REFLECTIONS:
 ${learningInsights}
 
@@ -325,43 +405,72 @@ RECENT CONVERSATION CONTEXT:
 ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 AI INSTRUCTIONS - CRITICAL:
-1. You now have COMPLETE visibility into finances, learning, challenges, AND real-time analytics
-2. Reference SPECIFIC trends, growth percentages, and projections
+1. You now have COMPLETE OMNISCIENT visibility: finances, learning, challenges, analytics, AND behavioral patterns
+2. Reference SPECIFIC trends, growth percentages, projections, AND behavioral predictions
 3. USE analytics for predictions: "At current ₱5,000/month savings, you'll hit ₱30k goal in 6 months"
-4. WARN about concerning trends (spending increasing, runway < 6 months, over budget)
-5. CELEBRATE positive analytics (net worth growth, savings velocity ahead)
-6. CONNECT all systems: challenges impact spending, spending affects goals, goals build net worth
-7. Reference burn rate for urgency: "Your ₱20k savings = 4 months runway at current spending"
-8. Use budget variance to suggest improvements: "Food spending ₱2k over budget - try Cook-at-Home challenge"
-9. Highlight trends for awareness: "Your spending increased 15% this month - mostly in shopping category"
-10. Project goal timelines: "At ₱3k/month savings velocity, your ₱50k laptop goal is 10 months away"
-11. Reference pace for motivation: "You're ahead of pace! 🚀 Saving 28% vs target 20%"
-12. Be specific, data-driven, and actionable - not generic!
+4. USE behavioral patterns for personalization: "You usually overspend on Fridays - today's Friday, watch out!"
+5. WARN about concerning trends (spending increasing, runway < 6 months, over budget, risky patterns)
+6. WARN proactively about triggers: "You mentioned stress - your stress-shopping pattern costs ₱3,000 avg"
+7. CELEBRATE positive analytics (net worth growth, savings velocity ahead, good habits forming)
+8. CONNECT all 5 systems: challenges → spending → goals → analytics → behavioral patterns
+9. Reference burn rate for urgency: "Your ₱20k savings = 4 months runway at current spending"
+10. Use budget variance to suggest improvements: "Food spending ₱2k over budget - try Cook-at-Home challenge"
+11. Highlight trends for awareness: "Your spending increased 15% this month - mostly in shopping category"
+12. Project goal timelines: "At ₱3k/month savings velocity, your ₱50k laptop goal is 10 months away"
+13. Reference pace for motivation: "You're ahead of pace! 🚀 Saving 28% vs target 20%"
+14. PREDICT behavior: "It's Friday - you spend 45% more on weekends. Budget ₱500 for today"
+15. PERSONALIZE based on risk profile: Conservative users → emergency fund focus. Aggressive → investment opportunities
+16. CELEBRATE habit formation: "15-day coffee-skipping streak! That's ₱2,250 saved = habit officially formed! �"
+17. IDENTIFY triggers from conversation: If user mentions "stressed", "tired", "celebrating" → reference their spending triggers
+18. Give TEMPORAL warnings: "Payday in 3 days - you typically overspend 65% post-payday. Plan purchases now"
+19. Be specific, data-driven, predictive, personalized, and actionable - not generic!
 
-EXAMPLE RESPONSES WITH FULL ANALYTICS:
-- Net Worth + Growth: "Your net worth is ₱65,000 (up ₱5,000 this month = 8.3% growth!). That's ₱60k annual growth at this pace! 🚀"
+EXAMPLE RESPONSES WITH BEHAVIORAL PATTERNS:
 
-- Burn Rate Warning: "⚠️ Your burn rate is ₱18,500/month. With ₱20,000 in savings, you have 1.1 months runway if income stops. Let's build that emergency fund faster!"
+- Spending Trigger Warning: "⚠️ You mentioned feeling stressed. I notice you have a 'Post-stress Shopping' pattern - happens 8x/month, costs ₱3,200 avg. Before you shop, try your Meditation mini-goal instead?"
 
-- Budget Variance: "You're ₱3,000 over budget this month (16% variance). Main culprits: Food ₱2,000 over, Shopping ₱1,000 over. Your Cook-at-Home challenge (Day 3/7) is helping - keep it up!"
+- Payday Effect Alert: "🗓️ Payday is tomorrow! Heads up - you spend 65% more in the 3 days after payday (₱7,500 vs ₱4,500). Your typical payday splurge costs ₱9,000 extra/month. Plan your purchases NOW before the impulse hits!"
 
-- Trend Analysis: "I notice your spending increased 15% this month (₱18,500 → ₱21,275). It's mostly shopping category (+₱2,000). Last month was your lowest spending. Want to get back on track?"
+- Day-of-Week Prediction: "It's Friday! 📅 Your data shows Fridays are your highest spending day (₱1,200 avg vs ₱600 weekday). You spend 45% more on weekends. Budget ₱1,500 for today + tomorrow to stay on track."
 
-- Savings Velocity: "Amazing! You're saving ₱6,500/month (26% savings rate) - that's AHEAD of the 20% target! 🚀 At this velocity, your ₱30k Emergency Fund is just 2 more months away!"
+- Risk Profile Personalization: "Based on your financial behavior, you're a CONSERVATIVE saver (85% in emergency funds, low spending volatility). This is smart! Your personality fits automated savings + secure digital banks. Not a crypto investor - and that's okay!"
 
-- Complete Picture: "Let me show you how everything connects:
+- Habit Formation Celebration: "🎉 15-DAY STREAK! Your coffee-skipping habit is officially FORMED! You've saved ₱2,250 (₱150/day × 15 days). Habits take 18 days avg - you're ahead! This will save ₱54,750/year!"
+
+- Breaking Bad Habit: "💪 Amazing progress! Your 'Impulse Food Delivery' habit - you haven't done it in 12 days! Previous frequency: 3x/week. If you make it to 21 days, it's officially broken. You're already 57% there!"
+
+- Complete Omniscient Picture: "Let me give you the COMPLETE 360° view:
   
-  💰 Net Worth: ₱65,000 (+₱5,000 this month, +8.3% growth)
-  🔥 Burn Rate: ₱18,500/month (₱617/day)
-  📊 Budget: ₱3,000 over (food & shopping categories)
-  📈 Trend: Spending up 15% (mostly shopping)
-  🚀 Savings: ₱6,500/month (26% rate - AHEAD!)
+  💰 FINANCES:
+  - Net Worth: ₱65,000 (+8.3% growth)
+  - Burn Rate: ₱18,500/month (3.5 months runway)
+  - Emergency Fund: ₱20,000/₱30,000 (67%)
   
-  🎯 Your No-Spend Challenge (Day 5/7, 🔥 5-day streak) is cutting food from ₱6k to ₱4k = ₱2k saved!
-  📚 You learned about digital banks in Saving module - that ₱20k Emergency Fund at 6% earns ₱1,200/year.
-  🏆 At current pace, your ₱30k Emergency Fund goal = 2 months away!
+  � ANALYTICS:
+  - Spending: Up 15% this month
+  - Budget: ₱3,000 over (food & shopping)
+  - Savings Velocity: ₱6,500/month (26% - AHEAD!)
   
-  ⚠️ Action: Shopping is your budget buster (+₱2k over). Skip that purchase and you'd be UNDER budget by ₱1k!"
+  🎯 CHALLENGES & LEARNING:
+  - No-Spend Challenge: Day 5/7 (🔥 streak saving ₱2k!)
+  - Completed: Budgeting, Saving modules
+  - Active: Cook-at-Home, No-Impulse-Buy
+  
+  🧠 BEHAVIORAL PATTERNS (NEW!):
+  - ⚠️ Payday Effect: You overspend 65% post-payday (₱9k/month)
+  - ⚠️ Weekend Spending: 45% higher on Fri-Sun
+  - ⚠️ Stress Trigger: 8x/month, ₱3,200 avg
+  - ✅ Coffee Habit: 15-day skip streak = ₱2,250 saved!
+  - � Risk Profile: Conservative (85% emergency funds)
+  
+  🎯 PERSONALIZED PREDICTIONS & ACTIONS:
+  1. TODAY IS FRIDAY → Budget ₱1,200 (your Friday avg)
+  2. Payday in 2 days → Plan purchases NOW to avoid ₱9k splurge
+  3. If you feel stressed today → Your pattern = ₱3,200 shopping. Try meditation instead
+  4. Your coffee habit is FORMED → Autopilot ₱54k/year savings! 🚀
+  5. At ₱6,500/month velocity + payday control = Emergency Fund in 1.5 months!
+  
+  💡 THE INSIGHT: Your challenges are working (₱2k food savings), but payday effect (₱9k) erases gains. Control the payday splurge = ₱7k net savings boost = Emergency Fund NEXT MONTH instead of 1.5!"
 `
     
     return personalizedPrompt
@@ -1862,6 +1971,633 @@ Be friendly, encouraging, and use Taglish as appropriate.
     context += `- RECOMMEND actions based on budget variance\n`
     context += `- Use trend data for predictions\n`
     context += `- Reference pace (ahead/on-track/behind) for encouragement\n`
+
+    return context
+  }
+
+  // ===== PHASE 5: BEHAVIORAL PATTERN DETECTION METHODS =====
+
+  async analyzeSpendingTriggers(userId: string): Promise<SpendingTrigger[]> {
+    // Get last 90 days of transactions with metadata (notes, tags, timestamps)
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('date', { ascending: false })
+
+    if (!transactions || transactions.length === 0) return []
+
+    const triggers: SpendingTrigger[] = []
+
+    // Detect weekend spending trigger
+    const weekendTransactions: any[] = transactions.filter((t: any) => {
+      const day = new Date(t.date).getDay()
+      return day === 0 || day === 6 // Sunday or Saturday
+    })
+    if (weekendTransactions.length > 0) {
+      const weekendTotal = weekendTransactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0)
+      const weekendAvg = weekendTotal / weekendTransactions.length
+      triggers.push({
+        trigger_type: 'temporal',
+        trigger_name: 'Weekend Spending',
+        occurrences: weekendTransactions.length,
+        average_amount: Math.round(weekendAvg),
+        total_impact: Math.round(weekendTotal),
+        confidence: weekendTransactions.length > 10 ? 85 : 65,
+        pattern_description: `You spend more on weekends (${weekendTransactions.length} transactions in 13 weeks)`,
+        last_occurrence: weekendTransactions[0]?.date || '',
+        recommended_action: 'Set weekend budget limit. Plan free activities. Use No-Spend Weekend challenge.'
+      })
+    }
+
+    // Detect evening/night spending (> 8pm)
+    const eveningTransactions: any[] = transactions.filter((t: any) => {
+      const hour = new Date(t.created_at).getHours()
+      return hour >= 20 // 8pm or later
+    })
+    if (eveningTransactions.length > 5) {
+      const eveningTotal = eveningTransactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0)
+      const eveningAvg = eveningTotal / eveningTransactions.length
+      triggers.push({
+        trigger_type: 'temporal',
+        trigger_name: 'Evening Impulse Spending',
+        occurrences: eveningTransactions.length,
+        average_amount: Math.round(eveningAvg),
+        total_impact: Math.round(eveningTotal),
+        confidence: 75,
+        pattern_description: `You make ${eveningTransactions.length} purchases after 8pm (impulse shopping time)`,
+        last_occurrence: eveningTransactions[0]?.date || '',
+        recommended_action: 'Delete shopping apps from phone after 8pm. Use 24-hour rule for purchases.'
+      })
+    }
+
+    // Detect high-frequency small purchases (coffee, snacks, etc.)
+    const smallPurchases: any[] = transactions.filter((t: any) => Math.abs(t.amount) < 200)
+    const frequentCategories = new Map<string, number>()
+    smallPurchases.forEach((t: any) => {
+      const count = frequentCategories.get(t.category) || 0
+      frequentCategories.set(t.category, count + 1)
+    })
+    
+    frequentCategories.forEach((count, category) => {
+      if (count > 15) { // More than 15x in 90 days = habitual
+        const categoryTotal = smallPurchases
+          .filter((t: any) => t.category === category)
+          .reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0)
+        const categoryAvg = categoryTotal / count
+        
+        triggers.push({
+          trigger_type: 'environmental',
+          trigger_name: `Habitual ${category} Purchases`,
+          occurrences: count,
+          average_amount: Math.round(categoryAvg),
+          total_impact: Math.round(categoryTotal),
+          confidence: count > 30 ? 90 : 75,
+          pattern_description: `${count} small ${category} purchases (₱${Math.round(categoryAvg)} avg) = habitual spending`,
+          last_occurrence: smallPurchases.find((t: any) => t.category === category)?.date || '',
+          recommended_action: `Track your ${category} spending. Consider alternatives. Start Skip-${category} challenge.`
+        })
+      }
+    })
+
+    return triggers.slice(0, 5) // Return top 5 most significant triggers
+  }
+
+  async detectPaydayEffect(userId: string): Promise<PaydayEffect> {
+    // Get user income/payday info
+    const userContext = await this.getUserContext(userId)
+    const income = userContext?.income || 25000
+
+    // Assume payday is 15th and end of month (common in Philippines)
+    const paydayDates = [15, 30]
+
+    // Get last 90 days of transactions
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+
+    if (!transactions || transactions.length === 0) {
+      return {
+        has_payday_pattern: false,
+        payday_dates: paydayDates,
+        average_pre_payday_spending: 0,
+        average_post_payday_spending: 0,
+        spending_spike_percentage: 0,
+        days_until_spike_ends: 0,
+        total_payday_overspending: 0,
+        recommendation: 'Not enough data to detect payday pattern yet.'
+      }
+    }
+
+    // Categorize transactions as pre-payday (days 1-14, 16-29) vs post-payday (days 15-17, 30-2)
+    const prePaydayTransactions: number[] = []
+    const postPaydayTransactions: number[] = []
+
+    transactions.forEach((t: any) => {
+      const day = new Date(t.date).getDate()
+      const amount = Math.abs(t.amount)
+      
+      // Post-payday: 15-17 or 30-2 (next month)
+      if ((day >= 15 && day <= 17) || (day >= 30) || (day <= 2)) {
+        postPaydayTransactions.push(amount)
+      } else {
+        prePaydayTransactions.push(amount)
+      }
+    })
+
+    const avgPrePayday = prePaydayTransactions.length > 0
+      ? prePaydayTransactions.reduce((a, b) => a + b, 0) / prePaydayTransactions.length
+      : 0
+    const avgPostPayday = postPaydayTransactions.length > 0
+      ? postPaydayTransactions.reduce((a, b) => a + b, 0) / postPaydayTransactions.length
+      : 0
+
+    const spikePercentage = avgPrePayday > 0
+      ? Math.round(((avgPostPayday - avgPrePayday) / avgPrePayday) * 100)
+      : 0
+
+    const hasPattern = spikePercentage > 20 // 20%+ increase = payday effect
+
+    // Calculate total overspending due to payday effect (monthly)
+    const totalOverspending = hasPattern
+      ? Math.round((avgPostPayday - avgPrePayday) * postPaydayTransactions.length / 3) // 3 months of data
+      : 0
+
+    return {
+      has_payday_pattern: hasPattern,
+      payday_dates: paydayDates,
+      average_pre_payday_spending: Math.round(avgPrePayday),
+      average_post_payday_spending: Math.round(avgPostPayday),
+      spending_spike_percentage: spikePercentage,
+      days_until_spike_ends: 3, // Typically lasts 3 days
+      total_payday_overspending: totalOverspending,
+      recommendation: hasPattern
+        ? `You overspend ${spikePercentage}% after payday (₱${totalOverspending}/month extra). Plan purchases BEFORE payday to avoid impulse splurges.`
+        : 'Good news! No significant payday spending pattern detected. Keep it up!'
+    }
+  }
+
+  async analyzeDayOfWeekPatterns(userId: string): Promise<DayOfWeekPattern> {
+    // Get last 90 days of transactions
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+
+    if (!transactions || transactions.length === 0) {
+      return {
+        highest_spending_day: 'Unknown',
+        lowest_spending_day: 'Unknown',
+        day_averages: [],
+        weekend_vs_weekday_ratio: 1.0,
+        pattern_strength: 'weak',
+        recommendation: 'Not enough data to detect day-of-week patterns yet.'
+      }
+    }
+
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    const dayTotals = new Map<number, { total: number; count: number }>()
+
+    // Initialize all days
+    for (let i = 0; i < 7; i++) {
+      dayTotals.set(i, { total: 0, count: 0 })
+    }
+
+    // Aggregate by day of week
+    transactions.forEach((t: any) => {
+      const day = new Date(t.date).getDay()
+      const amount = Math.abs(t.amount)
+      const current = dayTotals.get(day)!
+      dayTotals.set(day, { total: current.total + amount, count: current.count + 1 })
+    })
+
+    // Calculate averages
+    const dayAverages: { day: string; average: number; transaction_count: number }[] = []
+    let highestDay = 0
+    let lowestDay = 0
+    let highestAvg = 0
+    let lowestAvg = Infinity
+
+    dayTotals.forEach((data, dayNum) => {
+      const avg = data.count > 0 ? data.total / data.count : 0
+      dayAverages.push({
+        day: dayNames[dayNum],
+        average: Math.round(avg),
+        transaction_count: data.count
+      })
+
+      if (avg > highestAvg) {
+        highestAvg = avg
+        highestDay = dayNum
+      }
+      if (avg < lowestAvg && data.count > 0) {
+        lowestAvg = avg
+        lowestDay = dayNum
+      }
+    })
+
+    // Calculate weekend vs weekday ratio
+    const weekendData = [0, 6].map(d => dayTotals.get(d)!).reduce((sum, d) => sum + d.total, 0)
+    const weekendCount = [0, 6].map(d => dayTotals.get(d)!).reduce((sum, d) => sum + d.count, 0)
+    const weekdayData = [1, 2, 3, 4, 5].map(d => dayTotals.get(d)!).reduce((sum, d) => sum + d.total, 0)
+    const weekdayCount = [1, 2, 3, 4, 5].map(d => dayTotals.get(d)!).reduce((sum, d) => sum + d.count, 0)
+
+    const weekendAvg = weekendCount > 0 ? weekendData / weekendCount : 0
+    const weekdayAvg = weekdayCount > 0 ? weekdayData / weekdayCount : 0
+    const ratio = weekdayAvg > 0 ? weekendAvg / weekdayAvg : 1.0
+
+    // Determine pattern strength
+    const percentageDiff = Math.abs(highestAvg - lowestAvg) / ((highestAvg + lowestAvg) / 2) * 100
+    const patternStrength = percentageDiff > 50 ? 'strong' : percentageDiff > 25 ? 'moderate' : 'weak'
+
+    return {
+      highest_spending_day: dayNames[highestDay],
+      lowest_spending_day: dayNames[lowestDay],
+      day_averages: dayAverages,
+      weekend_vs_weekday_ratio: Math.round(ratio * 100) / 100,
+      pattern_strength: patternStrength,
+      recommendation: ratio > 1.3
+        ? `You spend ${Math.round((ratio - 1) * 100)}% more on weekends. Plan free weekend activities to save ₱${Math.round((weekendAvg - weekdayAvg) * 8)}/month.`
+        : 'Your spending is balanced across the week. Great consistency!'
+    }
+  }
+
+  async profileRiskTolerance(userId: string): Promise<RiskProfile> {
+    // Get user's financial data
+    const goals = await this.getUserGoals(userId)
+    const userContext = await this.getUserContext(userId)
+    const spendingAnalysis = await this.analyzeSpending(userId, 90)
+
+    if (!goals || goals.length === 0) {
+      return {
+        profile_type: 'moderate',
+        emergency_fund_months: 0,
+        savings_allocation: [],
+        spending_volatility: 0,
+        financial_stability_score: 50,
+        personality_traits: ['Not enough data'],
+        recommended_strategies: ['Start by setting financial goals']
+      }
+    }
+
+    // Analyze savings allocation
+    const totalSavings = goals.reduce((sum, g) => sum + Number(g.current_amount || 0), 0)
+    const savingsBreakdown: { category: string; percentage: number }[] = []
+    const emergencyFunds = goals.filter(g => 
+      g.category?.toLowerCase().includes('emergency') || 
+      (g.title || '').toLowerCase().includes('emergency')
+    )
+    const investmentGoals = goals.filter(g => 
+      g.category?.toLowerCase().includes('investment') ||
+      (g.title || '').toLowerCase().includes('invest') ||
+      (g.title || '').toLowerCase().includes('stock')
+    )
+    const savingsGoals = goals.filter(g => 
+      g.category?.toLowerCase().includes('savings')
+    )
+
+    const emergencyTotal = emergencyFunds.reduce((sum, g) => sum + Number(g.current_amount || 0), 0)
+    const investmentTotal = investmentGoals.reduce((sum, g) => sum + Number(g.current_amount || 0), 0)
+    const savingsTotal = savingsGoals.reduce((sum, g) => sum + Number(g.current_amount || 0), 0)
+
+    if (totalSavings > 0) {
+      savingsBreakdown.push({ category: 'Emergency Fund', percentage: Math.round((emergencyTotal / totalSavings) * 100) })
+      savingsBreakdown.push({ category: 'Investments', percentage: Math.round((investmentTotal / totalSavings) * 100) })
+      savingsBreakdown.push({ category: 'Savings', percentage: Math.round((savingsTotal / totalSavings) * 100) })
+    }
+
+    // Calculate emergency fund months
+    const monthlyExpenses = spendingAnalysis?.totalExpenses || userContext?.income || 20000
+    const emergencyMonths = monthlyExpenses > 0 ? emergencyTotal / monthlyExpenses : 0
+
+    // Calculate spending volatility (standard deviation)
+    const { data: recentTransactions } = await supabase
+      .from('transactions')
+      .select('amount, date')
+      .eq('user_id', userId)
+      .gte('date', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+
+    let volatility = 0
+    if (recentTransactions && recentTransactions.length > 0) {
+      const amounts = recentTransactions.map((t: any) => Math.abs(t.amount))
+      const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length
+      const variance = amounts.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / amounts.length
+      volatility = Math.sqrt(variance)
+    }
+
+    // Determine risk profile
+    const emergencyPercentage = savingsBreakdown.find(s => s.category === 'Emergency Fund')?.percentage || 0
+    const investmentPercentage = savingsBreakdown.find(s => s.category === 'Investments')?.percentage || 0
+
+    let profileType: 'conservative' | 'moderate' | 'aggressive' = 'moderate'
+    if (emergencyPercentage > 60) profileType = 'conservative'
+    else if (investmentPercentage > 40) profileType = 'aggressive'
+
+    // Calculate stability score (0-100)
+    const stabilityScore = Math.min(100, Math.round(
+      (emergencyMonths / 6) * 30 + // 30 points for 6 months emergency fund
+      (goals.length / 5) * 20 + // 20 points for having multiple goals
+      (100 - Math.min(100, volatility / 10)) * 30 + // 30 points for low volatility
+      ((spendingAnalysis?.netSavings || 0) > 0 ? 20 : 0) // 20 points for positive savings
+    ))
+
+    // Personality traits
+    const traits: string[] = []
+    if (profileType === 'conservative') traits.push('Security-focused', 'Risk-averse', 'Long-term planner')
+    else if (profileType === 'aggressive') traits.push('Growth-oriented', 'Risk-tolerant', 'Investment-focused')
+    else traits.push('Balanced', 'Pragmatic', 'Goal-oriented')
+
+    if (emergencyMonths >= 6) traits.push('Well-prepared for emergencies')
+    if (volatility < 500) traits.push('Consistent spender')
+
+    // Recommended strategies
+    const strategies: string[] = []
+    if (profileType === 'conservative') {
+      strategies.push('Automate savings to high-yield accounts (digital banks: 6% interest)')
+      strategies.push('Focus on building 6-month emergency fund first')
+      strategies.push('Consider low-risk investments after emergency fund complete')
+    } else if (profileType === 'aggressive') {
+      strategies.push('Ensure 3-month emergency fund before increasing investments')
+      strategies.push('Diversify investment portfolio')
+      strategies.push('Research stocks, crypto, or index funds')
+    } else {
+      strategies.push('Continue balanced approach: savings + investments')
+      strategies.push('Build emergency fund to 6 months')
+      strategies.push('Gradually increase investment allocation')
+    }
+
+    return {
+      profile_type: profileType,
+      emergency_fund_months: Math.round(emergencyMonths * 10) / 10,
+      savings_allocation: savingsBreakdown,
+      spending_volatility: Math.round(volatility),
+      financial_stability_score: stabilityScore,
+      personality_traits: traits,
+      recommended_strategies: strategies
+    }
+  }
+
+  async trackHabitFormation(userId: string): Promise<HabitFormation> {
+    // Get user's challenges and transaction history
+    const { data: userChallenges } = await supabase
+      .from('user_challenges')
+      .select('*, challenges(*)')
+      .eq('user_id', userId)
+
+    const { data: transactions } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('user_id', userId)
+      .gte('date', new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString())
+      .order('date', { ascending: true })
+
+    const detectedHabits: HabitFormation['detected_habits'] = []
+    const breakingHabits: HabitFormation['breaking_habits'] = []
+
+    // Analyze active challenges as habit formation
+    if (userChallenges) {
+      userChallenges.forEach((uc: any) => {
+        if (uc.status === 'active' && uc.current_streak && uc.current_streak > 3) {
+          const daysSinceStart = Math.floor(
+            (Date.now() - new Date(uc.start_date).getTime()) / (1000 * 60 * 60 * 24)
+          )
+          const consistency = Math.round((uc.current_streak / daysSinceStart) * 100)
+
+          // Calculate financial impact (estimated savings)
+          const estimatedDailySavings = uc.challenges?.points_reward || 50
+          const financialImpact = uc.current_streak * estimatedDailySavings
+
+          const habitType = uc.current_streak >= 15 ? 'positive' : 'neutral'
+
+          detectedHabits.push({
+            habit_name: uc.challenges?.title || 'Habit',
+            frequency: 'daily',
+            streak_days: uc.current_streak,
+            consistency_score: Math.min(100, consistency),
+            financial_impact: financialImpact,
+            habit_type: habitType,
+            formed_date: uc.current_streak >= 21 ? uc.start_date : '',
+            recommendation: uc.current_streak >= 21
+              ? `🎉 Habit FORMED! Keep going on autopilot!`
+              : `${21 - uc.current_streak} more days to form this habit (${Math.round((uc.current_streak / 21) * 100)}% there)`
+          })
+        }
+      })
+
+      // Check for completed challenges that weren't maintained (breaking habits)
+      const completedChallenges = userChallenges.filter((uc: any) => uc.status === 'completed')
+      completedChallenges.forEach((uc: any) => {
+        const daysSinceCompleted = Math.floor(
+          (Date.now() - new Date(uc.end_date || uc.updated_at).getTime()) / (1000 * 60 * 60 * 24)
+        )
+        
+        if (daysSinceCompleted > 7 && daysSinceCompleted < 30) {
+          // Check if behavior resumed (negative habit returning)
+          breakingHabits.push({
+            habit_name: `Old ${uc.challenges?.title || 'Habit'}`,
+            previous_frequency: 'daily',
+            days_since_last: daysSinceCompleted,
+            success_probability: Math.min(95, 50 + (daysSinceCompleted * 2))
+          })
+        }
+      })
+    }
+
+    // Detect transaction-based habits (recurring purchases)
+    if (transactions) {
+      const categoryFrequency = new Map<string, Date[]>()
+      
+      transactions.forEach((t: any) => {
+        if (!categoryFrequency.has(t.category)) {
+          categoryFrequency.set(t.category, [])
+        }
+        categoryFrequency.get(t.category)!.push(new Date(t.date))
+      })
+
+      categoryFrequency.forEach((dates, category) => {
+        if (dates.length >= 15) { // 15+ occurrences in 60 days = habitual
+          // Check consistency (are purchases evenly spaced?)
+          dates.sort((a, b) => a.getTime() - b.getTime())
+          const gaps: number[] = []
+          for (let i = 1; i < dates.length; i++) {
+            const gap = (dates[i].getTime() - dates[i - 1].getTime()) / (1000 * 60 * 60 * 24)
+            gaps.push(gap)
+          }
+          const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length
+          const consistency = avgGap < 7 ? 90 : avgGap < 14 ? 70 : 50
+
+          const categoryTransactions = transactions.filter((t: any) => t.category === category)
+          const totalSpent = categoryTransactions.reduce((sum: number, t: any) => sum + Math.abs(t.amount), 0)
+
+          // Determine if habit is positive or negative
+          const habitType = category.toLowerCase().includes('savings') || 
+                           category.toLowerCase().includes('invest')
+            ? 'positive'
+            : totalSpent > 5000
+            ? 'negative'
+            : 'neutral'
+
+          detectedHabits.push({
+            habit_name: `Regular ${category} ${habitType === 'positive' ? 'Contributions' : 'Purchases'}`,
+            frequency: avgGap < 7 ? 'daily' : avgGap < 30 ? 'weekly' : 'monthly',
+            streak_days: Math.floor((dates[dates.length - 1].getTime() - dates[0].getTime()) / (1000 * 60 * 60 * 24)),
+            consistency_score: Math.round(consistency),
+            financial_impact: habitType === 'positive' ? totalSpent : -totalSpent,
+            habit_type: habitType,
+            formed_date: dates[0].toISOString(),
+            recommendation: habitType === 'negative'
+              ? `This habit costs ₱${Math.round(totalSpent)}/60 days. Consider reducing frequency.`
+              : `Great habit! You've built consistency in ${category}.`
+          })
+        }
+      })
+    }
+
+    // Calculate habit formation speed (average days to form habits)
+    const formedHabits = detectedHabits.filter(h => h.streak_days >= 21)
+    const avgFormationSpeed = formedHabits.length > 0
+      ? Math.round(formedHabits.reduce((sum, h) => sum + h.streak_days, 0) / formedHabits.length)
+      : 21 // Default to 21 days
+
+    // Overall habit score (0-100)
+    const positiveHabits = detectedHabits.filter(h => h.habit_type === 'positive').length
+    const negativeHabits = detectedHabits.filter(h => h.habit_type === 'negative').length
+    const avgConsistency = detectedHabits.length > 0
+      ? detectedHabits.reduce((sum, h) => sum + h.consistency_score, 0) / detectedHabits.length
+      : 50
+
+    const habitScore = Math.round(
+      (positiveHabits / Math.max(1, positiveHabits + negativeHabits)) * 50 + // 50 points for positive ratio
+      (avgConsistency / 100) * 50 // 50 points for consistency
+    )
+
+    return {
+      detected_habits: detectedHabits.slice(0, 6), // Top 6 habits
+      breaking_habits: breakingHabits.slice(0, 3), // Top 3 breaking habits
+      habit_formation_speed: avgFormationSpeed,
+      overall_habit_score: habitScore
+    }
+  }
+
+  formatBehavioralContext(
+    triggers: SpendingTrigger[],
+    paydayEffect: PaydayEffect,
+    dayPattern: DayOfWeekPattern,
+    riskProfile: RiskProfile,
+    habitFormation: HabitFormation
+  ): string {
+    let context = '\n'
+
+    // Spending Triggers
+    if (triggers.length > 0) {
+      context += `⚠️ SPENDING TRIGGERS DETECTED:\n`
+      triggers.forEach((trigger, idx) => {
+        context += `\n${idx + 1}. ${trigger.trigger_name} (${trigger.trigger_type})\n`
+        context += `   - Occurrences: ${trigger.occurrences} times\n`
+        context += `   - Avg Amount: ₱${trigger.average_amount.toLocaleString()}\n`
+        context += `   - Total Impact: ₱${trigger.total_impact.toLocaleString()}\n`
+        context += `   - Confidence: ${trigger.confidence}%\n`
+        context += `   - Pattern: ${trigger.pattern_description}\n`
+        context += `   - Last: ${new Date(trigger.last_occurrence).toLocaleDateString()}\n`
+        context += `   - Action: ${trigger.recommended_action}\n`
+      })
+      context += `\n`
+    }
+
+    // Payday Effect
+    context += `📅 PAYDAY SPENDING PATTERN:\n`
+    if (paydayEffect.has_payday_pattern) {
+      context += `- ⚠️ PAYDAY EFFECT DETECTED!\n`
+      context += `- Payday Dates: ${paydayEffect.payday_dates.join(', ')} of month\n`
+      context += `- Pre-Payday Spending: ₱${paydayEffect.average_pre_payday_spending.toLocaleString()}/transaction\n`
+      context += `- Post-Payday Spending: ₱${paydayEffect.average_post_payday_spending.toLocaleString()}/transaction\n`
+      context += `- Spending Spike: +${paydayEffect.spending_spike_percentage}% 📈\n`
+      context += `- Monthly Overspending: ₱${paydayEffect.total_payday_overspending.toLocaleString()}\n`
+      context += `- Recommendation: ${paydayEffect.recommendation}\n`
+    } else {
+      context += `- ✅ No significant payday spending pattern\n`
+      context += `- ${paydayEffect.recommendation}\n`
+    }
+    context += `\n`
+
+    // Day of Week Pattern
+    context += `📆 DAY-OF-WEEK SPENDING:\n`
+    context += `- Highest: ${dayPattern.highest_spending_day}\n`
+    context += `- Lowest: ${dayPattern.lowest_spending_day}\n`
+    context += `- Weekend vs Weekday: ${dayPattern.weekend_vs_weekday_ratio}x ${dayPattern.weekend_vs_weekday_ratio > 1.2 ? '⚠️' : '✅'}\n`
+    context += `- Pattern Strength: ${dayPattern.pattern_strength.toUpperCase()}\n`
+    context += `- Daily Averages:\n`
+    dayPattern.day_averages.forEach(d => {
+      context += `  * ${d.day}: ₱${d.average.toLocaleString()} (${d.transaction_count} transactions)\n`
+    })
+    context += `- Recommendation: ${dayPattern.recommendation}\n`
+    context += `\n`
+
+    // Risk Profile
+    context += `👤 FINANCIAL PERSONALITY:\n`
+    context += `- Profile: ${riskProfile.profile_type.toUpperCase()} ${
+      riskProfile.profile_type === 'conservative' ? '🛡️' : 
+      riskProfile.profile_type === 'aggressive' ? '🚀' : '⚖️'
+    }\n`
+    context += `- Emergency Fund: ${riskProfile.emergency_fund_months.toFixed(1)} months ${
+      riskProfile.emergency_fund_months >= 6 ? '✅' : '⚠️'
+    }\n`
+    context += `- Savings Allocation:\n`
+    riskProfile.savings_allocation.forEach(s => {
+      context += `  * ${s.category}: ${s.percentage}%\n`
+    })
+    context += `- Spending Volatility: ₱${riskProfile.spending_volatility.toLocaleString()} ${
+      riskProfile.spending_volatility < 500 ? '(Low - consistent)' : '(High - variable)'
+    }\n`
+    context += `- Stability Score: ${riskProfile.financial_stability_score}/100\n`
+    context += `- Personality Traits: ${riskProfile.personality_traits.join(', ')}\n`
+    context += `- Recommended Strategies:\n`
+    riskProfile.recommended_strategies.forEach(s => {
+      context += `  * ${s}\n`
+    })
+    context += `\n`
+
+    // Habit Formation
+    context += `🔄 HABIT TRACKING:\n`
+    context += `- Overall Habit Score: ${habitFormation.overall_habit_score}/100\n`
+    context += `- Habit Formation Speed: ${habitFormation.habit_formation_speed} days\n`
+    context += `\n`
+
+    if (habitFormation.detected_habits.length > 0) {
+      context += `ACTIVE HABITS:\n`
+      habitFormation.detected_habits.forEach((habit, idx) => {
+        const icon = habit.habit_type === 'positive' ? '✅' : habit.habit_type === 'negative' ? '⚠️' : 'ℹ️'
+        context += `${idx + 1}. ${icon} ${habit.habit_name}\n`
+        context += `   - Frequency: ${habit.frequency}\n`
+        context += `   - Streak: ${habit.streak_days} days ${habit.streak_days >= 21 ? '🎉 FORMED!' : `(${Math.round((habit.streak_days / 21) * 100)}% to formed)`}\n`
+        context += `   - Consistency: ${habit.consistency_score}/100\n`
+        context += `   - Financial Impact: ${habit.financial_impact > 0 ? '+' : ''}₱${Math.abs(habit.financial_impact).toLocaleString()}\n`
+        context += `   - ${habit.recommendation}\n`
+      })
+    }
+
+    if (habitFormation.breaking_habits.length > 0) {
+      context += `\nBREAKING HABITS:\n`
+      habitFormation.breaking_habits.forEach((habit, idx) => {
+        context += `${idx + 1}. ${habit.habit_name}\n`
+        context += `   - Days Since Last: ${habit.days_since_last}\n`
+        context += `   - Success Probability: ${habit.success_probability}%\n`
+      })
+    }
+
+    context += `\n🎯 AI INSTRUCTIONS FOR BEHAVIORAL PATTERNS:\n`
+    context += `- PREDICT user behavior based on triggers and patterns\n`
+    context += `- WARN proactively about triggers (e.g., "It's Friday - your high spending day")\n`
+    context += `- REFERENCE triggers when user mentions emotions ("You mentioned stress - watch for stress-shopping")\n`
+    context += `- ALERT about payday effect 2-3 days before payday\n`
+    context += `- CELEBRATE habit milestones (15 days = forming, 21 days = formed!)\n`
+    context += `- PERSONALIZE advice based on risk profile\n`
+    context += `- CONNECT behaviors to financial outcomes\n`
+    context += `- Use temporal context (day of week, distance from payday) for predictions\n`
 
     return context
   }
