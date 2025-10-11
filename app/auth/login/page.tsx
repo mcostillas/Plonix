@@ -64,17 +64,23 @@ function LoginForm() {
         // Check if user has completed onboarding
         if (result.user) {
           const { supabase } = await import('@/lib/supabase')
-          const { data: profile } = await supabase
+          const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
             .select('age, monthly_income')
             .eq('user_id', result.user.id)
             .maybeSingle()
           
+          console.log('🔍 Profile check:', { profile, profileError, userId: result.user.id })
+          
           // If no profile data or missing required fields, redirect to onboarding
           if (!profile || !(profile as any).age || !(profile as any).monthly_income) {
+            console.log('❌ Onboarding incomplete! Redirecting to /onboarding')
+            setIsLoading(false) // Stop loading indicator
             router.push('/onboarding')
             return
           }
+          
+          console.log('✅ Onboarding complete, going to dashboard')
         }
         
         // Get redirect URL from query params or default to dashboard
