@@ -67,85 +67,22 @@ function DashboardContent() {
   const totalModules = 7 // 3 core + 4 essential modules
 
   // Check if user needs onboarding
+  // Check if user is new and show Joyride tour
   useEffect(() => {
-    async function checkOnboarding() {
-      if (!user?.id) return
-      
-      // Check localStorage first as fallback
-      const localCompleted = localStorage.getItem('plounix_onboarding_completed')
-      if (localCompleted === 'true') {
-        console.log('✅ Dashboard: Onboarding completed (localStorage)')
-        // Check if user just completed onboarding (less than 1 day ago)
-        const onboardingTime = localStorage.getItem('plounix_onboarding_time')
-        if (onboardingTime) {
-          const timeSinceOnboarding = Date.now() - parseInt(onboardingTime)
-          const oneDay = 24 * 60 * 60 * 1000
-          if (timeSinceOnboarding < oneDay) {
-            console.log('🎉 New user detected (onboarded within 24 hours)')
-            setIsNewUser(true)
-          }
-        }
-        
-        // Check if tour was shown
-        const tourShown = localStorage.getItem('plounix_tour_shown')
-        console.log('🎯 Tour shown status:', tourShown)
-        if (tourShown !== 'true') {
-          console.log('🚀 Setting showTour to true')
-          setShowTour(true)
-        } else {
-          console.log('✅ Tour already shown, skipping')
-        }
-        return
-      }
-      
-      try {
-        const { supabase } = await import('@/lib/supabase')
-        const { data: profile, error } = await supabase
-          .from('user_profiles')
-          .select('onboarding_completed')
-          .eq('user_id', user.id)
-          .maybeSingle()
-        
-        console.log('🔍 Dashboard: Checking onboarding status', { profile, error })
-        
-        // If column doesn't exist or error, mark as completed to prevent infinite redirects
-        if (error && error.message?.includes('column')) {
-          console.log('⚠️ Column does not exist, marking onboarding as complete in localStorage')
-          localStorage.setItem('plounix_onboarding_completed', 'true')
-          localStorage.setItem('plounix_onboarding_time', Date.now().toString())
-          return
-        }
-        
-        // Redirect to onboarding if not completed (only once per user)
-        if (!profile || !(profile as any).onboarding_completed) {
-          console.log('❌ Dashboard: Onboarding not complete, redirecting')
-          router.push('/onboarding')
-        } else {
-          console.log('✅ Dashboard: Onboarding complete in database')
-          // Store in localStorage for faster future checks
-          localStorage.setItem('plounix_onboarding_completed', 'true')
-          localStorage.setItem('plounix_onboarding_time', Date.now().toString())
-          
-          // Check if tour was shown
-          const tourShown = localStorage.getItem('plounix_tour_shown')
-          console.log('🎯 Tour shown status:', tourShown)
-          if (tourShown !== 'true') {
-            console.log('🚀 Setting showTour to true')
-            setShowTour(true)
-          } else {
-            console.log('✅ Tour already shown, skipping')
-          }
-        }
-      } catch (error) {
-        console.error('❌ Dashboard: Error checking onboarding', error)
-        // On error, mark as completed to prevent infinite redirects
-        localStorage.setItem('plounix_onboarding_completed', 'true')
-        localStorage.setItem('plounix_onboarding_time', Date.now().toString())
-      }
-    }
+    if (!user?.id) return
     
-    checkOnboarding()
-  }, [user, router])
+    // Check if tour was already shown
+    const tourShown = localStorage.getItem('plounix_tour_shown')
+    console.log('🎯 Tour shown status:', tourShown)
+    
+    if (tourShown !== 'true') {
+      console.log('🚀 New user detected, showing Joyride tour')
+      setIsNewUser(true)
+      setShowTour(true)
+    } else {
+      console.log('✅ Tour already shown, skipping')
+    }
+  }, [user])
 
   // Load completed modules from localStorage
   useEffect(() => {
