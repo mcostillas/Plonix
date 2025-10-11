@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic'
 
 // Initialize Supabase client with service role to bypass RLS
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '') // Remove trailing slash
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!.trim()
 
 console.log('🔑 Supabase URL:', supabaseUrl)
 console.log('🔑 Service Role Key present:', serviceRoleKey ? `YES (${serviceRoleKey.substring(0, 20)}...)` : 'NO')
