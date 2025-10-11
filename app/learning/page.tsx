@@ -71,8 +71,8 @@ function LearningContent() {
       // Need at least 2 core modules to start unlocking essential modules
       if (completedCoreModules.length < 2) return false
       
-      // Sequential unlocking of essential modules based on their order
-      const essentialOrder = ['debt-credit', 'emergency-insurance', 'financial-goals', 'money-mindset']
+      // FIX: Match the actual module IDs used in the essentialModules array
+      const essentialOrder = ['emergency-fund', 'credit-debt', 'digital-money', 'insurance', 'financial-goals', 'money-mindset']
       const moduleIndex = essentialOrder.indexOf(moduleId)
       
       if (moduleIndex === -1) return false // Module not found

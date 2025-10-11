@@ -14,7 +14,19 @@ import {
   Menu,
   X,
   CreditCard,
-  TrendingUp
+  TrendingUp,
+  Palette,
+  Waves,
+  Leaf,
+  Flame,
+  Sparkles,
+  Moon,
+  Flower2,
+  Star,
+  Rainbow,
+  Clover,
+  Heart,
+  Drama
 } from 'lucide-react'
 import { PlounixLogo } from './logo'
 import { useAuth } from '@/lib/auth-hooks'
@@ -23,6 +35,31 @@ import { useEffect, useState, useRef } from 'react'
 import { LogoutModal, useLogoutModal } from './logout-modal'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { NotificationBell } from './notification-bell'
+
+// Colorful avatar options (matching profile page)
+const AVATAR_OPTIONS = [
+  { id: 1, gradient: 'from-purple-400 via-pink-500 to-red-500', icon: Palette },
+  { id: 2, gradient: 'from-blue-400 via-cyan-500 to-teal-500', icon: Waves },
+  { id: 3, gradient: 'from-green-400 via-emerald-500 to-teal-500', icon: Leaf },
+  { id: 4, gradient: 'from-yellow-400 via-orange-500 to-red-500', icon: Flame },
+  { id: 5, gradient: 'from-pink-400 via-purple-500 to-indigo-500', icon: Sparkles },
+  { id: 6, gradient: 'from-indigo-400 via-blue-500 to-purple-500', icon: Moon },
+  { id: 7, gradient: 'from-rose-400 via-pink-500 to-purple-500', icon: Flower2 },
+  { id: 8, gradient: 'from-amber-400 via-yellow-500 to-orange-500', icon: Star },
+  { id: 9, gradient: 'from-cyan-400 via-blue-500 to-indigo-500', icon: Rainbow },
+  { id: 10, gradient: 'from-lime-400 via-green-500 to-emerald-500', icon: Clover },
+  { id: 11, gradient: 'from-fuchsia-400 via-pink-500 to-rose-500', icon: Heart },
+  { id: 12, gradient: 'from-violet-400 via-purple-500 to-fuchsia-500', icon: Drama },
+]
+
+// Get avatar gradient by ID
+const getAvatarGradient = (profilePicture: string) => {
+  if (profilePicture?.startsWith('avatar-')) {
+    const avatarId = parseInt(profilePicture.replace('avatar-', ''))
+    return AVATAR_OPTIONS.find(a => a.id === avatarId)
+  }
+  return null
+}
 
 interface NavbarProps {
   currentPage?: string
@@ -303,17 +340,35 @@ export function Navbar({ currentPage }: NavbarProps) {
                 </Button>
                 {/* Profile Picture & Name - Clickable to profile */}
                 <Link href="/profile" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                  {profilePicture ? (
-                    <img
-                      src={profilePicture}
-                      alt="Profile"
-                      className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  {(() => {
+                    const avatarData = getAvatarGradient(profilePicture)
+                    
+                    if (avatarData) {
+                      // Show colorful gradient avatar
+                      const IconComponent = avatarData.icon
+                      return (
+                        <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-2 border-gray-200`}>
+                          <IconComponent className="w-4 h-4 text-white" strokeWidth={1.5} />
+                        </div>
+                      )
+                    } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                      // Show uploaded image (legacy support)
+                      return (
+                        <img
+                          src={profilePicture}
+                          alt="Profile"
+                          className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
+                        />
+                      )
+                    } else {
+                      // Show default avatar
+                      return (
+                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
+                          <User className="w-4 h-4 text-white" />
+                        </div>
+                      )
+                    }
+                  })()}
                   <span className="text-sm text-gray-600 hidden xl:block hover:text-primary font-medium cursor-pointer">
                     Hi, {user.name || user.email.split('@')[0]}!
                   </span>
@@ -415,17 +470,35 @@ export function Navbar({ currentPage }: NavbarProps) {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors rounded-lg mx-2"
                   >
-                    {profilePicture ? (
-                      <img
-                        src={profilePicture}
-                        alt="Profile"
-                        className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
-                        <User className="w-6 h-6 text-white" />
-                      </div>
-                    )}
+                    {(() => {
+                      const avatarData = getAvatarGradient(profilePicture)
+                      
+                      if (avatarData) {
+                        // Show colorful gradient avatar
+                        const IconComponent = avatarData.icon
+                        return (
+                          <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-2 border-gray-200`}>
+                            <IconComponent className="w-6 h-6 text-white" strokeWidth={1.5} />
+                          </div>
+                        )
+                      } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                        // Show uploaded image (legacy support)
+                        return (
+                          <img
+                            src={profilePicture}
+                            alt="Profile"
+                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                          />
+                        )
+                      } else {
+                        // Show default avatar
+                        return (
+                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
+                            <User className="w-6 h-6 text-white" />
+                          </div>
+                        )
+                      }
+                    })()}
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">
                         {user.name || user.email.split('@')[0]}
