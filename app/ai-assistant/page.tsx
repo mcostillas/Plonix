@@ -94,9 +94,10 @@ function AIAssistantContent() {
   const [currentChatId, setCurrentChatId] = useState('')
   
   const [inputMessage, setInputMessage] = useState('')
-  const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
-  const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
-  const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
+  // TODO: Re-enable with image API
+  // const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
+  // const [receiptPreview, setReceiptPreview] = useState<string | null>(null)
+  // const [isProcessingReceipt, setIsProcessingReceipt] = useState(false)
   const [isRecording, setIsRecording] = useState(false)
   const [isTranscribing, setIsTranscribing] = useState(false)
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null)
@@ -609,6 +610,8 @@ function AIAssistantContent() {
     }
   }
 
+  // TODO: Re-enable receipt functions with image API integration
+  /*
   // Handle receipt file upload
   const handleReceiptUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -732,6 +735,7 @@ function AIAssistantContent() {
       setIsProcessingReceipt(false)
     }
   }
+  */
 
   // Start recording audio
   const startRecording = async () => {
@@ -1639,8 +1643,8 @@ function AIAssistantContent() {
               </div>
             )}
             
-            {/* Receipt Preview */}
-            {receiptPreview && (
+            {/* TODO: Re-enable receipt preview with image API */}
+            {/* {receiptPreview && (
               <div className="mb-3 relative inline-block">
                 <div className="relative rounded-lg overflow-hidden border-2 border-primary/20 shadow-md">
                   <img 
@@ -1677,7 +1681,7 @@ function AIAssistantContent() {
                   <span className="text-xs text-gray-500">{uploadedReceipt?.name}</span>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Character counter */}
             {inputMessage.length > 0 && (
@@ -1697,7 +1701,8 @@ function AIAssistantContent() {
               <div className="flex-1">
                 <InputGroup className="rounded-full">
                   {/* Hidden file input */}
-                  <input
+                  {/* TODO: Re-enable receipt upload with image API integration */}
+                  {/* <input
                     ref={fileInputRef}
                     type="file"
                     accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
@@ -1705,7 +1710,6 @@ function AIAssistantContent() {
                     className="hidden"
                   />
                   
-                  {/* Receipt upload button - Left side */}
                   <InputGroupAddon align="center">
                     <Button
                       variant="ghost"
@@ -1716,7 +1720,7 @@ function AIAssistantContent() {
                     >
                       <Receipt className="w-4 h-4 text-gray-400 group-hover:text-primary" />
                     </Button>
-                  </InputGroupAddon>
+                  </InputGroupAddon> */}
                   
                   <TextareaAutosize
                     data-slot="input-group-control"

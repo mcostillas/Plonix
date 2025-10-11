@@ -10,14 +10,14 @@ import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { PageLoader } from '@/components/ui/page-loader'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X, Wallet, Sparkles, PartyPopper } from 'lucide-react'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X, Sparkles, PartyPopper } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { supabase } from '@/lib/supabase'
 import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/success-modal'
 import { AlreadyCheckedInModal } from '@/components/ui/info-modal'
 import { CancelChallengeModal } from '@/components/ui/confirmation-modal'
-import { AvailableMoneyCard } from '@/components/AvailableMoneyCard'
 import { toast } from 'sonner'
+import { InteractiveTour } from '@/components/InteractiveTour'
 
 export default function DashboardPage() {
   return (
@@ -38,8 +38,6 @@ function DashboardContent() {
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0)
   const [totalSaved, setTotalSaved] = useState<number>(0)
   const [activeGoalsCount, setActiveGoalsCount] = useState<number>(0)
-  const [scheduledExpenses, setScheduledExpenses] = useState<number>(0)
-  const [availableMoney, setAvailableMoney] = useState<number>(0)
   const [topGoals, setTopGoals] = useState<any[]>([])
   const [recentTransactions, setRecentTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -62,6 +60,8 @@ function DashboardContent() {
   const [canceledModalOpen, setCanceledModalOpen] = useState(false)
   const [partialPointsEarned, setPartialPointsEarned] = useState<number>(0)
   const [isCanceling, setIsCanceling] = useState(false)
+  const [showTour, setShowTour] = useState(false)
+  const [isNewUser, setIsNewUser] = useState(false)
 
   // Total modules count (should match learning page)
   const totalModules = 7 // 3 core + 4 essential modules
@@ -75,6 +75,26 @@ function DashboardContent() {
       const localCompleted = localStorage.getItem('plounix_onboarding_completed')
       if (localCompleted === 'true') {
         console.log('✅ Dashboard: Onboarding completed (localStorage)')
+        // Check if user just completed onboarding (less than 1 day ago)
+        const onboardingTime = localStorage.getItem('plounix_onboarding_time')
+        if (onboardingTime) {
+          const timeSinceOnboarding = Date.now() - parseInt(onboardingTime)
+          const oneDay = 24 * 60 * 60 * 1000
+          if (timeSinceOnboarding < oneDay) {
+            console.log('🎉 New user detected (onboarded within 24 hours)')
+            setIsNewUser(true)
+          }
+        }
+        
+        // Check if tour was shown
+        const tourShown = localStorage.getItem('plounix_tour_shown')
+        console.log('🎯 Tour shown status:', tourShown)
+        if (tourShown !== 'true') {
+          console.log('🚀 Setting showTour to true')
+          setShowTour(true)
+        } else {
+          console.log('✅ Tour already shown, skipping')
+        }
         return
       }
       
@@ -98,6 +118,16 @@ function DashboardContent() {
         if (!profile || !(profile as any).onboarding_completed) {
           console.log('❌ Dashboard: Onboarding not complete, redirecting')
           router.push('/onboarding')
+        } else {
+          // Check if tour was shown
+          const tourShown = localStorage.getItem('plounix_tour_shown')
+          console.log('🎯 Tour shown status:', tourShown)
+          if (tourShown !== 'true') {
+            console.log('🚀 Setting showTour to true')
+            setShowTour(true)
+          } else {
+            console.log('✅ Tour already shown, skipping')
+          }
         }
       } catch (error) {
         console.error('Error checking onboarding:', error)
@@ -184,36 +214,6 @@ function DashboardContent() {
 
         if (!txError && txData) {
           setRecentTransactions(txData)
-        }
-
-        // Fetch monthly bills to calculate available money
-        const { data: monthlyBillsData, error: billsError } = await supabase
-          .from('scheduled_payments')
-          .select('amount')
-          .eq('user_id', user.id)
-          .eq('is_active', true)
-
-        console.log('Monthly Bills Debug:', {
-          monthlyBillsData,
-          billsError,
-          income,
-          userId: user.id
-        })
-
-        if (!billsError && monthlyBillsData) {
-          const totalMonthlyBills = monthlyBillsData.reduce((sum: number, bill: any) => sum + bill.amount, 0)
-          console.log('Total monthly bills:', totalMonthlyBills)
-          setScheduledExpenses(totalMonthlyBills)
-          // Available money = Net income (income - already spent) - monthly bills
-          const netIncome = income - spent
-          setAvailableMoney(netIncome - totalMonthlyBills)
-          console.log('Available money:', netIncome - totalMonthlyBills, '(Net:', netIncome, '- Monthly Bills:', totalMonthlyBills, ')')
-        } else {
-          console.log('No monthly bills found or error occurred:', billsError)
-          // If no monthly bills or error (table doesn't exist), available money = net income
-          setScheduledExpenses(0)
-          const netIncome = income - spent
-          setAvailableMoney(netIncome)
         }
       } catch (err) {
         console.error('Error fetching financial data:', err)
@@ -356,13 +356,24 @@ function DashboardContent() {
     }
   }
 
+  const handleTourComplete = () => {
+    console.log('✅ Tour completed, setting localStorage')
+    setShowTour(false)
+    localStorage.setItem('plounix_tour_shown', 'true')
+  }
+
   if (loading && !mounted) {
     return <PageLoader message="Loading your dashboard..." />
   }
 
+  console.log('🎯 Dashboard rendering, showTour:', showTour)
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="dashboard" />
+      
+      {/* Interactive Tour */}
+      {showTour && <InteractiveTour onComplete={handleTourComplete} />}
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Welcome Message for New Users */}
@@ -417,13 +428,21 @@ function DashboardContent() {
         {/* Welcome Header */}
         <div className="mb-8 bg-gradient-to-r from-primary/10 to-blue-600/10 rounded-2xl p-6 border border-primary/20">
           <h1 className="text-3xl font-bold mb-2 text-gray-900">
-            Welcome back, {user?.name || user?.email?.split('@')[0] || 'there'}! 
+            {isNewUser ? (
+              <>Welcome to Plounix, {user?.name || user?.email?.split('@')[0] || 'there'}! 🎉</>
+            ) : (
+              <>Welcome back, {user?.name || user?.email?.split('@')[0] || 'there'}!</>
+            )}
           </h1>
-          <p className="text-gray-600 text-lg">Ready to level up your financial game today?</p>
+          <p className="text-gray-600 text-lg">
+            {isNewUser 
+              ? "Let's start building your financial future together!" 
+              : "Ready to level up your financial game today?"}
+          </p>
         </div>
 
         {/* Top Row - Stats + Learning Progress */}
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -434,20 +453,6 @@ function DashboardContent() {
                   <p className="text-sm text-gray-600 font-medium">This Month Net</p>
                 </div>
                 <PiggyBank className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-green-600">
-                    {loading ? '...' : `₱${availableMoney.toLocaleString()}`}
-                  </p>
-                  <p className="text-sm text-gray-600 font-medium">Available to Spend</p>
-                </div>
-                <Wallet className="w-8 h-8 text-green-500" />
               </div>
             </CardContent>
           </Card>
@@ -674,7 +679,7 @@ function DashboardContent() {
         {/* Main Navigation */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {/* AI Assistant Card - Featured */}
-          <div className="lg:col-span-3 mb-4">
+          <div className="lg:col-span-3 mb-4" data-tour="ai-assistant">
             <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -700,7 +705,7 @@ function DashboardContent() {
             </Card>
           </div>
 
-          <Link href="/learning">
+          <Link href="/learning" data-tour="learning">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
                 <BookOpen className="w-12 h-12 text-blue-600 mb-4" />
@@ -718,7 +723,7 @@ function DashboardContent() {
             </Card>
           </Link>
 
-          <Link href="/goals">
+          <Link href="/goals" data-tour="goals">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
                 <Target className="w-12 h-12 text-green-600 mb-4" />
@@ -736,7 +741,7 @@ function DashboardContent() {
             </Card>
           </Link>
 
-          <Link href="/challenges">
+          <Link href="/challenges" data-tour="challenges">
             <Card className="hover:shadow-lg transition-shadow cursor-pointer">
               <CardHeader>
                 <Trophy className="w-12 h-12 text-purple-600 mb-4" />
@@ -759,6 +764,7 @@ function DashboardContent() {
           <Card 
             className="hover:shadow-lg transition-shadow cursor-pointer"
             onClick={() => setShowAddTransactionModal(true)}
+            data-tour="transactions"
           >
             <CardHeader>
               <PlusCircle className="w-12 h-12 text-orange-600 mb-4" />

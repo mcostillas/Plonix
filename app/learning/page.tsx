@@ -242,7 +242,7 @@ function LearningContent() {
                 )}
                 
                 {/* Debug reset button - only show in development */}
-                {process.env.NODE_ENV === 'development' && completedModules.length > 0 && (
+                {completedModules.length > 0 && (
                   <div className="mt-3 pt-3 border-t border-gray-200">
                     <Button 
                       variant="outline" 
@@ -250,7 +250,7 @@ function LearningContent() {
                       onClick={resetProgress}
                       className="text-xs"
                     >
-                      Reset Progress (Dev Only)
+                      Reset Progress
                     </Button>
                   </div>
                 )}

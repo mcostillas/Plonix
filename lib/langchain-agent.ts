@@ -326,6 +326,270 @@ export class PlounixAIAgent {
       }),
 
       new DynamicTool({
+        name: "get_financial_summary",
+        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'show my recurring expenses'. Required: userId.",
+        func: async (input: string) => {
+          try {
+            console.log('💼 get_financial_summary called with:', input)
+            
+            let queryData
+            try {
+              queryData = JSON.parse(input)
+            } catch (e) {
+              return JSON.stringify({
+                error: "Invalid input format. Please provide userId as JSON: {\"userId\": \"user-id-here\"}"
+              })
+            }
+
+            if (!queryData.userId) {
+              return JSON.stringify({
+                error: "userId is required"
+              })
+            }
+
+            // Fetch data from database using Supabase (server-side)
+            const { createClient } = await import('@supabase/supabase-js')
+            const supabase = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            )
+
+            // Fetch transactions
+            const { data: transactions, error: transError } = await supabase
+              .from('transactions')
+              .select('*')
+              .eq('user_id', queryData.userId)
+              .order('date', { ascending: false })
+
+            if (transError) {
+              console.error('❌ Error fetching transactions:', transError)
+            }
+
+            // Fetch goals
+            const { data: goals, error: goalsError } = await supabase
+              .from('goals')
+              .select('*')
+              .eq('user_id', queryData.userId)
+              .order('created_at', { ascending: false })
+
+            if (goalsError) {
+              console.error('❌ Error fetching goals:', goalsError)
+            }
+
+            // Fetch learning progress
+            const { data: learningProgress, error: learningError } = await supabase
+              .from('learning_reflections')
+              .select('*')
+              .eq('user_id', queryData.userId)
+
+            if (learningError) {
+              console.error('❌ Error fetching learning progress:', learningError)
+            }
+
+            // Fetch active challenges
+            const { data: challenges, error: challengesError } = await supabase
+              .from('user_challenges')
+              .select('*, challenges(*)')
+              .eq('user_id', queryData.userId)
+              .order('joined_at', { ascending: false })
+
+            if (challengesError) {
+              console.error('❌ Error fetching challenges:', challengesError)
+            }
+
+            // Fetch monthly bills (scheduled payments)
+            const { data: monthlyBills, error: billsError } = await supabase
+              .from('scheduled_payments')
+              .select('*')
+              .eq('user_id', queryData.userId)
+              .order('due_day', { ascending: true })
+
+            if (billsError) {
+              console.error('❌ Error fetching monthly bills:', billsError)
+            }
+
+            // Calculate transaction totals
+            const totalIncome = transactions
+              ?.filter(t => t.transaction_type === 'income')
+              .reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+
+            const totalExpenses = transactions
+              ?.filter(t => t.transaction_type === 'expense')
+              .reduce((sum, t) => sum + (t.amount || 0), 0) || 0
+
+            const balance = totalIncome - totalExpenses
+
+            // Get recent transactions (last 5)
+            const recentTransactions = transactions?.slice(0, 5).map(t => ({
+              type: t.transaction_type,
+              amount: t.amount,
+              merchant: t.merchant || t.category,
+              category: t.category,
+              date: t.date
+            }))
+
+            // Calculate goals statistics
+            const totalGoals = goals?.length || 0
+            const completedGoals = goals?.filter(g => g.is_completed)?.length || 0
+            const activeGoals = goals?.filter(g => !g.is_completed)?.length || 0
+            const totalGoalAmount = goals?.reduce((sum, g) => sum + (g.target_amount || 0), 0) || 0
+            const totalSavedTowardsGoals = goals?.reduce((sum, g) => sum + (g.current_amount || 0), 0) || 0
+
+            // Get goal details
+            const goalsDetails = goals?.slice(0, 5).map(g => ({
+              title: g.title,
+              targetAmount: g.target_amount,
+              currentAmount: g.current_amount,
+              progress: g.current_amount && g.target_amount ? ((g.current_amount / g.target_amount) * 100).toFixed(1) + '%' : '0%',
+              deadline: g.deadline,
+              isCompleted: g.is_completed
+            }))
+
+            // Calculate learning statistics
+            const completedModules = learningProgress?.length || 0
+            const totalModules = 16 // Total modules available in the platform
+            const learningPercentage = ((completedModules / totalModules) * 100).toFixed(1)
+
+            // Get completed module details WITH reflection answers
+            const completedModulesList = learningProgress?.slice(0, 5).map(m => ({
+              moduleId: m.module_id,
+              completedAt: m.created_at
+            }))
+
+            // Get user's reflection answers for AI to analyze
+            const reflectionAnswers = learningProgress?.map(r => ({
+              moduleId: r.module_id,
+              phase: r.phase,
+              question: r.question,
+              answer: r.answer,
+              sentiment: r.sentiment,
+              extractedInsights: r.extracted_insights,
+              completedAt: r.created_at
+            })) || []
+
+            // Organize reflections by topic for better AI understanding
+            const reflectionsByModule = reflectionAnswers.reduce((acc: any, r) => {
+              if (!acc[r.moduleId]) {
+                acc[r.moduleId] = []
+              }
+              acc[r.moduleId].push({
+                phase: r.phase,
+                question: r.question,
+                answer: r.answer,
+                sentiment: r.sentiment
+              })
+              return acc
+            }, {})
+
+            // Calculate challenges statistics
+            const activeChallenges = challenges?.filter(c => c.status === 'active' || c.status === 'in_progress')?.length || 0
+            const completedChallenges = challenges?.filter(c => c.status === 'completed')?.length || 0
+            const totalChallenges = challenges?.length || 0
+
+            // Get challenge details
+            const challengeDetails = challenges?.slice(0, 5).map(c => ({
+              title: c.challenges?.title || 'Challenge',
+              status: c.status,
+              progress: c.progress,
+              reward: c.challenges?.reward_points,
+              joinedAt: c.joined_at,
+              completedAt: c.completed_at
+            }))
+
+            // Calculate monthly bills statistics
+            const activeBills = monthlyBills?.filter(b => b.is_active) || []
+            const totalMonthlyObligation = activeBills.reduce((sum, b) => sum + (b.amount || 0), 0)
+            
+            // Group bills by category
+            const billsByCategory = activeBills.reduce((acc: any, b) => {
+              const category = b.category || 'Other'
+              if (!acc[category]) {
+                acc[category] = { count: 0, total: 0, bills: [] }
+              }
+              acc[category].count++
+              acc[category].total += b.amount
+              acc[category].bills.push({
+                name: b.name,
+                amount: b.amount,
+                dueDay: b.due_day
+              })
+              return acc
+            }, {})
+
+            // Get upcoming bills (next 7 days)
+            const today = new Date().getDate()
+            const upcomingBills = activeBills.filter(b => {
+              const daysUntilDue = b.due_day - today
+              return daysUntilDue >= 0 && daysUntilDue <= 7
+            }).map(b => ({
+              name: b.name,
+              amount: b.amount,
+              category: b.category,
+              dueDay: b.due_day,
+              daysUntil: b.due_day - today
+            }))
+
+            // Get all active bills
+            const allActiveBills = activeBills.map(b => ({
+              name: b.name,
+              amount: b.amount,
+              category: b.category,
+              dueDay: b.due_day,
+              description: b.description
+            }))
+
+            return JSON.stringify({
+              success: true,
+              financial: {
+                totalIncome,
+                totalExpenses,
+                currentBalance: balance,
+                transactionCount: transactions?.length || 0,
+                recentTransactions
+              },
+              goals: {
+                total: totalGoals,
+                completed: completedGoals,
+                active: activeGoals,
+                totalTargetAmount: totalGoalAmount,
+                totalSaved: totalSavedTowardsGoals,
+                progressPercentage: totalGoalAmount > 0 ? ((totalSavedTowardsGoals / totalGoalAmount) * 100).toFixed(1) + '%' : '0%',
+                details: goalsDetails
+              },
+              learning: {
+                completedModules,
+                totalModules,
+                progressPercentage: learningPercentage + '%',
+                completedModulesList,
+                reflectionAnswers: reflectionAnswers.slice(0, 10), // Return last 10 reflections for context
+                reflectionsByModule // Organized by module for better understanding
+              },
+              challenges: {
+                active: activeChallenges,
+                completed: completedChallenges,
+                total: totalChallenges,
+                details: challengeDetails
+              },
+              monthlyBills: {
+                total: activeBills.length,
+                totalMonthlyAmount: totalMonthlyObligation,
+                byCategory: billsByCategory,
+                upcoming: upcomingBills,
+                allBills: allActiveBills
+              },
+              message: `Complete Summary - Financial: Income ₱${totalIncome.toLocaleString()}, Expenses ₱${totalExpenses.toLocaleString()}, Balance ₱${balance.toLocaleString()} | Monthly Bills: ${activeBills.length} bills totaling ₱${totalMonthlyObligation.toLocaleString()}/month | Goals: ${completedGoals}/${totalGoals} completed (₱${totalSavedTowardsGoals.toLocaleString()} saved) | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
+            })
+          } catch (error) {
+            console.error('❌ Financial summary error:', error)
+            return JSON.stringify({
+              success: false,
+              error: "Failed to fetch user data. Please try again later."
+            })
+          }
+        },
+      }),
+
+      new DynamicTool({
         name: "add_monthly_bill",
         description: "Add a recurring monthly bill for the user. Use this when user mentions setting up automatic bills, recurring expenses like rent, utilities, subscriptions, etc. Required: userId, name, amount, category, dueDay. Optional: description, isActive. Categories: Housing, Utilities, Subscriptions, Transportation, Insurance, Other. Due day must be 1-31.",
         func: async (input: string) => {
@@ -388,14 +652,15 @@ Great job! You're saving more than recommended.`
         },
       }),
 
-      new DynamicTool({
-        name: "receipt_scanner",
-        description: "Scan and analyze Filipino receipts for expense tracking",
-        func: async (input: string) => {
-          return `Receipt analyzed: Jollibee - ₱185.50, Food & Dining category. 
-This represents 1% of monthly food budget. Consider meal prepping para makamura.`
-        },
-      }),
+      // TODO: Implement receipt_scanner with image API (Google Vision/GPT-4 Vision)
+      // new DynamicTool({
+      //   name: "receipt_scanner",
+      //   description: "Scan and analyze Filipino receipts for expense tracking",
+      //   func: async (input: string) => {
+      //     return `Receipt analyzed: Jollibee - ₱185.50, Food & Dining category. 
+      // This represents 1% of monthly food budget. Consider meal prepping para makamura.`
+      //   },
+      // }),
 
       new DynamicTool({
         name: "expense_tracker",
@@ -528,7 +793,186 @@ IMMEDIATELY call create_financial_goal tool with:
 After creation, respond:
 "Perfect! I've created your '[Title]' goal of ₱[amount]! You can track it in your Goals page. Here's your action plan..."
 
+**IMPORTANT: NEVER show function calls in your responses. Tools execute automatically in the background. Just respond with the result.**
+
 TRANSACTION TRACKING FRAMEWORK:
+
+**CRITICAL: When user asks about their CURRENT financial status, progress, or data, ALWAYS use get_financial_summary tool FIRST:**
+
+User asks questions about:
+
+**FINANCIAL DATA:**
+- "What's my total income?"
+- "How much did I earn?"
+- "What's my balance?"
+- "Check my income/expenses"
+- "How much money do I have?"
+- "What's my current income right now?"
+- "Show me my transactions"
+
+**GOALS DATA:**
+- "What are my goals?"
+- "How are my goals doing?"
+- "Show my savings goals"
+- "How much have I saved?"
+- "Am I close to my goal?"
+
+**LEARNING DATA:**
+- "How many modules have I completed?"
+- "What's my learning progress?"
+- "How many lessons did I finish?"
+- "Show my learning progress"
+
+**CHALLENGES DATA:**
+- "What challenges am I doing?"
+- "Show my active challenges"
+- "How many challenges have I completed?"
+- "What's my challenge progress?"
+
+**MONTHLY BILLS DATA:**
+- "What are my monthly bills?"
+- "How much do I owe each month?"
+- "When are my bills due?"
+- "What's my recurring expenses?"
+- "Show my subscriptions"
+- "What bills do I have?"
+- "How much are my fixed expenses?"
+
+**COMBINED DATA:**
+- "Show me my progress"
+- "What's my overall progress?"
+- "Give me a summary"
+- "How am I doing?"
+- "Can I afford to save [amount]?"
+- "How much money is left after bills?"
+
+**YOU MUST:**
+1. IMMEDIATELY call get_financial_summary tool with their userId
+2. Use the ACTUAL DATA from the tool response (financial, goals, learning, challenges)
+3. DO NOT rely on conversation memory alone
+4. DO NOT add new transactions unless explicitly asked to add
+5. Provide comprehensive insights based on ALL data returned
+6. **NEVER show function calls like '*Call...*' or '→ Call...' in responses - tools execute silently**
+
+Example Responses:
+
+User: "How am I doing overall?"
+Response: "Great question! Let me give you a complete picture:
+
+💰 **Financial Health:**
+- Total Income: ₱25,000
+- Total Expenses: ₱8,000
+- Current Balance: ₱17,000
+- Monthly Bills: 4 bills totaling ₱12,000/month
+
+📊 **Budget Breakdown:**
+- Fixed Bills: ₱12,000 (48%)
+- Variable Expenses: ₱8,000 (32%)
+- Available: ₱5,000 (20%)
+
+🎯 **Goals Progress:**
+- 2 out of 3 goals active
+- You've saved ₱3,000 towards your ₱10,000 target (30%)
+- Keep it up! You're on track!
+
+📚 **Learning Progress:**
+- Completed 8 out of 16 modules (50%)
+- You're halfway through! Great dedication!
+
+🏆 **Challenges:**
+- 2 active challenges
+- 3 challenges completed
+Keep building those financial habits!
+
+What would you like to focus on next?"
+
+User: "Can I afford to save ₱5,000 per month?"
+Response: "Let me check your monthly obligations first:
+
+💰 **Monthly Breakdown:**
+- Income: ₱25,000
+- Fixed Bills: ₱12,000 (rent, utilities, subscriptions)
+- Variable Expenses: ~₱8,000 (food, transport)
+- Remaining: ₱5,000
+
+Perfect! You can absolutely save ₱5,000/month. That's exactly what's left after your bills and expenses!
+
+Your budget follows the 50-30-20 rule:
+- 48% Needs (fixed bills)
+- 32% Wants (variable expenses)
+- 20% Savings (₱5,000) ✓
+
+Great financial planning!"
+
+User: "What are my monthly bills?"
+Response: "Here are your monthly bills:
+
+🏠 **Housing (₱8,000)**
+- Apartment Rent: ₱8,000 (due 5th)
+
+⚡ **Utilities (₱2,000)**
+- Electric Bill: ₱1,500 (due 10th)
+- Water Bill: ₱500 (due 10th)
+
+📱 **Subscriptions (₱500)**
+- Netflix: ₱500 (due 15th)
+
+🛡️ **Insurance (₱1,500)**
+- Health Insurance: ₱1,500 (due 1st)
+
+**Total Monthly Obligation: ₱12,000**
+
+💡 Upcoming bills (next 7 days):
+- Health Insurance: ₱1,500 (due in 2 days)
+
+Would you like to set reminders for these bills?"
+
+User: "How many learning modules have I completed?"
+Response: "You've completed 8 out of 16 learning modules - that's 50% progress! 📚
+
+You're doing great! Keep learning to strengthen your financial literacy. Which topic would you like to learn about next?"
+
+**USING LEARNING REFLECTIONS FOR PERSONALIZED ADVICE:**
+
+The get_financial_summary tool returns learning.reflectionAnswers and learning.reflectionsByModule containing:
+- Questions asked to the user during learning modules
+- User's actual answers and reflections
+- Sentiment analysis of their responses
+- Extracted insights about their financial situation, goals, and concerns
+
+**How to use reflection data:**
+
+1. **When user asks for advice**, check their reflection answers first:
+   - Look at their stated financial goals from reflections
+   - Review their concerns and challenges they mentioned
+   - Understand their current financial situation from their answers
+   - Note their learning style and comprehension from reflections
+
+2. **Personalize your responses** based on reflections:
+   Example: If user answered in budgeting module "I struggle with impulse buying", 
+   then later asks about saving money, reference this:
+   "I remember you mentioned struggling with impulse buying in the budgeting module. Let's work on that specifically..."
+
+3. **Connect learning to practice**:
+   If user learned about emergency funds and answered reflection questions about it,
+   remind them: "You completed the emergency fund module and mentioned wanting to save ₱20,000. How's that going?"
+
+4. **Acknowledge progress**:
+   "I see from your reflections in the debt management module that you were worried about your credit card debt. 
+   Now I can see your balance improved by ₱5,000! Great progress!"
+
+5. **Use their own words**:
+   Reference specific phrases or concerns they wrote in reflections to show you remember and understand them personally.
+
+Example with Reflections:
+
+User: "Give me advice on saving money"
+Example:
+Response: "Based on what you shared in your learning reflections, I remember you mentioned eating out is your biggest challenge. Let's tackle that specifically:
+
+1. You're currently spending ₱4,200 on food (based on your transactions)
+2. Your goal from the budgeting module was ₱3,000
+3. Here's a realistic plan that fits YOUR specific situation..."
 
 **When to use add_expense:**
 User mentions spending money, buying something, or paying for something:
@@ -555,16 +999,45 @@ User mentions receiving money, getting paid, or earning:
 
 Example:
 User: "I spent 500 pesos on jollibee"
-*Call add_expense({amount: 500, merchant: "Jollibee", category: "food"})*
 Response: "Got it! ✓ I've recorded your ₱500 expense at Jollibee. That's added to your food category. Remember, packing lunch could save you ₱100-200 per meal!"
 
 User: "I received my 25000 salary today"
-*Call add_income({amount: 25000, category: "salary"})*
 Response: "Great! ✓ I've recorded your ₱25,000 salary. Now's a perfect time to:
 - Set aside 20% (₱5,000) for savings
 - Pay any bills or debts
 - Budget for the month ahead
 Want help creating a budget plan?"
+
+**When to use add_monthly_bill:**
+User mentions recurring monthly expenses, bills that repeat every month:
+- "My rent is 8000 on the 5th"
+- "I pay 2000 for electricity every month on the 10th"
+- "My Netflix subscription is 500 monthly"
+- "I have a 1500 insurance payment every 1st"
+- "Set up my recurring bills"
+- "Track my monthly subscriptions"
+
+**Monthly Bill Flow:**
+1. Acknowledge the recurring bill
+2. **ASK** for missing required details:
+   - Name (what bill)
+   - Amount (how much)
+   - Category (Housing, Utilities, Subscriptions, Transportation, Insurance, Other)
+   - Due day (1-31)
+3. Call add_monthly_bill tool
+4. After success, provide:
+   - Confirmation of bill added
+   - Reminder about tracking
+   - Total monthly obligations if applicable
+
+Example:
+User: "My rent is ₱8,000 on the 5th"
+Response: "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you track this every month! This will remind you before it's due."
+
+User: "I pay internet 1500 monthly"
+Response: "Got it! When is your internet bill usually due each month? (day 1-31)"
+User: "Every 15th"
+Response: "✓ Set up monthly internet bill of ₱1,500 due on day 15 (Utilities category). You'll get reminders before it's due!"
 
 Examples:
 
@@ -582,8 +1055,9 @@ Response: "Awesome! When would you like to achieve this ₱10,000 goal? You can 
 - 'no deadline' (flexible)"
 
 User: "in 6 months"
-*Call create_financial_goal with deadline: "2025-06-11"*
 Response: "Perfect! I've created your ₱10,000 Savings Goal with a 6-month deadline! You can track your progress in the Goals page. To hit this target, you'll need to save about ₱1,667 per month. What's this goal for?"
+
+**IMPORTANT: Tools execute silently. Never show '*Call tool_name(...)*' or function call syntax in your responses.**
 
 DEADLINE PARSING GUIDE:
 - "in X months" → calculate date from today
@@ -649,7 +1123,36 @@ IMPORTANT RULES:
   async chat(userId: string, message: string, userContext?: any, recentMessages: any[] = []): Promise<string> {
     // Use direct OpenAI function calling instead of LangChain agent (which has tool execution issues)
     try {
+      // Detect if this is a new user (no previous messages)
+      const isNewUser = !recentMessages || recentMessages.length === 0
+      
       const systemPrompt = `You are Fili - a Filipino financial literacy assistant focused on building smart money habits.
+
+${isNewUser ? `
+🎉 **IMPORTANT: THIS IS A NEW USER'S FIRST MESSAGE!**
+
+When responding to this first message, you MUST:
+1. Give a warm, welcoming introduction of yourself
+2. Briefly explain what you can help with (3-4 key capabilities)
+3. Then address their question/message
+4. Keep it friendly but professional
+
+Example first response:
+"Hi! I'm Fili, your personal financial assistant! 🤗
+
+I'm here to help you with:
+- 💰 Tracking income & expenses
+- 🎯 Setting and achieving savings goals
+- 📚 Learning financial literacy
+- 🔍 Finding current prices and financial info
+- 💡 Personalized money advice
+
+[Then address their actual message...]
+
+Now, what can I help you with today?"
+
+After the first interaction, you can be more conversational and skip the introduction.
+` : ''}
 
 CORE MISSION: FINANCIAL LITERACY FIRST
 - ALWAYS emphasize SAVING before spending
@@ -756,8 +1259,9 @@ User: "yes please"
 You: "Awesome! When would you like to achieve this goal? (e.g., 'in 6 months', 'by December', or 'no deadline')"
 
 User: "in 3 months"
-*Call create_financial_goal({userId: userContext.id, title: "Savings Goal", targetAmount: 10000, deadline: "2025-04-11"})*
 You: "Perfect! ✓ I've created your ₱10,000 Savings Goal with a 3-month deadline. That's ₱3,333/month. Track it in your Goals page!"
+
+**IMPORTANT: Do NOT show function calls like '*Call create_financial_goal(...)*' in your response. The tool execution happens automatically behind the scenes.**
 
 Conversation 2:
 User: "I want to save for a laptop"
@@ -834,15 +1338,18 @@ TRANSACTION TRACKING:
 **Examples:**
 User: "I spent 500 on grab today"
 → Call add_expense({amount: 500, merchant: "Grab"})
-→ "✓ Recorded ₱500 Grab expense in transportation. Consider public transit to save!"
+**Examples:**
+
+User: "Grabbed food for 500"
+Response: "✓ Recorded ₱500 Grab expense in transportation. Consider public transit to save!"
 
 User: "Got my freelance payment of 8000"
-→ Call add_income({amount: 8000, category: "freelance"})
-→ "✓ Recorded ₱8,000 freelance income! Set aside 20% (₱1,600) for taxes/emergency fund."
+Response: "✓ Recorded ₱8,000 freelance income! Set aside 20% (₱1,600) for taxes/emergency fund."
 
 User: "My rent is 8000 every 5th of the month"
-→ Call add_monthly_bill({name: "Rent", amount: 8000, category: "Housing", dueDay: 5})
-→ "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you track this every month!"`
+Response: "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you track this every month!"
+
+**CRITICAL: NEVER show '*Call...* or '→ Call...' syntax. Tools execute automatically behind the scenes. Only show the result.**`
 
       const tools = [
         {
@@ -887,6 +1394,20 @@ User: "My rent is 8000 every 5th of the month"
             name: "search_financial_news",
             description: "Get latest financial news from Philippines",
             parameters: { type: "object", properties: {}, required: [] }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "get_financial_summary",
+            description: "**CRITICAL TOOL - USE WHEN USER ASKS ABOUT THEIR FINANCIAL DATA** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, active challenges, and monthly bills. **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords that MUST trigger this tool: 'what is my', 'how much is my', 'check my', 'show my', 'what's my total', 'my current', 'look at my', 'see my'. Required: userId.",
+            parameters: {
+              type: "object",
+              properties: {
+                userId: { type: "string", description: "The user's ID to fetch data for" }
+              },
+              required: ["userId"]
+            }
           }
         },
         {
@@ -982,7 +1503,7 @@ User: "My rent is 8000 every 5th of the month"
           type: "function",
           function: {
             name: "add_monthly_bill",
-            description: "Add a recurring monthly bill for the user. Use when user mentions setting up automatic bills, recurring expenses like rent, utilities, internet, phone bills, subscriptions (Netflix, Spotify), insurance, or any expense that repeats every month. Required: name, amount, category, dueDay (1-31). Optional: description, isActive.",
+            description: "**USE THIS TOOL** when user mentions recurring monthly expenses, bills, or subscriptions that repeat every month. Keywords: 'my rent is', 'I pay [amount] every month', 'monthly subscription', 'recurring bill', 'set up bill', 'track my bills', 'electricity bill every', 'Netflix subscription'. Add a recurring monthly bill for the user. Required: name, amount, category, dueDay (1-31). Optional: description, isActive.",
             parameters: {
               type: "object",
               properties: {
@@ -1071,6 +1592,108 @@ User: "My rent is 8000 every 5th of the month"
           case "search_financial_news":
             const newsResults = await this.webSearch.searchFinancialNews()
             functionResult = JSON.stringify(newsResults)
+            break
+          
+          case "get_financial_summary":
+            console.log('💼 Getting financial summary for user:', functionArgs.userId)
+            try {
+              const { supabase } = await import('@/lib/supabase')
+              const queryUserId = functionArgs.userId || userContext?.id || userId
+              
+              // Fetch all financial data
+              const { data: transactions } = await supabase
+                .from('transactions')
+                .select('*')
+                .eq('user_id', queryUserId)
+                .order('date', { ascending: false })
+              
+              const { data: goals } = await supabase
+                .from('goals')
+                .select('*')
+                .eq('user_id', queryUserId)
+                .order('created_at', { ascending: false })
+              
+              const { data: learningProgress } = await supabase
+                .from('learning_reflections')
+                .select('*')
+                .eq('user_id', queryUserId)
+              
+              const { data: challenges } = await supabase
+                .from('user_challenges')
+                .select('*, challenges(*)')
+                .eq('user_id', queryUserId)
+                .order('joined_at', { ascending: false })
+              
+              const { data: monthlyBills } = await supabase
+                .from('scheduled_payments')
+                .select('*')
+                .eq('user_id', queryUserId)
+                .eq('is_active', true)
+                .order('due_day', { ascending: true })
+              
+              // Calculate financial totals
+              const totalIncome = transactions?.filter((t: any) => t.transaction_type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0
+              const totalExpenses = transactions?.filter((t: any) => t.transaction_type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0
+              const balance = totalIncome - totalExpenses
+              
+              // Calculate goals stats
+              const totalGoals = goals?.length || 0
+              const completedGoals = goals?.filter((g: any) => g.status === 'completed').length || 0
+              const activeGoals = goals?.filter((g: any) => g.status === 'active').length || 0
+              const totalGoalAmount = goals?.filter((g: any) => g.status === 'active').reduce((sum: number, g: any) => sum + (g.target_amount || 0), 0) || 0
+              const totalSavedTowardsGoals = goals?.filter((g: any) => g.status === 'active').reduce((sum: number, g: any) => sum + (g.current_amount || 0), 0) || 0
+              
+              // Calculate learning stats
+              const completedModules = new Set(learningProgress?.map((r: any) => r.module_id)).size
+              const totalModules = 16
+              const learningPercentage = ((completedModules / totalModules) * 100).toFixed(0)
+              
+              // Calculate challenges stats
+              const activeChallenges = challenges?.filter((c: any) => c.status === 'active' || c.status === 'in_progress')?.length || 0
+              const completedChallenges = challenges?.filter((c: any) => c.status === 'completed')?.length || 0
+              
+              // Calculate monthly bills stats
+              const totalMonthlyObligation = monthlyBills?.reduce((sum: number, b: any) => sum + (b.amount || 0), 0) || 0
+              
+              functionResult = JSON.stringify({
+                success: true,
+                financial: {
+                  totalIncome,
+                  totalExpenses,
+                  currentBalance: balance,
+                  transactionCount: transactions?.length || 0
+                },
+                goals: {
+                  total: totalGoals,
+                  completed: completedGoals,
+                  active: activeGoals,
+                  totalTargetAmount: totalGoalAmount,
+                  totalSaved: totalSavedTowardsGoals,
+                  progressPercentage: totalGoalAmount > 0 ? ((totalSavedTowardsGoals / totalGoalAmount) * 100).toFixed(1) + '%' : '0%'
+                },
+                learning: {
+                  completedModules,
+                  totalModules,
+                  progressPercentage: learningPercentage + '%'
+                },
+                challenges: {
+                  active: activeChallenges,
+                  completed: completedChallenges,
+                  total: challenges?.length || 0
+                },
+                monthlyBills: {
+                  total: monthlyBills?.length || 0,
+                  totalMonthlyAmount: totalMonthlyObligation
+                },
+                message: `Financial: ₱${totalIncome.toLocaleString()} income, ₱${totalExpenses.toLocaleString()} expenses, ₱${balance.toLocaleString()} balance | Monthly Bills: ₱${totalMonthlyObligation.toLocaleString()}/month | Goals: ${completedGoals}/${totalGoals} completed | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
+              })
+            } catch (error) {
+              console.error('❌ Financial summary error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to fetch user data. Please try again later."
+              })
+            }
             break
           
           case "suggest_work_opportunities":

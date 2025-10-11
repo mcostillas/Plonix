@@ -108,7 +108,7 @@ export default function TermsPage() {
                 savings, and investment advice tailored for Filipino youth</li>
                 <li><strong>Educational Content:</strong> Learning modules, articles, and resources on financial literacy</li>
                 <li><strong>Financial Tools:</strong> Budget calculators, savings trackers, goal setting, and expense management</li>
-                <li><strong>Receipt Scanner:</strong> OCR technology to digitize and track expenses from receipts</li>
+                {/* <li><strong>Receipt Scanner:</strong> OCR technology to digitize and track expenses from receipts</li> */}
                 <li><strong>Challenges & Gamification:</strong> Interactive challenges to build financial habits</li>
               </ul>
             </section>
