@@ -104,23 +104,33 @@ export default function RegisterPage() {
     }
 
     try {
-      // const fullName = `${formData.firstName} ${formData.lastName}`
-      // const { user, error: signUpError } = await signUp(
-      //   formData.email,
-      //   formData.password,
-      //   { full_name: fullName }
-      // )
-
       const fullName = `${formData.firstName} ${formData.lastName}`
-      const { user, error: signUpError } = await signUp(
+      const result = await signUp(
         formData.email,
         formData.password,
         fullName
       )
 
-      if (signUpError) {
-        setError(signUpError.message)
-      } else if (user) {
+      if (!result.success || result.error) {
+        // Check for specific error messages
+        const errorMessage = result.error || 'Registration failed. Please try again.'
+        
+        if (errorMessage.includes('already registered') || 
+            errorMessage.includes('already exists') ||
+            errorMessage.includes('User already registered')) {
+          setError('This email is already registered. Please log in instead.')
+        } else {
+          setError(errorMessage)
+        }
+      } else if (result.user) {
+        // Check if user was actually created (not a duplicate)
+        // Supabase returns user even for duplicates when email confirmation is on
+        if (!result.user.identities || result.user.identities.length === 0) {
+          setError('This email is already registered. Please log in or reset your password if you forgot it.')
+          setIsLoading(false)
+          return
+        }
+        
         // Clear saved form data on successful registration
         sessionStorage.removeItem('registerFormData')
         setMessage('Account created successfully! Please check your email to verify your account.')
