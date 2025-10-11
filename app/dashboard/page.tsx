@@ -75,15 +75,15 @@ function DashboardContent() {
         const { supabase } = await import('@/lib/supabase')
         const { data: profile } = await supabase
           .from('user_profiles')
-          .select('age, monthly_income')
+          .select('onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle()
         
         console.log('🔍 Dashboard: Checking onboarding status', { profile })
         
-        // Redirect to onboarding if profile is incomplete
-        if (!profile || !(profile as any).age || !(profile as any).monthly_income) {
-          console.log('❌ Dashboard: Profile incomplete, redirecting to onboarding')
+        // Redirect to onboarding if not completed
+        if (!profile || !(profile as any).onboarding_completed) {
+          console.log('❌ Dashboard: Onboarding not complete, redirecting')
           router.push('/onboarding')
         }
       } catch (error) {

@@ -4,53 +4,90 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
-import { PiggyBank, User, Wallet, Target, Sparkles, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Card } from '@/components/ui/card'
+import { 
+  PiggyBank, 
+  MessageCircle, 
+  Target, 
+  TrendingUp, 
+  BookOpen,
+  Sparkles,
+  ArrowRight,
+  Check,
+  Brain,
+  Receipt,
+  Coins,
+  Trophy,
+  X
+} from 'lucide-react'
 
-// Avatar options
-const AVATARS = [
-  { id: 'avatar-1', emoji: '👨‍🎓', label: 'Student' },
-  { id: 'avatar-2', emoji: '👩‍🎓', label: 'Student' },
-  { id: 'avatar-3', emoji: '👨‍💼', label: 'Professional' },
-  { id: 'avatar-4', emoji: '👩‍💼', label: 'Professional' },
-  { id: 'avatar-5', emoji: '🧑‍💻', label: 'Freelancer' },
-  { id: 'avatar-6', emoji: '👨‍🍳', label: 'Worker' },
-  { id: 'avatar-7', emoji: '👩‍⚕️', label: 'Healthcare' },
-  { id: 'avatar-8', emoji: '🧑‍🏫', label: 'Teacher' },
+interface OnboardingStep {
+  id: number
+  title: string
+  description: string
+  icon: React.ReactNode
+  highlight: string
+  image?: string
+}
+
+const ONBOARDING_STEPS: OnboardingStep[] = [
+  {
+    id: 1,
+    title: "Welcome to Plounix! 🎉",
+    description: "Your personal AI-powered financial companion for Filipino students and young professionals. We're here to help you master your money and build wealth!",
+    icon: <PiggyBank className="w-12 h-12 text-primary" />,
+    highlight: "Let's take a quick tour of what you can do!"
+  },
+  {
+    id: 2,
+    title: "Chat with Your AI Financial Assistant",
+    description: "Ask anything about budgeting, saving, investing, or Filipino banks. Our AI can analyze your expenses, scan receipts, and even search the web for real-time financial data!",
+    icon: <MessageCircle className="w-12 h-12 text-blue-600" />,
+    highlight: "💡 Try: 'Help me create a budget' or 'Scan my grocery receipt'"
+  },
+  {
+    id: 3,
+    title: "Set & Track Your Financial Goals",
+    description: "Whether it's building an emergency fund, saving for a gadget, or planning a trip - set goals and watch your progress grow!",
+    icon: <Target className="w-12 h-12 text-green-600" />,
+    highlight: "🎯 Track multiple goals at once with visual progress bars"
+  },
+  {
+    id: 4,
+    title: "Smart Expense Tracking",
+    description: "Log your transactions manually or use our AI to scan receipts. See where your money goes with beautiful charts and insights.",
+    icon: <Receipt className="w-12 h-12 text-purple-600" />,
+    highlight: "📊 Automatic categorization and monthly summaries"
+  },
+  {
+    id: 5,
+    title: "Join Money Challenges",
+    description: "Gamify your savings! Join challenges like 'No Spend Week' or 'Coffee Fund Challenge' and earn points while building better habits.",
+    icon: <Trophy className="w-12 h-12 text-yellow-600" />,
+    highlight: "🏆 Compete with others and earn achievements"
+  },
+  {
+    id: 6,
+    title: "Learn Financial Literacy",
+    description: "Access free courses on budgeting, investing, digital banking, and more. Perfect for beginners looking to master money management!",
+    icon: <BookOpen className="w-12 h-12 text-orange-600" />,
+    highlight: "📚 7 comprehensive modules from basics to advanced"
+  },
+  {
+    id: 7,
+    title: "You're All Set! 🚀",
+    description: "That's it! You now know what Plounix can do. Ready to start your financial journey?",
+    icon: <Sparkles className="w-12 h-12 text-primary" />,
+    highlight: "Your AI kuya/ate is ready to help you anytime!"
+  }
 ]
 
-// Financial goals options
-const FINANCIAL_GOALS = [
-  { id: 'emergency-fund', label: 'Build Emergency Fund', icon: '🛡️' },
-  { id: 'save-gadget', label: 'Save for Gadget/Phone', icon: '📱' },
-  { id: 'travel', label: 'Travel Fund', icon: '✈️' },
-  { id: 'education', label: 'Education/Course', icon: '📚' },
-  { id: 'business', label: 'Start a Business', icon: '💼' },
-  { id: 'investment', label: 'Learn Investing', icon: '📈' },
-  { id: 'debt-free', label: 'Become Debt-Free', icon: '💳' },
-  { id: 'house', label: 'Save for House/Condo', icon: '🏠' },
-]
-
-export default function OnboardingPage() {
+export default function OnboardingTourPage() {
   const router = useRouter()
-  const [step, setStep] = useState(1)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [currentStep, setCurrentStep] = useState(1)
   const [user, setUser] = useState<any>(null)
-  
-  const [formData, setFormData] = useState({
-    age: '',
-    monthlyIncome: '',
-    profilePicture: 'avatar-1',
-    selectedGoals: [] as string[],
-  })
+  const [isCompleting, setIsCompleting] = useState(false)
 
-  const totalSteps = 4
-  const progress = (step / totalSteps) * 100
-
-  // Check if user is authenticated
   useEffect(() => {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser()
@@ -59,110 +96,58 @@ export default function OnboardingPage() {
         return
       }
       setUser(user)
-
-      // Check if user already completed onboarding
-      const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('age, monthly_income')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (profile && (profile as any).age && (profile as any).monthly_income) {
-        // Already onboarded, redirect to dashboard
-        router.push('/dashboard')
-      }
     }
 
     checkUser()
   }, [router])
 
+  const currentStepData = ONBOARDING_STEPS[currentStep - 1]
+  const progress = (currentStep / ONBOARDING_STEPS.length) * 100
+  const isLastStep = currentStep === ONBOARDING_STEPS.length
+
   const handleNext = () => {
-    if (step === 1 && !formData.age) {
-      setError('Please enter your age')
-      return
+    if (currentStep < ONBOARDING_STEPS.length) {
+      setCurrentStep(currentStep + 1)
     }
-    if (step === 2 && !formData.monthlyIncome) {
-      setError('Please enter your monthly income')
-      return
-    }
-    setError('')
-    setStep(step + 1)
   }
 
   const handleBack = () => {
-    setError('')
-    setStep(step - 1)
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1)
+    }
   }
 
-  const toggleGoal = (goalId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedGoals: prev.selectedGoals.includes(goalId)
-        ? prev.selectedGoals.filter(id => id !== goalId)
-        : [...prev.selectedGoals, goalId]
-    }))
+  const handleSkip = async () => {
+    await completeOnboarding()
   }
 
-  const handleComplete = async () => {
+  const completeOnboarding = async () => {
     if (!user) return
     
-    setIsLoading(true)
-    setError('')
-
+    setIsCompleting(true)
     try {
-      // Update user profile
-      const { error: profileError } = await (supabase
+      // Mark onboarding as complete in user_profiles
+      const { error } = await (supabase
         .from('user_profiles')
         .update as any)({
-          age: parseInt(formData.age),
-          monthly_income: parseFloat(formData.monthlyIncome),
-          profile_picture: formData.profilePicture,
-          updated_at: new Date().toISOString(),
+          onboarding_completed: true,
+          onboarding_completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
         })
         .eq('user_id', user.id)
 
-      if (profileError) throw profileError
-
-      // Update user_context with income
-      const { error: contextError } = await (supabase
-        .from('user_context')
-        .update as any)({
-          income: parseFloat(formData.monthlyIncome),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('user_id', user.id)
-
-      if (contextError) throw contextError
-
-      // Create goals if selected
-      if (formData.selectedGoals.length > 0) {
-        const goals = formData.selectedGoals.map(goalId => {
-          const goal = FINANCIAL_GOALS.find(g => g.id === goalId)
-          return {
-            user_id: user.id,
-            title: goal?.label || goalId,
-            target_amount: goalId === 'emergency-fund' ? parseFloat(formData.monthlyIncome) * 3 : 10000,
-            current_amount: 0,
-            deadline: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-            status: 'active',
-            category: goalId,
-          }
-        })
-
-        const { error: goalsError } = await (supabase
-          .from('goals')
-          .insert as any)(goals)
-
-        if (goalsError) console.error('Error creating goals:', goalsError)
+      if (error) {
+        console.error('Error completing onboarding:', error)
       }
 
-      // Redirect to dashboard
+      // Redirect to dashboard with welcome message
       router.push('/dashboard?onboarding=complete')
-    } catch (err: any) {
-      console.error('Onboarding error:', err)
-      setError(err.message || 'Failed to complete onboarding')
+    } catch (err) {
+      console.error('Onboarding completion error:', err)
+      // Redirect anyway
+      router.push('/dashboard')
     } finally {
-      setIsLoading(false)
+      setIsCompleting(false)
     }
   }
 
@@ -176,263 +161,155 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-blue-50/30 to-green-50/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <PiggyBank className="w-10 h-10 text-primary" />
-            <span className="text-2xl font-bold text-primary">Plounix</span>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Let's Set Up Your Financial Journey! 🚀
-          </h1>
-          <p className="text-gray-600">
-            Just a few quick questions to personalize your experience
-          </p>
+      <div className="w-full max-w-3xl">
+        {/* Skip Button */}
+        <div className="flex justify-end mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSkip}
+            disabled={isCompleting}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            Skip Tour
+          </Button>
         </div>
 
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
-            <span>Step {step} of {totalSteps}</span>
-            <span>{Math.round(progress)}% Complete</span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">
+              Step {currentStep} of {ONBOARDING_STEPS.length}
+            </span>
+            <span className="text-sm text-gray-500">{Math.round(progress)}%</span>
           </div>
-          <Progress value={progress} className="h-2" />
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-gradient-to-r from-primary to-blue-600 transition-all duration-300"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
         </div>
 
-        <Card className="shadow-xl border-0">
-          <CardContent className="p-8">
-            {error && (
-              <div className="mb-6 rounded-md bg-red-50 p-4">
-                <div className="text-sm text-red-700">{error}</div>
-              </div>
-            )}
+        {/* Main Card */}
+        <Card className="shadow-2xl border-0 overflow-hidden">
+          <div className="bg-gradient-to-br from-primary/10 to-blue-50 p-8 text-center">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-full bg-white shadow-lg mb-6">
+              {currentStepData.icon}
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+              {currentStepData.title}
+            </h1>
+            <p className="text-lg text-gray-700 max-w-2xl mx-auto leading-relaxed">
+              {currentStepData.description}
+            </p>
+          </div>
 
-            {/* Step 1: Age */}
-            {step === 1 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-                    <User className="w-8 h-8 text-primary" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    How old are you?
-                  </h2>
-                  <p className="text-gray-600">
-                    This helps us give you age-appropriate financial advice
-                  </p>
+          <div className="p-8">
+            {/* Highlight Box */}
+            <div className="bg-gradient-to-r from-primary/5 to-blue-50/50 rounded-xl p-6 mb-8 border-l-4 border-primary">
+              <p className="text-gray-800 font-medium text-center">
+                {currentStepData.highlight}
+              </p>
+            </div>
+
+            {/* Feature Preview Cards */}
+            {currentStep === 2 && (
+              <div className="grid md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-blue-50 p-4 rounded-lg text-center">
+                  <Brain className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-800">Smart AI</p>
+                  <p className="text-xs text-gray-600">Understands context</p>
                 </div>
-
-                <div className="max-w-md mx-auto">
-                  <Input
-                    type="number"
-                    placeholder="Enter your age"
-                    value={formData.age}
-                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
-                    className="h-14 text-lg text-center"
-                    min="13"
-                    max="100"
-                    autoFocus
-                  />
-                  <p className="text-sm text-gray-500 text-center mt-2">
-                    Age must be between 13-100 years
-                  </p>
+                <div className="bg-green-50 p-4 rounded-lg text-center">
+                  <Receipt className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-800">Scan Receipts</p>
+                  <p className="text-xs text-gray-600">Auto-categorize</p>
                 </div>
-              </div>
-            )}
-
-            {/* Step 2: Monthly Income */}
-            {step === 2 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-                    <Wallet className="w-8 h-8 text-green-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    What's your monthly income?
-                  </h2>
-                  <p className="text-gray-600">
-                    Include allowance, salary, side hustles, etc. (in PHP)
-                  </p>
-                </div>
-
-                <div className="max-w-md mx-auto">
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-gray-400">₱</span>
-                    <Input
-                      type="number"
-                      placeholder="0.00"
-                      value={formData.monthlyIncome}
-                      onChange={(e) => setFormData({ ...formData, monthlyIncome: e.target.value })}
-                      className="h-14 text-lg text-center pl-10"
-                      min="0"
-                      step="100"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex justify-center gap-2 mt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, monthlyIncome: '5000' })}
-                    >
-                      ₱5,000
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, monthlyIncome: '15000' })}
-                    >
-                      ₱15,000
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setFormData({ ...formData, monthlyIncome: '25000' })}
-                    >
-                      ₱25,000
-                    </Button>
-                  </div>
-                  <p className="text-sm text-gray-500 text-center mt-2">
-                    Don't worry, you can update this later!
-                  </p>
+                <div className="bg-purple-50 p-4 rounded-lg text-center">
+                  <TrendingUp className="w-8 h-8 text-purple-600 mx-auto mb-2" />
+                  <p className="text-sm font-medium text-gray-800">Web Search</p>
+                  <p className="text-xs text-gray-600">Real-time data</p>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Avatar Selection */}
-            {step === 3 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-purple-100 mb-4">
-                    <Sparkles className="w-8 h-8 text-purple-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    Choose your avatar
-                  </h2>
-                  <p className="text-gray-600">
-                    Pick one that represents you best!
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 max-w-lg mx-auto">
-                  {AVATARS.map((avatar) => (
-                    <button
-                      key={avatar.id}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, profilePicture: avatar.id })}
-                      className={`
-                        flex flex-col items-center justify-center p-4 rounded-xl border-2 transition-all
-                        ${formData.profilePicture === avatar.id
-                          ? 'border-primary bg-primary/5 scale-105'
-                          : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
-                        }
-                      `}
-                    >
-                      <span className="text-4xl mb-2">{avatar.emoji}</span>
-                      <span className="text-xs text-gray-600">{avatar.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Step 4: Financial Goals */}
-            {step === 4 && (
-              <div className="space-y-6">
-                <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 mb-4">
-                    <Target className="w-8 h-8 text-orange-600" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    What are your financial goals?
-                  </h2>
-                  <p className="text-gray-600">
-                    Select all that apply (you can add more later)
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3 max-w-lg mx-auto">
-                  {FINANCIAL_GOALS.map((goal) => (
-                    <button
-                      key={goal.id}
-                      type="button"
-                      onClick={() => toggleGoal(goal.id)}
-                      className={`
-                        flex items-center space-x-3 p-4 rounded-lg border-2 transition-all text-left
-                        ${formData.selectedGoals.includes(goal.id)
-                          ? 'border-primary bg-primary/5'
-                          : 'border-gray-200 hover:border-primary/50 hover:bg-gray-50'
-                        }
-                      `}
-                    >
-                      <span className="text-2xl">{goal.icon}</span>
-                      <span className="text-sm font-medium text-gray-900">{goal.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <p className="text-sm text-gray-500 text-center">
-                  Selected {formData.selectedGoals.length} goal{formData.selectedGoals.length !== 1 ? 's' : ''}
-                </p>
-              </div>
-            )}
+            {/* Dots Indicator */}
+            <div className="flex items-center justify-center space-x-2 mb-8">
+              {ONBOARDING_STEPS.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentStep(index + 1)}
+                  className={`transition-all ${
+                    index + 1 === currentStep
+                      ? 'w-8 h-2 bg-primary'
+                      : index + 1 < currentStep
+                      ? 'w-2 h-2 bg-green-500'
+                      : 'w-2 h-2 bg-gray-300'
+                  } rounded-full`}
+                  aria-label={`Go to step ${index + 1}`}
+                />
+              ))}
+            </div>
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t">
-              {step > 1 && (
+            <div className="flex items-center justify-between">
+              <Button
+                variant="outline"
+                onClick={handleBack}
+                disabled={currentStep === 1 || isCompleting}
+                className={currentStep === 1 ? 'invisible' : ''}
+              >
+                Back
+              </Button>
+
+              {!isLastStep ? (
                 <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={handleBack}
-                  disabled={isLoading}
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back
-                </Button>
-              )}
-              
-              {step < totalSteps ? (
-                <Button
-                  type="button"
                   onClick={handleNext}
-                  className="ml-auto"
-                  disabled={isLoading}
+                  className="min-w-[120px]"
+                  disabled={isCompleting}
                 >
                   Next
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
                 <Button
-                  type="button"
-                  onClick={handleComplete}
-                  className="ml-auto"
-                  disabled={isLoading}
+                  onClick={completeOnboarding}
+                  className="min-w-[120px] bg-green-600 hover:bg-green-700"
+                  disabled={isCompleting}
                 >
-                  {isLoading ? 'Setting up...' : 'Complete Setup'}
-                  <Sparkles className="w-4 h-4 ml-2" />
+                  {isCompleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                      Starting...
+                    </>
+                  ) : (
+                    <>
+                      Get Started
+                      <Check className="w-4 h-4 ml-2" />
+                    </>
+                  )}
                 </Button>
               )}
             </div>
-          </CardContent>
+          </div>
         </Card>
 
-        {/* Skip option (only on goals step) */}
-        {step === 4 && (
-          <div className="text-center mt-4">
-            <button
-              type="button"
-              onClick={handleComplete}
-              className="text-sm text-gray-500 hover:text-gray-700 underline"
-              disabled={isLoading}
-            >
-              Skip for now
-            </button>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-3 gap-4 mt-6 text-center">
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-2xl font-bold text-primary">100%</p>
+            <p className="text-xs text-gray-600">Free Forever</p>
           </div>
-        )}
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-2xl font-bold text-green-600">24/7</p>
+            <p className="text-xs text-gray-600">AI Available</p>
+          </div>
+          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
+            <p className="text-2xl font-bold text-blue-600">10k+</p>
+            <p className="text-xs text-gray-600">Users</p>
+          </div>
+        </div>
       </div>
     </div>
   )
