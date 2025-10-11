@@ -133,11 +133,11 @@ export default function RegisterPage() {
         
         // Clear saved form data on successful registration
         sessionStorage.removeItem('registerFormData')
-        setMessage('Account created successfully! Please check your email to verify your account.')
-        // Redirect to login after 3 seconds
+        setMessage('Account created successfully! Redirecting to setup...')
+        // Redirect to onboarding after 2 seconds
         setTimeout(() => {
-          router.push('/auth/login?message=Please verify your email before logging in')
-        }, 3000)
+          router.push('/onboarding')
+        }, 2000)
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
