@@ -1,23 +1,47 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 import { Database } from './database.types'
 
-// Use placeholder values if env vars not available (e.g., during build)
-// The actual values will be available at runtime on Vercel
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co'
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBsYWNlaG9sZGVyIiwicm9sZSI6ImFub24iLCJpYXQiOjE2NDUxOTIwMDAsImV4cCI6MTk2MDU2ODAwMH0.placeholder'
+// Lazy initialization to avoid build-time errors
+let supabaseInstance: SupabaseClient<Database> | null = null
 
-export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true, // Persist session in localStorage
-      detectSessionInUrl: true,
-      storage: typeof window !== 'undefined' ? window.localStorage : undefined,
-    },
+function getSupabaseClient(): SupabaseClient<Database> {
+  if (supabaseInstance) {
+    return supabaseInstance
   }
-)
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseKey) {
+    throw new Error(
+      'Missing Supabase environment variables. ' +
+      'Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your Vercel project settings.'
+    )
+  }
+
+  supabaseInstance = createClient<Database>(
+    supabaseUrl,
+    supabaseKey,
+    {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      },
+    }
+  )
+
+  return supabaseInstance
+}
+
+// Export a getter instead of the client directly
+export const supabase = new Proxy({} as SupabaseClient<Database>, {
+  get: (target, prop) => {
+    const client = getSupabaseClient()
+    return (client as any)[prop]
+  }
+})
 
 // Database Tables Structure for Authentication:
 /*
