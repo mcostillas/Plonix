@@ -94,11 +94,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Build smart context with memory (only for authenticated users)
-    // Use sessionId to separate different conversations
+    // Use actual userId for database queries, sessionId for chat grouping
     let contextualMessage = message
     if (authenticatedUser) {
       try {
-        contextualMessage = await getAuthenticatedMemoryContext(effectiveSessionId, message, authenticatedUser, recentMessages)
+        // Pass user.id for database queries, but keep sessionId for conversation context
+        contextualMessage = await getAuthenticatedMemoryContext(authenticatedUser.id, message, authenticatedUser, recentMessages)
       } catch (error) {
         console.log('Memory not available, using direct message:', error)
       }
@@ -109,10 +110,10 @@ export async function POST(request: NextRequest) {
     const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser, recentMessages)
 
     // Save to memory if user is authenticated
-    // Use sessionId so messages are grouped by chat session
+    // Use user.id for database storage, sessionId for chat session grouping
     if (authenticatedUser) {
       try {
-        await addToUserMemory(effectiveSessionId, message, response, authenticatedUser)
+        await addToUserMemory(authenticatedUser.id, message, response, authenticatedUser)
       } catch (error) {
         console.log('Could not save to memory, continuing without persistence:', error)
       }
