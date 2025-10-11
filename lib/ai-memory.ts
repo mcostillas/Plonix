@@ -169,6 +169,56 @@ interface ChallengeStats {
   current_longest_streak: number
 }
 
+// Phase 4: Analytics interfaces
+interface NetWorth {
+  total_assets: number
+  total_liabilities: number
+  net_worth: number
+  growth_this_month: number
+  growth_percentage: number
+}
+
+interface BurnRate {
+  monthly_burn_rate: number
+  daily_burn_rate: number
+  runway_months: number // How long savings will last
+  projected_depletion_date?: string
+}
+
+interface BudgetVsActual {
+  period: string // "October 2025"
+  budget_total: number
+  actual_total: number
+  variance: number
+  variance_percentage: number
+  categories: {
+    category: string
+    budgeted: number
+    actual: number
+    variance: number
+    status: 'under' | 'over' | 'on-track'
+  }[]
+}
+
+interface SpendingTrend {
+  period: string // "Last 3 months"
+  trend: 'increasing' | 'decreasing' | 'stable'
+  change_amount: number
+  change_percentage: number
+  average_monthly: number
+  highest_month: { month: string; amount: number }
+  lowest_month: { month: string; amount: number }
+  top_growing_categories: { category: string; growth: number }[]
+}
+
+interface SavingsVelocity {
+  current_monthly_savings: number
+  average_savings_rate: number // Percentage
+  months_to_next_goal?: number
+  projected_annual_savings: number
+  pace: 'ahead' | 'on-track' | 'behind'
+}
+
 export class AIMemoryManager {
   // Enhanced context building with personalization
   async buildPersonalizedContext(userId: string): Promise<string> {
@@ -190,6 +240,13 @@ export class AIMemoryManager {
     const activeChallenges = await this.getActiveChallenges(userId)
     const challengeStats = await this.getChallengeStats(userId)
     
+    // ===== PHASE 4: FETCH REAL-TIME ANALYTICS =====
+    const netWorth = await this.calculateNetWorth(userId)
+    const burnRate = await this.calculateBurnRate(userId)
+    const budgetVsActual = await this.getBudgetVsActual(userId)
+    const spendingTrends = await this.detectSpendingTrends(userId)
+    const savingsVelocity = await this.calculateSavingsVelocity(userId)
+    
     if (!userContext) return this.getDefaultContext()
 
     // Build learning insights from reflections
@@ -205,6 +262,9 @@ export class AIMemoryManager {
     
     // Build challenges context
     const challengesContext = this.formatChallengesContext(activeChallenges, challengeStats)
+    
+    // Build analytics context
+    const analyticsContext = this.formatAnalyticsContext(netWorth, burnRate, budgetVsActual, spendingTrends, savingsVelocity)
 
     const personalizedPrompt = `
 PERSONAL PROFILE:
@@ -242,6 +302,12 @@ ${challengesContext}
 
 ===== END CHALLENGES DATA =====
 
+===== REAL-TIME ANALYTICS & INSIGHTS =====
+
+${analyticsContext}
+
+===== END ANALYTICS DATA =====
+
 LEARNING JOURNEY & REFLECTIONS:
 ${learningInsights}
 
@@ -259,27 +325,43 @@ RECENT CONVERSATION CONTEXT:
 ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 AI INSTRUCTIONS - CRITICAL:
-1. You now have COMPLETE visibility into user's finances, learning journey, AND active challenges
-2. Reference SPECIFIC concepts they learned (e.g., "Remember the 50-30-20 rule from Budgeting?")
-3. CELEBRATE challenge progress and streaks with emojis (🔥 for streaks, 🎉 for milestones)
-4. WARN about challenge deadlines if < 3 days and < 80% progress
-5. CONNECT challenges to financial goals (e.g., "Your No-Spend challenge helps reach emergency fund!")
-6. Give ACTIONABLE advice based on ACTUAL spending patterns, knowledge, AND active challenges
-7. Celebrate progress on goals with EXACT percentages
-8. Warn about upcoming bills if they're within 3 days
-9. Build on their financial education (e.g., "Now that you understand budgeting, let's apply it...")
-10. Reference SPECIFIC numbers from goals, transactions, bills, and challenge progress
-11. Use their name (${profile?.name || 'Friend'}) naturally
-12. Be specific, data-driven, and personalized - not generic!
+1. You now have COMPLETE visibility into finances, learning, challenges, AND real-time analytics
+2. Reference SPECIFIC trends, growth percentages, and projections
+3. USE analytics for predictions: "At current ₱5,000/month savings, you'll hit ₱30k goal in 6 months"
+4. WARN about concerning trends (spending increasing, runway < 6 months, over budget)
+5. CELEBRATE positive analytics (net worth growth, savings velocity ahead)
+6. CONNECT all systems: challenges impact spending, spending affects goals, goals build net worth
+7. Reference burn rate for urgency: "Your ₱20k savings = 4 months runway at current spending"
+8. Use budget variance to suggest improvements: "Food spending ₱2k over budget - try Cook-at-Home challenge"
+9. Highlight trends for awareness: "Your spending increased 15% this month - mostly in shopping category"
+10. Project goal timelines: "At ₱3k/month savings velocity, your ₱50k laptop goal is 10 months away"
+11. Reference pace for motivation: "You're ahead of pace! 🚀 Saving 28% vs target 20%"
+12. Be specific, data-driven, and actionable - not generic!
 
-EXAMPLE RESPONSES WITH FULL CONTEXT:
-- Learning + Challenge: "I see you're on Day 3 of the No-Spend Weekend challenge (🔥 3-day streak!) and you completed the Budgeting module! That 50-30-20 rule is helping you save - you're at ₱15,000/₱20,000 on your emergency fund (75%)!"
+EXAMPLE RESPONSES WITH FULL ANALYTICS:
+- Net Worth + Growth: "Your net worth is ₱65,000 (up ₱5,000 this month = 8.3% growth!). That's ₱60k annual growth at this pace! 🚀"
 
-- Challenge + Goal: "Your 7-Day Savings Challenge is at 71% (₱350/₱500 saved)! Keep it up - this directly contributes to your ₱30,000 Emergency Fund goal. Just ₱150 more in 2 days!"
+- Burn Rate Warning: "⚠️ Your burn rate is ₱18,500/month. With ₱20,000 in savings, you have 1.1 months runway if income stops. Let's build that emergency fund faster!"
 
-- All Systems: "Amazing progress! You completed Investing module, you're at 90% on your Laptop Fund (₱45k/₱50k), AND you're crushing the Cook-at-Home challenge (Day 5/7 🔥). Your food spending dropped from ₱6,000 to ₱4,000 this month - that's ₱2,000 saved!"
+- Budget Variance: "You're ₱3,000 over budget this month (16% variance). Main culprits: Food ₱2,000 over, Shopping ₱1,000 over. Your Cook-at-Home challenge (Day 3/7) is helping - keep it up!"
 
-- Urgent Challenge: "⚠️ Heads up! Your Save ₱500 challenge ends in 2 days and you're at 60% (₱300/₱500). Need to save ₱200 more. Your Netflix bill (₱149) is due in 3 days - perfect timing to pause it and save toward your challenge!"
+- Trend Analysis: "I notice your spending increased 15% this month (₱18,500 → ₱21,275). It's mostly shopping category (+₱2,000). Last month was your lowest spending. Want to get back on track?"
+
+- Savings Velocity: "Amazing! You're saving ₱6,500/month (26% savings rate) - that's AHEAD of the 20% target! 🚀 At this velocity, your ₱30k Emergency Fund is just 2 more months away!"
+
+- Complete Picture: "Let me show you how everything connects:
+  
+  💰 Net Worth: ₱65,000 (+₱5,000 this month, +8.3% growth)
+  🔥 Burn Rate: ₱18,500/month (₱617/day)
+  📊 Budget: ₱3,000 over (food & shopping categories)
+  📈 Trend: Spending up 15% (mostly shopping)
+  🚀 Savings: ₱6,500/month (26% rate - AHEAD!)
+  
+  🎯 Your No-Spend Challenge (Day 5/7, 🔥 5-day streak) is cutting food from ₱6k to ₱4k = ₱2k saved!
+  📚 You learned about digital banks in Saving module - that ₱20k Emergency Fund at 6% earns ₱1,200/year.
+  🏆 At current pace, your ₱30k Emergency Fund goal = 2 months away!
+  
+  ⚠️ Action: Shopping is your budget buster (+₱2k over). Skip that purchase and you'd be UNDER budget by ₱1k!"
 `
     
     return personalizedPrompt
@@ -1358,6 +1440,430 @@ Be friendly, encouraging, and use Taglish as appropriate.
       console.error('Error in getRecentChallengeActivity:', error)
       return []
     }
+  }
+
+  // ===== PHASE 4: REAL-TIME ANALYTICS METHODS =====
+  
+  /**
+   * Calculates net worth (assets - liabilities)
+   */
+  async calculateNetWorth(userId: string): Promise<NetWorth> {
+    try {
+      // Get all goals (assets)
+      const goals = await this.getUserGoals(userId)
+      const totalAssets = goals.reduce((sum, g) => {
+        const amount = typeof g.current_amount === 'number' ? g.current_amount : parseFloat(g.current_amount || '0')
+        return sum + amount
+      }, 0)
+
+      // For now, we don't track liabilities separately
+      // In future, could add loans/debts table
+      const totalLiabilities = 0
+
+      const netWorth = totalAssets - totalLiabilities
+
+      // Calculate growth (compare to 30 days ago)
+      // For now, estimate based on savings rate
+      const spendingAnalysis = await this.analyzeSpending(userId, 30)
+      const monthlyGrowth = spendingAnalysis?.netSavings || 0
+      const growthPercentage = totalAssets > 0 ? (monthlyGrowth / totalAssets) * 100 : 0
+
+      return {
+        total_assets: totalAssets,
+        total_liabilities: totalLiabilities,
+        net_worth: netWorth,
+        growth_this_month: monthlyGrowth,
+        growth_percentage: Math.round(growthPercentage * 100) / 100
+      }
+    } catch (error) {
+      console.error('Error calculating net worth:', error)
+      return {
+        total_assets: 0,
+        total_liabilities: 0,
+        net_worth: 0,
+        growth_this_month: 0,
+        growth_percentage: 0
+      }
+    }
+  }
+
+  /**
+   * Calculates burn rate (how fast user is spending money)
+   */
+  async calculateBurnRate(userId: string): Promise<BurnRate> {
+    try {
+      const analysis = await this.analyzeSpending(userId, 30)
+      
+      if (!analysis) {
+        return {
+          monthly_burn_rate: 0,
+          daily_burn_rate: 0,
+          runway_months: 0
+        }
+      }
+
+      const monthlyBurnRate = analysis.totalExpenses
+      const dailyBurnRate = monthlyBurnRate / 30
+
+      // Calculate runway (how long savings will last)
+      const goals = await this.getUserGoals(userId)
+      const liquidSavings = goals.reduce((sum, g) => {
+        // Only count emergency fund or savings as liquid
+        if (g.category === 'emergency' || g.category === 'savings') {
+          const amount = typeof g.current_amount === 'number' ? g.current_amount : parseFloat(g.current_amount || '0')
+          return sum + amount
+        }
+        return sum
+      }, 0)
+
+      const runwayMonths = monthlyBurnRate > 0 ? liquidSavings / monthlyBurnRate : 0
+
+      // Calculate projected depletion date
+      let projectedDepletionDate: string | undefined
+      if (runwayMonths > 0 && runwayMonths < 120) { // Only if < 10 years
+        const depletionDate = new Date()
+        depletionDate.setMonth(depletionDate.getMonth() + Math.floor(runwayMonths))
+        projectedDepletionDate = depletionDate.toISOString().split('T')[0]
+      }
+
+      return {
+        monthly_burn_rate: monthlyBurnRate,
+        daily_burn_rate: Math.round(dailyBurnRate * 100) / 100,
+        runway_months: Math.round(runwayMonths * 10) / 10,
+        projected_depletion_date: projectedDepletionDate
+      }
+    } catch (error) {
+      console.error('Error calculating burn rate:', error)
+      return {
+        monthly_burn_rate: 0,
+        daily_burn_rate: 0,
+        runway_months: 0
+      }
+    }
+  }
+
+  /**
+   * Compares budget vs actual spending
+   */
+  async getBudgetVsActual(userId: string): Promise<BudgetVsActual> {
+    try {
+      const userContext = await this.getUserContext(userId)
+      const analysis = await this.analyzeSpending(userId, 30)
+
+      if (!userContext || !analysis) {
+        return {
+          period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+          budget_total: 0,
+          actual_total: 0,
+          variance: 0,
+          variance_percentage: 0,
+          categories: []
+        }
+      }
+
+      // Use 50-30-20 rule as default budget
+      const income = userContext.income || 0
+      const budgetNeeds = income * 0.5
+      const budgetWants = income * 0.3
+      const budgetSavings = income * 0.2
+      const budgetTotal = income
+
+      const actualTotal = analysis.totalExpenses
+      const variance = budgetTotal - actualTotal
+      const variancePercentage = budgetTotal > 0 ? (variance / budgetTotal) * 100 : 0
+
+      // Categorize spending
+      const categories = analysis.topCategories.map((cat: any) => {
+        // Estimate budget based on category type
+        let budgeted = 0
+        const isNeed = ['food', 'transport', 'utilities', 'rent', 'bills'].includes(cat.category.toLowerCase())
+        const isWant = ['entertainment', 'shopping', 'dining', 'leisure'].includes(cat.category.toLowerCase())
+        
+        if (isNeed) {
+          budgeted = budgetNeeds * (cat.percentage / 100) * 2 // Rough allocation
+        } else if (isWant) {
+          budgeted = budgetWants * (cat.percentage / 100) * 2
+        }
+
+        const catVariance = budgeted - cat.amount
+        const status: 'under' | 'over' | 'on-track' = 
+          catVariance > budgeted * 0.1 ? 'under' : 
+          catVariance < -budgeted * 0.1 ? 'over' : 
+          'on-track'
+
+        return {
+          category: cat.category,
+          budgeted: Math.round(budgeted),
+          actual: cat.amount,
+          variance: Math.round(catVariance),
+          status
+        }
+      })
+
+      return {
+        period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        budget_total: budgetTotal,
+        actual_total: actualTotal,
+        variance: Math.round(variance),
+        variance_percentage: Math.round(variancePercentage * 100) / 100,
+        categories: categories.slice(0, 5) // Top 5 categories
+      }
+    } catch (error) {
+      console.error('Error calculating budget vs actual:', error)
+      return {
+        period: new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        budget_total: 0,
+        actual_total: 0,
+        variance: 0,
+        variance_percentage: 0,
+        categories: []
+      }
+    }
+  }
+
+  /**
+   * Detects spending trends over time
+   */
+  async detectSpendingTrends(userId: string): Promise<SpendingTrend> {
+    try {
+      // Get spending for last 90 days
+      const currentMonth = await this.analyzeSpending(userId, 30)
+      const previousMonth = await this.analyzeSpending(userId, 60) // Last 30-60 days
+      const twoMonthsAgo = await this.analyzeSpending(userId, 90) // Last 60-90 days
+
+      if (!currentMonth) {
+        return {
+          period: 'Last 3 months',
+          trend: 'stable',
+          change_amount: 0,
+          change_percentage: 0,
+          average_monthly: 0,
+          highest_month: { month: 'Unknown', amount: 0 },
+          lowest_month: { month: 'Unknown', amount: 0 },
+          top_growing_categories: []
+        }
+      }
+
+      const current = currentMonth.totalExpenses
+      const previous = previousMonth?.totalExpenses || current
+      const twoAgo = twoMonthsAgo?.totalExpenses || current
+
+      const average = (current + previous + twoAgo) / 3
+      const changeAmount = current - previous
+      const changePercentage = previous > 0 ? (changeAmount / previous) * 100 : 0
+
+      // Determine trend
+      let trend: 'increasing' | 'decreasing' | 'stable' = 'stable'
+      if (changePercentage > 10) {
+        trend = 'increasing'
+      } else if (changePercentage < -10) {
+        trend = 'decreasing'
+      }
+
+      // Find highest and lowest months
+      const months = [
+        { month: 'This month', amount: current },
+        { month: 'Last month', amount: previous },
+        { month: '2 months ago', amount: twoAgo }
+      ]
+      months.sort((a, b) => b.amount - a.amount)
+
+      // Detect growing categories
+      const topGrowingCategories = currentMonth.topCategories
+        .slice(0, 3)
+        .map((cat: any) => ({
+          category: cat.category,
+          growth: cat.percentage
+        }))
+
+      return {
+        period: 'Last 3 months',
+        trend,
+        change_amount: Math.round(changeAmount),
+        change_percentage: Math.round(changePercentage * 100) / 100,
+        average_monthly: Math.round(average),
+        highest_month: months[0],
+        lowest_month: months[months.length - 1],
+        top_growing_categories: topGrowingCategories
+      }
+    } catch (error) {
+      console.error('Error detecting spending trends:', error)
+      return {
+        period: 'Last 3 months',
+        trend: 'stable',
+        change_amount: 0,
+        change_percentage: 0,
+        average_monthly: 0,
+        highest_month: { month: 'Unknown', amount: 0 },
+        lowest_month: { month: 'Unknown', amount: 0 },
+        top_growing_categories: []
+      }
+    }
+  }
+
+  /**
+   * Calculates savings velocity (how fast user is saving)
+   */
+  async calculateSavingsVelocity(userId: string): Promise<SavingsVelocity> {
+    try {
+      const analysis = await this.analyzeSpending(userId, 30)
+      const goals = await this.getUserGoals(userId)
+
+      if (!analysis) {
+        return {
+          current_monthly_savings: 0,
+          average_savings_rate: 0,
+          projected_annual_savings: 0,
+          pace: 'on-track'
+        }
+      }
+
+      const monthlySavings = analysis.netSavings
+      const savingsRate = analysis.savingsRate
+      const projectedAnnualSavings = monthlySavings * 12
+
+      // Calculate months to next goal
+      const activeGoals = goals.filter(g => g.status === 'active')
+      let monthsToNextGoal: number | undefined
+      
+      if (activeGoals.length > 0 && monthlySavings > 0) {
+        // Find closest goal
+        const closestGoal = activeGoals.reduce((closest, current) => {
+          const currentAmount = typeof current.current_amount === 'number' ? current.current_amount : parseFloat(current.current_amount || '0')
+          const currentTarget = typeof current.target_amount === 'number' ? current.target_amount : parseFloat(current.target_amount || '0')
+          const currentRemaining = currentTarget - currentAmount
+
+          const closestAmount = typeof closest.current_amount === 'number' ? closest.current_amount : parseFloat(closest.current_amount || '0')
+          const closestTarget = typeof closest.target_amount === 'number' ? closest.target_amount : parseFloat(closest.target_amount || '0')
+          const closestRemaining = closestTarget - closestAmount
+
+          return currentRemaining < closestRemaining ? current : closest
+        })
+
+        const closestAmount = typeof closestGoal.current_amount === 'number' ? closestGoal.current_amount : parseFloat(closestGoal.current_amount || '0')
+        const closestTarget = typeof closestGoal.target_amount === 'number' ? closestGoal.target_amount : parseFloat(closestGoal.target_amount || '0')
+        const remaining = closestTarget - closestAmount
+        monthsToNextGoal = Math.ceil(remaining / monthlySavings)
+      }
+
+      // Determine pace
+      let pace: 'ahead' | 'on-track' | 'behind' = 'on-track'
+      if (savingsRate >= 25) {
+        pace = 'ahead'
+      } else if (savingsRate < 15) {
+        pace = 'behind'
+      }
+
+      return {
+        current_monthly_savings: monthlySavings,
+        average_savings_rate: savingsRate,
+        months_to_next_goal: monthsToNextGoal,
+        projected_annual_savings: projectedAnnualSavings,
+        pace
+      }
+    } catch (error) {
+      console.error('Error calculating savings velocity:', error)
+      return {
+        current_monthly_savings: 0,
+        average_savings_rate: 0,
+        projected_annual_savings: 0,
+        pace: 'on-track'
+      }
+    }
+  }
+
+  /**
+   * Formats analytics context for AI
+   */
+  formatAnalyticsContext(
+    netWorth: NetWorth,
+    burnRate: BurnRate,
+    budgetVsActual: BudgetVsActual,
+    trends: SpendingTrend,
+    velocity: SavingsVelocity
+  ): string {
+    let context = `REAL-TIME ANALYTICS & INSIGHTS:\n\n`
+
+    // Net Worth
+    context += `💰 NET WORTH:\n`
+    context += `- Total Assets: ₱${netWorth.total_assets.toLocaleString()}\n`
+    context += `- Net Worth: ₱${netWorth.net_worth.toLocaleString()}\n`
+    if (netWorth.growth_this_month !== 0) {
+      const sign = netWorth.growth_this_month > 0 ? '+' : ''
+      context += `- Monthly Growth: ${sign}₱${netWorth.growth_this_month.toLocaleString()} (${sign}${netWorth.growth_percentage}%)\n`
+    }
+    context += `\n`
+
+    // Burn Rate
+    context += `🔥 BURN RATE:\n`
+    context += `- Monthly: ₱${burnRate.monthly_burn_rate.toLocaleString()}\n`
+    context += `- Daily: ₱${burnRate.daily_burn_rate.toLocaleString()}\n`
+    if (burnRate.runway_months > 0) {
+      context += `- Runway: ${burnRate.runway_months} months`
+      if (burnRate.runway_months < 6) {
+        context += ` ⚠️ LOW!`
+      }
+      context += `\n`
+      if (burnRate.projected_depletion_date) {
+        context += `- Depletion Date: ${burnRate.projected_depletion_date} (if no income)\n`
+      }
+    }
+    context += `\n`
+
+    // Budget vs Actual
+    context += `📊 BUDGET VS ACTUAL (${budgetVsActual.period}):\n`
+    context += `- Budgeted: ₱${budgetVsActual.budget_total.toLocaleString()}\n`
+    context += `- Actual: ₱${budgetVsActual.actual_total.toLocaleString()}\n`
+    context += `- Variance: ₱${budgetVsActual.variance.toLocaleString()} (${budgetVsActual.variance_percentage}%)\n`
+    if (budgetVsActual.categories.length > 0) {
+      context += `\nCategory Performance:\n`
+      budgetVsActual.categories.forEach(cat => {
+        const icon = cat.status === 'under' ? '✅' : cat.status === 'over' ? '⚠️' : '➡️'
+        context += `${icon} ${cat.category}: ₱${cat.actual.toLocaleString()} vs ₱${cat.budgeted.toLocaleString()}\n`
+      })
+    }
+    context += `\n`
+
+    // Spending Trends
+    context += `📈 SPENDING TRENDS (${trends.period}):\n`
+    const trendIcon = trends.trend === 'increasing' ? '📈' : trends.trend === 'decreasing' ? '📉' : '➡️'
+    context += `- Trend: ${trendIcon} ${trends.trend.toUpperCase()}\n`
+    context += `- Change: ${trends.change_amount >= 0 ? '+' : ''}₱${trends.change_amount.toLocaleString()} (${trends.change_percentage}%)\n`
+    context += `- Average Monthly: ₱${trends.average_monthly.toLocaleString()}\n`
+    context += `- Highest: ${trends.highest_month.month} (₱${trends.highest_month.amount.toLocaleString()})\n`
+    context += `- Lowest: ${trends.lowest_month.month} (₱${trends.lowest_month.amount.toLocaleString()})\n`
+    if (trends.top_growing_categories.length > 0) {
+      context += `\nGrowing Categories:\n`
+      trends.top_growing_categories.forEach(cat => {
+        context += `- ${cat.category}: ${cat.growth}% of spending\n`
+      })
+    }
+    context += `\n`
+
+    // Savings Velocity
+    context += `🚀 SAVINGS VELOCITY:\n`
+    context += `- Monthly Savings: ₱${velocity.current_monthly_savings.toLocaleString()}\n`
+    context += `- Savings Rate: ${velocity.average_savings_rate}%\n`
+    context += `- Annual Projection: ₱${velocity.projected_annual_savings.toLocaleString()}\n`
+    if (velocity.months_to_next_goal) {
+      context += `- Next Goal: ${velocity.months_to_next_goal} months away\n`
+    }
+    const paceIcon = velocity.pace === 'ahead' ? '🚀' : velocity.pace === 'behind' ? '🐌' : '✅'
+    context += `- Pace: ${paceIcon} ${velocity.pace.toUpperCase()}\n`
+    context += `\n`
+
+    // AI Instructions
+    context += `\n🎯 AI INSTRUCTIONS FOR ANALYTICS:\n`
+    context += `- Reference SPECIFIC numbers and percentages\n`
+    context += `- Highlight trends (increasing/decreasing)\n`
+    context += `- WARN if burn rate runway < 6 months\n`
+    context += `- CELEBRATE positive growth and savings velocity\n`
+    context += `- CONNECT analytics to goals (e.g., "At current pace, you'll hit goal in 3 months")\n`
+    context += `- RECOMMEND actions based on budget variance\n`
+    context += `- Use trend data for predictions\n`
+    context += `- Reference pace (ahead/on-track/behind) for encouragement\n`
+
+    return context
   }
 }
 
