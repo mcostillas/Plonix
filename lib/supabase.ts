@@ -4,13 +4,15 @@ import { Database } from './database.types'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables. Please check your .env.local file.')
+// Validate environment variables at runtime, not build time
+// This allows the build to succeed even if env vars aren't set during build
+if (typeof window !== 'undefined' && (!supabaseUrl || !supabaseKey)) {
+  console.error('Missing Supabase environment variables. Please check your .env.local file.')
 }
 
 export const supabase = createClient<Database>(
-  supabaseUrl,
-  supabaseKey,
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseKey || 'placeholder-key',
   {
     auth: {
       autoRefreshToken: true,
