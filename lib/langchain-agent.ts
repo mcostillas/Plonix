@@ -1549,6 +1549,19 @@ Response: "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you 
       // Add current user message
       messages.push({ role: 'user', content: message })
       
+      // DIAGNOSTIC LOGGING
+      const systemPromptTokens = Math.ceil(systemPrompt.length / 4)
+      const toolsTokens = Math.ceil(JSON.stringify(tools).length / 4)
+      const messagesTokens = Math.ceil(JSON.stringify(messages).length / 4)
+      const totalEstimatedTokens = systemPromptTokens + toolsTokens + messagesTokens
+      
+      console.log('📏 TOKEN USAGE DIAGNOSTIC:')
+      console.log('  System prompt: ~', systemPromptTokens, 'tokens')
+      console.log('  Tools array: ~', toolsTokens, 'tokens')
+      console.log('  Messages: ~', messagesTokens, 'tokens')
+      console.log('  TOTAL ESTIMATED: ~', totalEstimatedTokens, 'tokens')
+      console.log('  Context limit (gpt-4o-mini): 128,000 tokens')
+      console.log('  Usage: ', ((totalEstimatedTokens / 128000) * 100).toFixed(2), '%')
       console.log('💬 Sending to OpenAI with', messages.length, 'messages in context')
 
       // First call to OpenAI
@@ -1569,7 +1582,35 @@ Response: "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you 
       })
 
       const data = await initialResponse.json()
+      
+      // DIAGNOSTIC: Check for API errors
+      if (data.error) {
+        console.error('❌ OpenAI API ERROR:')
+        console.error('  Type:', data.error.type)
+        console.error('  Code:', data.error.code)
+        console.error('  Message:', data.error.message)
+        throw new Error(data.error.message)
+      }
+      
+      // DIAGNOSTIC: Check response structure
+      if (!data.choices || data.choices.length === 0) {
+        console.error('❌ NO CHOICES IN RESPONSE:')
+        console.error('  Full response:', JSON.stringify(data, null, 2))
+        throw new Error('No response from OpenAI')
+      }
+      
       const assistantMessage = data.choices[0]?.message
+      
+      // DIAGNOSTIC: Log if tools were called
+      console.log('🔍 AI RESPONSE ANALYSIS:')
+      console.log('  Tool calls present?', !!assistantMessage.tool_calls)
+      console.log('  Number of tool calls:', assistantMessage.tool_calls?.length || 0)
+      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+        console.log('  Tools being called:', assistantMessage.tool_calls.map((t: any) => t.function.name).join(', '))
+      } else {
+        console.log('  ⚠️ NO TOOLS CALLED - AI responded conversationally')
+        console.log('  Response preview:', assistantMessage.content?.substring(0, 100))
+      }
 
       // Check if AI wants to call function(s)
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
