@@ -126,7 +126,7 @@ export default function OnboardingTourPage() {
     
     setIsCompleting(true)
     try {
-      // Mark onboarding as complete in user_profiles
+      // Try to mark onboarding as complete in user_profiles
       const { error } = await (supabase
         .from('user_profiles')
         .update as any)({
@@ -137,13 +137,22 @@ export default function OnboardingTourPage() {
         .eq('user_id', user.id)
 
       if (error) {
-        console.error('Error completing onboarding:', error)
+        console.log('⚠️ Column might not exist yet, storing in localStorage', error)
+        // Fallback: Store in localStorage if column doesn't exist
+        localStorage.setItem('plounix_onboarding_completed', 'true')
+      } else {
+        console.log('✅ Onboarding marked complete in database')
       }
+
+      // Also store in localStorage as backup
+      localStorage.setItem('plounix_onboarding_completed', 'true')
 
       // Redirect to dashboard with welcome message
       router.push('/dashboard?onboarding=complete')
     } catch (err) {
       console.error('Onboarding completion error:', err)
+      // Fallback to localStorage
+      localStorage.setItem('plounix_onboarding_completed', 'true')
       // Redirect anyway
       router.push('/dashboard')
     } finally {

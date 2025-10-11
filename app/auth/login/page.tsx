@@ -63,24 +63,33 @@ function LoginForm() {
         
         // Check if user has completed onboarding
         if (result.user) {
-          const { supabase } = await import('@/lib/supabase')
-          const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('onboarding_completed')
-            .eq('user_id', result.user.id)
-            .maybeSingle()
-          
-          console.log('🔍 Profile check:', { profile, profileError, userId: result.user.id })
-          
-          // If onboarding not completed, redirect to tour
-          if (!profile || !(profile as any).onboarding_completed) {
-            console.log('❌ Onboarding incomplete! Redirecting to /onboarding')
-            setIsLoading(false) // Stop loading indicator
-            router.push('/onboarding')
-            return
+          // Check localStorage first
+          const localCompleted = localStorage.getItem('plounix_onboarding_completed')
+          if (localCompleted === 'true') {
+            console.log('✅ Onboarding complete (localStorage), going to dashboard')
+          } else {
+            const { supabase } = await import('@/lib/supabase')
+            const { data: profile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('onboarding_completed')
+              .eq('user_id', result.user.id)
+              .maybeSingle()
+            
+            console.log('🔍 Profile check:', { profile, profileError, userId: result.user.id })
+            
+            // If column doesn't exist, skip onboarding check
+            if (profileError && profileError.message?.includes('column')) {
+              console.log('⚠️ Column does not exist, skipping onboarding')
+            } else if (!profile || !(profile as any).onboarding_completed) {
+              // If onboarding not completed, redirect to tour
+              console.log('❌ Onboarding incomplete! Redirecting to /onboarding')
+              setIsLoading(false) // Stop loading indicator
+              router.push('/onboarding')
+              return
+            }
+            
+            console.log('✅ Onboarding complete, going to dashboard')
           }
-          
-          console.log('✅ Onboarding complete, going to dashboard')
         }
         
         // Get redirect URL from query params or default to dashboard
