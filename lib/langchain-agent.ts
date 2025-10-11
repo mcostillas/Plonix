@@ -163,6 +163,217 @@ export class PlounixAIAgent {
         },
       }),
 
+      // Goal Creation Tool
+      new DynamicTool({
+        name: "create_financial_goal",
+        description: "**CRITICAL TOOL** Create a financial goal for the user directly in the database. Use this when user mentions wanting to save for something, has a financial target, or when you identify a goal they should pursue. Required: userId (from context), title, targetAmount. Optional: description, currentAmount, category, deadline (ISO date string like '2025-12-31'), icon, color. ALWAYS ask user for deadline before creating goal. ALWAYS use this tool when you suggest creating a goal - DON'T just mention it, actually create it!",
+        func: async (input: string) => {
+          try {
+            console.log('🎯 create_financial_goal called with:', input)
+            
+            // Parse the input (expecting JSON string with goal details)
+            let goalData
+            try {
+              goalData = JSON.parse(input)
+            } catch (e) {
+              return JSON.stringify({
+                error: "Invalid input format. Please provide goal details as JSON with: userId, title, targetAmount (required), and optional: description, currentAmount, category, deadline, icon, color"
+              })
+            }
+
+            // Make API call to create goal
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/goals/create`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...goalData,
+                aiGenerated: true
+              })
+            })
+
+            if (!response.ok) {
+              const error = await response.json()
+              return JSON.stringify({
+                success: false,
+                error: error.error || 'Failed to create goal',
+                details: error.details
+              })
+            }
+
+            const result = await response.json()
+            console.log('✅ Goal created successfully:', result.goal)
+            
+            return JSON.stringify({
+              success: true,
+              goal: result.goal,
+              message: `Goal "${result.goal.title}" successfully created! Target: ₱${result.goal.target_amount.toLocaleString()}`
+            })
+          } catch (error) {
+            console.error('❌ Goal creation error:', error)
+            return JSON.stringify({
+              success: false,
+              error: "Failed to create goal. Please try again later."
+            })
+          }
+        },
+      }),
+
+      // Transaction Management Tools
+      new DynamicTool({
+        name: "add_expense",
+        description: "Add an expense transaction for the user. Use this when user mentions spending money, buying something, or paying for something. Required: userId, amount. Optional: merchant, category, paymentMethod, notes, date.",
+        func: async (input: string) => {
+          try {
+            console.log('💸 add_expense called with:', input)
+            
+            let expenseData
+            try {
+              expenseData = JSON.parse(input)
+            } catch (e) {
+              return JSON.stringify({
+                error: "Invalid input format. Please provide expense details as JSON"
+              })
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...expenseData,
+                transactionType: 'expense'
+              })
+            })
+
+            if (!response.ok) {
+              const error = await response.json()
+              return JSON.stringify({
+                success: false,
+                error: error.error || 'Failed to add expense'
+              })
+            }
+
+            const result = await response.json()
+            console.log('✅ Expense added:', result.transaction)
+            return JSON.stringify({
+              success: true,
+              transaction: result.transaction,
+              message: result.message
+            })
+          } catch (error) {
+            console.error('❌ Expense creation error:', error)
+            return JSON.stringify({
+              success: false,
+              error: "Failed to add expense. Please try again later."
+            })
+          }
+        },
+      }),
+
+      new DynamicTool({
+        name: "add_income",
+        description: "Add an income transaction for the user. Use this when user mentions receiving money, getting paid, earning, or any income source. Required: userId, amount. Optional: merchant (source), category, paymentMethod, notes, date.",
+        func: async (input: string) => {
+          try {
+            console.log('💰 add_income called with:', input)
+            
+            let incomeData
+            try {
+              incomeData = JSON.parse(input)
+            } catch (e) {
+              return JSON.stringify({
+                error: "Invalid input format. Please provide income details as JSON"
+              })
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                ...incomeData,
+                transactionType: 'income'
+              })
+            })
+
+            if (!response.ok) {
+              const error = await response.json()
+              return JSON.stringify({
+                success: false,
+                error: error.error || 'Failed to add income'
+              })
+            }
+
+            const result = await response.json()
+            console.log('✅ Income added:', result.transaction)
+            return JSON.stringify({
+              success: true,
+              transaction: result.transaction,
+              message: result.message
+            })
+          } catch (error) {
+            console.error('❌ Income creation error:', error)
+            return JSON.stringify({
+              success: false,
+              error: "Failed to add income. Please try again later."
+            })
+          }
+        },
+      }),
+
+      new DynamicTool({
+        name: "add_monthly_bill",
+        description: "Add a recurring monthly bill for the user. Use this when user mentions setting up automatic bills, recurring expenses like rent, utilities, subscriptions, etc. Required: userId, name, amount, category, dueDay. Optional: description, isActive. Categories: Housing, Utilities, Subscriptions, Transportation, Insurance, Other. Due day must be 1-31.",
+        func: async (input: string) => {
+          try {
+            console.log('📅 add_monthly_bill called with:', input)
+            
+            let billData
+            try {
+              billData = JSON.parse(input)
+            } catch (e) {
+              return JSON.stringify({
+                error: "Invalid input format. Please provide monthly bill details as JSON"
+              })
+            }
+
+            const response = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/monthly-bills/add`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(billData)
+            })
+
+            if (!response.ok) {
+              const error = await response.json()
+              return JSON.stringify({
+                success: false,
+                error: error.error || 'Failed to add monthly bill'
+              })
+            }
+
+            const result = await response.json()
+            console.log('✅ Monthly bill added:', result.bill)
+            return JSON.stringify({
+              success: true,
+              bill: result.bill,
+              message: result.message
+            })
+          } catch (error) {
+            console.error('❌ Monthly bill creation error:', error)
+            return JSON.stringify({
+              success: false,
+              error: "Failed to add monthly bill. Please try again later."
+            })
+          }
+        },
+      }),
+
       // Financial Analysis Tools
       new DynamicTool({
         name: "budget_analyzer",
@@ -283,6 +494,103 @@ When users want to learn a skill or say they're not good at something:
 5. Mention realistic time commitment and earning potential
 6. Encourage starting with beginner resources and practicing
 7. Connect learning to their financial goals (e.g., "Learning this can help you earn ₱X/month")
+
+GOAL CREATION FRAMEWORK (THREE-STEP APPROACH):
+
+**Step 1 - When user first mentions a goal:**
+When user mentions ANY savings goal or target amount:
+   - "I want [amount] goal"
+   - "I want to save [amount]"
+   - "My goal is [amount]"
+   - "I need to save for [item]"
+
+Response pattern:
+1. Acknowledge and provide brief advice
+2. **ASK**: "Would you like me to create this goal for you in your Goals page? I can set it up right now!"
+3. Wait for confirmation
+
+**Step 2 - When user confirms (says yes, sure, okay, create it, etc.):**
+**ASK ABOUT DEADLINE**: "Great! When would you like to achieve this goal? For example:
+   - By a specific date (e.g., 'by December 2025')
+   - In a certain timeframe (e.g., 'in 6 months')
+   - Or no deadline if you're saving at your own pace"
+
+Wait for their response.
+
+**Step 3 - After getting deadline (or if they say no deadline):**
+IMMEDIATELY call create_financial_goal tool with:
+   - userId: from userContext.id
+   - title: Specific or "Savings Goal"
+   - targetAmount: numeric value
+   - deadline: ISO format date if provided, null otherwise
+   - description: based on context
+
+After creation, respond:
+"Perfect! I've created your '[Title]' goal of ₱[amount]! You can track it in your Goals page. Here's your action plan..."
+
+TRANSACTION TRACKING FRAMEWORK:
+
+**When to use add_expense:**
+User mentions spending money, buying something, or paying for something:
+- "I spent 500 on food"
+- "I bought a new phone for 15000"
+- "I paid my electric bill 2000"
+- "Grabbed lunch for 150"
+
+**When to use add_income:**
+User mentions receiving money, getting paid, or earning:
+- "I got paid 20000"
+- "Received 5000 from freelance"
+- "My salary came in"
+- "Earned 1000 from side gig"
+
+**Transaction Flow:**
+1. Acknowledge the transaction
+2. **ASK** for missing details if needed (amount is required)
+3. Call appropriate tool (add_expense or add_income)
+4. After success, provide:
+   - Confirmation of transaction added
+   - Brief financial advice or insight
+   - Encouragement to keep tracking
+
+Example:
+User: "I spent 500 pesos on jollibee"
+*Call add_expense({amount: 500, merchant: "Jollibee", category: "food"})*
+Response: "Got it! ✓ I've recorded your ₱500 expense at Jollibee. That's added to your food category. Remember, packing lunch could save you ₱100-200 per meal!"
+
+User: "I received my 25000 salary today"
+*Call add_income({amount: 25000, category: "salary"})*
+Response: "Great! ✓ I've recorded your ₱25,000 salary. Now's a perfect time to:
+- Set aside 20% (₱5,000) for savings
+- Pay any bills or debts
+- Budget for the month ahead
+Want help creating a budget plan?"
+
+Examples:
+
+User: "I want a 10000 goal"
+Response: "Great! ₱10,000 is a solid target. Depending on your timeline:
+- Save ₱1,000/month = 10 months
+- Save ₱2,000/month = 5 months
+
+Would you like me to create this goal for you in your Goals page? I can set it up right now!"
+
+User: "yes please"
+Response: "Awesome! When would you like to achieve this ₱10,000 goal? You can say:
+- 'by December 2025' (specific date)
+- 'in 6 months' (timeframe)
+- 'no deadline' (flexible)"
+
+User: "in 6 months"
+*Call create_financial_goal with deadline: "2025-06-11"*
+Response: "Perfect! I've created your ₱10,000 Savings Goal with a 6-month deadline! You can track your progress in the Goals page. To hit this target, you'll need to save about ₱1,667 per month. What's this goal for?"
+
+DEADLINE PARSING GUIDE:
+- "in X months" → calculate date from today
+- "in X weeks" → calculate date from today
+- "by [Month Year]" → use last day of that month
+- "by [specific date]" → parse that date
+- "no deadline" / "no rush" → set deadline to null
 
 Example responses for learning:
 ✅ "I see you're interested in freelancing but don't have the skills yet. Let me find learning resources for you..."
@@ -415,6 +723,46 @@ When users mention wanting to learn ANY skill (writing, design, coding, video ed
 
 The tool has 51 pre-curated resources with REAL URLs. ALWAYS use it!
 
+GOAL CREATION FRAMEWORK (THREE-STEP APPROACH):
+
+**Step 1 - Initial Goal Mention:**
+When user mentions a savings goal or target amount, provide advice THEN offer to create:
+
+Response pattern:
+1. Brief financial advice (2-3 sentences)
+2. **ASK**: "Would you like me to create this goal for you? I can set it up in your Goals page right now!"
+
+**Step 2 - User Confirms:**
+When user says "yes", "sure", "okay", "create it", "please", etc.:
+- **ASK ABOUT DEADLINE**: "Great! When would you like to achieve this goal?"
+  - Suggest options: "by a specific date", "in X months", "no deadline"
+- Wait for their deadline response
+
+**Step 3 - Create Goal:**
+After getting deadline (or if they say no deadline):
+- IMMEDIATELY call create_financial_goal tool
+- Parameters: userId (from userContext.id), title, targetAmount, deadline (ISO date or null)
+- After success: "Perfect! Goal created! Check your Goals page to track progress."
+
+Examples:
+
+Conversation 1:
+User: "I want a 10000 goal"
+You: "Great! ₱10,000 is achievable. Save ₱1,000/month = 10 months, or ₱2,000/month = 5 months. 
+
+Would you like me to create this goal for you? I can set it up in your Goals page right now!"
+
+User: "yes please"
+You: "Awesome! When would you like to achieve this goal? (e.g., 'in 6 months', 'by December', or 'no deadline')"
+
+User: "in 3 months"
+*Call create_financial_goal({userId: userContext.id, title: "Savings Goal", targetAmount: 10000, deadline: "2025-04-11"})*
+You: "Perfect! ✓ I've created your ₱10,000 Savings Goal with a 3-month deadline. That's ₱3,333/month. Track it in your Goals page!"
+
+Conversation 2:
+User: "I want to save for a laptop"
+You: "Smart! How much are you targeting? New laptops range from ₱25,000-₱50,000. Once you tell me the amount, I can create the goal for you!"
+
 Example responses for learning:
 ✅ "I see you're interested in freelancing but don't have the skills yet. Let me find learning resources for you..."
 ✅ "Great that you want to learn! Here are FREE YouTube courses and websites where you can start..."
@@ -461,7 +809,40 @@ ALWAYS PRIORITIZE:
 3. Budget analysis before purchases
 4. Alternatives to buying new
 5. Payment plans WITHOUT high interest
-6. Long-term financial health over short-term wants`
+6. Long-term financial health over short-term wants
+
+TRANSACTION TRACKING:
+**Automatically record transactions when user mentions:**
+- Expenses: "I spent...", "I bought...", "I paid...", "I purchased..."
+- Income: "I got paid...", "I received...", "I earned...", "salary came in"
+
+**Transaction Tool Usage:**
+- Use add_expense for any spending mentioned
+- Use add_income for any money received
+- Use add_monthly_bill for recurring monthly expenses
+- Auto-detect category and payment method from context
+- Always confirm transaction was recorded
+- Provide brief financial insight after recording
+
+**Monthly Bills:**
+- Use add_monthly_bill when user mentions recurring expenses
+- Examples: rent, electricity, water, internet, phone, Netflix, Spotify, insurance
+- Automatically set up bills so they're tracked every month
+- Categories: Housing (rent), Utilities (electric, water, internet), Subscriptions (streaming), Transportation, Insurance, Other
+- Ask for due day (1-31) if not mentioned
+
+**Examples:**
+User: "I spent 500 on grab today"
+→ Call add_expense({amount: 500, merchant: "Grab"})
+→ "✓ Recorded ₱500 Grab expense in transportation. Consider public transit to save!"
+
+User: "Got my freelance payment of 8000"
+→ Call add_income({amount: 8000, category: "freelance"})
+→ "✓ Recorded ₱8,000 freelance income! Set aside 20% (₱1,600) for taxes/emergency fund."
+
+User: "My rent is 8000 every 5th of the month"
+→ Call add_monthly_bill({name: "Rent", amount: 8000, category: "Housing", dueDay: 5})
+→ "✓ Set up monthly rent bill of ₱8,000 due on day 5. I'll help you track this every month!"`
 
       const tools = [
         {
@@ -537,6 +918,84 @@ ALWAYS PRIORITIZE:
               required: ["skill"]
             }
           }
+        },
+        {
+          type: "function",
+          function: {
+            name: "create_financial_goal",
+            description: "**CRITICAL TOOL - USE PROACTIVELY** Create a financial goal for the user directly in the database. IMPORTANT: ALWAYS ASK USER FOR DEADLINE before calling this function. Use when user mentions wanting to save for something, has a financial target, or when you identify a goal they should pursue. DO NOT just suggest creating a goal - ACTUALLY CREATE IT using this tool. The tool will handle category detection, icon selection, and color assignment automatically.",
+            parameters: {
+              type: "object",
+              properties: {
+                title: { type: "string", description: "Clear, specific goal title (e.g., 'Emergency Fund', 'New Laptop', 'Travel to Japan')" },
+                targetAmount: { type: "number", description: "Target amount in Philippine pesos (numeric value)" },
+                description: { type: "string", description: "Why they want this goal, what it means to them" },
+                currentAmount: { type: "number", description: "Amount already saved (default: 0)" },
+                category: { type: "string", description: "Category: emergency-fund, education, travel, gadget, home, investment, healthcare, wedding, transportation, debt, savings, or custom. Leave empty for auto-detection." },
+                deadline: { type: "string", description: "Target completion date in YYYY-MM-DD format. ALWAYS ASK user 'When would you like to achieve this goal?' before creating. Set to null if no deadline." },
+                icon: { type: "string", description: "Emoji icon (optional, auto-selected based on category)" },
+                color: { type: "string", description: "Color theme (optional, auto-selected based on category)" }
+              },
+              required: ["title", "targetAmount"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "add_expense",
+            description: "Add an expense transaction for the user. Use when user mentions spending money, buying something, paying bills, or any expense. Required: amount. Optional: merchant, category, paymentMethod, notes, date (YYYY-MM-DD).",
+            parameters: {
+              type: "object",
+              properties: {
+                amount: { type: "number", description: "Amount spent in Philippine pesos" },
+                merchant: { type: "string", description: "Where the money was spent (e.g., 'Jollibee', '7-Eleven', 'Grab')" },
+                category: { type: "string", description: "Expense category: food, transportation, bills, shopping, entertainment, health, education, personal-care, housing, debt, or other. Leave empty for auto-detection." },
+                paymentMethod: { type: "string", description: "How they paid: gcash, maya, card, bank, or cash. Leave empty for auto-detection." },
+                notes: { type: "string", description: "Additional details about the expense" },
+                date: { type: "string", description: "Transaction date in YYYY-MM-DD format (default: today)" }
+              },
+              required: ["amount"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "add_income",
+            description: "Add an income transaction for the user. Use when user mentions receiving money, getting paid, earning, salary, freelance payment, or any income source. Required: amount. Optional: merchant (source), category, paymentMethod, notes, date (YYYY-MM-DD).",
+            parameters: {
+              type: "object",
+              properties: {
+                amount: { type: "number", description: "Amount received in Philippine pesos" },
+                merchant: { type: "string", description: "Source of income (e.g., 'Company Name', 'Freelance Client', 'Business')" },
+                category: { type: "string", description: "Income category: salary, freelance, business, investment, gift, or other-income. Leave empty for auto-detection." },
+                paymentMethod: { type: "string", description: "How they received it: gcash, maya, card, bank, or cash. Leave empty for auto-detection." },
+                notes: { type: "string", description: "Additional details about the income" },
+                date: { type: "string", description: "Transaction date in YYYY-MM-DD format (default: today)" }
+              },
+              required: ["amount"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "add_monthly_bill",
+            description: "Add a recurring monthly bill for the user. Use when user mentions setting up automatic bills, recurring expenses like rent, utilities, internet, phone bills, subscriptions (Netflix, Spotify), insurance, or any expense that repeats every month. Required: name, amount, category, dueDay (1-31). Optional: description, isActive.",
+            parameters: {
+              type: "object",
+              properties: {
+                name: { type: "string", description: "Bill name (e.g., 'Rent', 'Electricity', 'Netflix', 'Internet')" },
+                amount: { type: "number", description: "Monthly bill amount in Philippine pesos" },
+                category: { type: "string", description: "Category: Housing (rent, mortgage), Utilities (electric, water, internet), Subscriptions (Netflix, Spotify), Transportation (car payment, gas), Insurance (health, car), or Other" },
+                dueDay: { type: "number", description: "Day of the month when bill is due (1-31)" },
+                description: { type: "string", description: "Additional details about the bill (optional)" },
+                isActive: { type: "boolean", description: "Whether the bill is active (default: true)" }
+              },
+              required: ["name", "amount", "category", "dueDay"]
+            }
+          }
         }
       ]
 
@@ -577,18 +1036,23 @@ ALWAYS PRIORITIZE:
       const data = await initialResponse.json()
       const assistantMessage = data.choices[0]?.message
 
-      // Check if AI wants to call a function
-      if (assistantMessage.tool_calls) {
-        const toolCall = assistantMessage.tool_calls[0]
-        const functionName = toolCall.function.name
-        const functionArgs = JSON.parse(toolCall.function.arguments)
+      // Check if AI wants to call function(s)
+      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+        console.log(`🔧 ${assistantMessage.tool_calls.length} tool(s) called`)
+        
+        // Process ALL tool calls
+        const toolResponses = []
+        
+        for (const toolCall of assistantMessage.tool_calls) {
+          const functionName = toolCall.function.name
+          const functionArgs = JSON.parse(toolCall.function.arguments)
 
-        console.log('🔧 Tool called:', functionName, functionArgs)
+          console.log('🔧 Tool called:', functionName, functionArgs)
 
-        let functionResult = ""
+          let functionResult = ""
 
-        // Execute the requested function
-        switch (functionName) {
+          // Execute the requested function
+          switch (functionName) {
           case "search_web":
             const searchResults = await this.webSearch.searchWeb(functionArgs.query)
             functionResult = JSON.stringify(searchResults.slice(0, 3))
@@ -664,13 +1128,185 @@ ALWAYS PRIORITIZE:
             }
             break
           
+          case "create_financial_goal":
+            console.log('🎯 Creating financial goal with args:', functionArgs)
+            try {
+              // Add userId from userContext if available
+              const goalData = {
+                ...functionArgs,
+                userId: userContext?.id || functionArgs.userId,
+                aiGenerated: true
+              }
+              
+              const goalResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/goals/create`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(goalData)
+              })
+
+              if (!goalResponse.ok) {
+                const error = await goalResponse.json()
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: error.error || 'Failed to create goal'
+                })
+              } else {
+                const result = await goalResponse.json()
+                console.log('✅ Goal created successfully:', result.goal)
+                functionResult = JSON.stringify({
+                  success: true,
+                  goal: result.goal,
+                  message: `Goal "${result.goal.title}" successfully created! Target: ₱${result.goal.target_amount.toLocaleString()}`
+                })
+              }
+            } catch (error) {
+              console.error('❌ Goal creation error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to create goal. Please try again later."
+              })
+            }
+            break
+          
+          case "add_expense":
+            console.log('💸 Adding expense with args:', functionArgs)
+            try {
+              const expenseData = {
+                ...functionArgs,
+                userId: userContext?.id || functionArgs.userId,
+                transactionType: 'expense'
+              }
+              
+              const expenseResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(expenseData)
+              })
+
+              if (!expenseResponse.ok) {
+                const error = await expenseResponse.json()
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: error.error || 'Failed to add expense'
+                })
+              } else {
+                const result = await expenseResponse.json()
+                console.log('✅ Expense added:', result.transaction)
+                functionResult = JSON.stringify({
+                  success: true,
+                  transaction: result.transaction,
+                  message: result.message
+                })
+              }
+            } catch (error) {
+              console.error('❌ Expense creation error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to add expense. Please try again later."
+              })
+            }
+            break
+
+          case "add_income":
+            console.log('💰 Adding income with args:', functionArgs)
+            try {
+              const incomeData = {
+                ...functionArgs,
+                userId: userContext?.id || functionArgs.userId,
+                transactionType: 'income'
+              }
+              
+              const incomeResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/transactions/add`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(incomeData)
+              })
+
+              if (!incomeResponse.ok) {
+                const error = await incomeResponse.json()
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: error.error || 'Failed to add income'
+                })
+              } else {
+                const result = await incomeResponse.json()
+                console.log('✅ Income added:', result.transaction)
+                functionResult = JSON.stringify({
+                  success: true,
+                  transaction: result.transaction,
+                  message: result.message
+                })
+              }
+            } catch (error) {
+              console.error('❌ Income creation error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to add income. Please try again later."
+              })
+            }
+            break
+
+          case "add_monthly_bill":
+            console.log('📅 Adding monthly bill with args:', functionArgs)
+            try {
+              const billData = {
+                ...functionArgs,
+                userId: userContext?.id || functionArgs.userId
+              }
+              
+              const billResponse = await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/monthly-bills/add`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(billData)
+              })
+
+              if (!billResponse.ok) {
+                const error = await billResponse.json()
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: error.error || 'Failed to add monthly bill'
+                })
+              } else {
+                const result = await billResponse.json()
+                console.log('✅ Monthly bill added:', result.bill)
+                functionResult = JSON.stringify({
+                  success: true,
+                  bill: result.bill,
+                  message: result.message
+                })
+              }
+            } catch (error) {
+              console.error('❌ Monthly bill creation error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to add monthly bill. Please try again later."
+              })
+            }
+            break
+          
           default:
             functionResult = "Function not available"
         }
 
         console.log('📤 Tool result length:', functionResult.length)
+        
+        // Store the tool response
+        toolResponses.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: functionResult
+        })
+      }
 
-        // Send the function result back to OpenAI for final response
+        // Send all function results back to OpenAI for final response
         const finalResponse = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -683,11 +1319,7 @@ ALWAYS PRIORITIZE:
               { role: 'system', content: systemPrompt },
               { role: 'user', content: message },
               assistantMessage,
-              {
-                role: "tool",
-                tool_call_id: toolCall.id,
-                content: functionResult
-              }
+              ...toolResponses
             ],
             temperature: 0.7,
             max_tokens: 1000

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
-import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, Upload, Camera, MessageSquare, Bell } from 'lucide-react'
+import { User, Mail, Calendar, DollarSign, Target, Trophy, Edit, MessageCircle, Save, X, MessageSquare, Bell, Palette, Waves, Leaf, Flame, Sparkles, Moon, Flower2, Star, Rainbow, Clover, Heart, Drama } from 'lucide-react'
 import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/lib/auth-hooks'
@@ -21,15 +21,31 @@ export default function ProfilePage() {
   )
 }
 
+// Colorful avatar options
+const AVATAR_OPTIONS = [
+  { id: 1, gradient: 'from-purple-400 via-pink-500 to-red-500', icon: Palette },
+  { id: 2, gradient: 'from-blue-400 via-cyan-500 to-teal-500', icon: Waves },
+  { id: 3, gradient: 'from-green-400 via-emerald-500 to-teal-500', icon: Leaf },
+  { id: 4, gradient: 'from-yellow-400 via-orange-500 to-red-500', icon: Flame },
+  { id: 5, gradient: 'from-pink-400 via-purple-500 to-indigo-500', icon: Sparkles },
+  { id: 6, gradient: 'from-indigo-400 via-blue-500 to-purple-500', icon: Moon },
+  { id: 7, gradient: 'from-rose-400 via-pink-500 to-purple-500', icon: Flower2 },
+  { id: 8, gradient: 'from-amber-400 via-yellow-500 to-orange-500', icon: Star },
+  { id: 9, gradient: 'from-cyan-400 via-blue-500 to-indigo-500', icon: Rainbow },
+  { id: 10, gradient: 'from-lime-400 via-green-500 to-emerald-500', icon: Clover },
+  { id: 11, gradient: 'from-fuchsia-400 via-pink-500 to-rose-500', icon: Heart },
+  { id: 12, gradient: 'from-violet-400 via-purple-500 to-fuchsia-500', icon: Drama },
+]
+
 function ProfileContent() {
   const { user } = useAuth()
-  const fileInputRef = useRef<HTMLInputElement>(null)
   
   // Profile state
   const [isEditing, setIsEditing] = useState(false)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false)
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false)
   const [profileData, setProfileData] = useState({
     name: '',
     email: '',
@@ -163,6 +179,69 @@ function ProfileContent() {
     }
   }
 
+  // Handle avatar selection
+  const handleAvatarSelect = async (avatarId: number) => {
+    if (!user?.id) {
+      console.error('No user ID found')
+      toast.error('User not authenticated')
+      return
+    }
+
+    console.log('Selecting avatar:', avatarId)
+    console.log('User ID:', user.id)
+
+    setSaving(true)
+    try {
+      // Store avatar as "avatar-{id}" format
+      const avatarValue = `avatar-${avatarId}`
+      
+      // Use upsert which handles both insert and update
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .upsert({
+          user_id: user.id,
+          profile_picture: avatarValue,
+          name: profileData.name || null,
+          age: profileData.age ? parseInt(profileData.age) : null,
+          monthly_income: profileData.monthlyIncome ? parseFloat(profileData.monthlyIncome) : null,
+          updated_at: new Date().toISOString()
+        } as any, {
+          onConflict: 'user_id'
+        })
+        .select()
+
+      console.log('Upsert result - data:', data, 'error:', error)
+
+      if (error) {
+        console.error('Database error:', error)
+        toast.error('Failed to update avatar', {
+          description: error.message
+        })
+      } else {
+        console.log('Avatar updated successfully!')
+        setProfileData({ ...profileData, profilePicture: avatarValue })
+        setShowAvatarSelector(false)
+        toast.success('Avatar updated successfully')
+      }
+    } catch (err: any) {
+      console.error('Error updating avatar:', err)
+      toast.error('An error occurred', {
+        description: err.message
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // Get avatar gradient by ID
+  const getAvatarGradient = (profilePicture: string) => {
+    if (profilePicture?.startsWith('avatar-')) {
+      const avatarId = parseInt(profilePicture.replace('avatar-', ''))
+      return AVATAR_OPTIONS.find(a => a.id === avatarId)
+    }
+    return null
+  }
+
   // Handle profile update
   const handleSaveProfile = async () => {
     if (!user?.id) return
@@ -196,83 +275,6 @@ function ProfileContent() {
     }
   }
 
-  // Handle profile picture upload
-  const handleProfilePictureUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('Invalid file type', {
-        description: 'Please upload an image file'
-      })
-      return
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('File too large', {
-        description: 'Image size should be less than 5MB'
-      })
-      return
-    }
-
-    setSaving(true)
-    try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${user.id}-${Date.now()}.${fileExt}`
-      const filePath = `profile-pictures/${fileName}`
-
-      // Upload to Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
-        })
-
-      if (uploadError) {
-        console.error('Upload error:', uploadError)
-        toast.error('Failed to upload image', {
-          description: uploadError.message
-        })
-        return
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(filePath)
-
-      // Update profile data state with the URL
-      setProfileData({ ...profileData, profilePicture: publicUrl })
-
-      // Save to database immediately
-      const { error: dbError } = await supabase
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          profile_picture: publicUrl,
-          updated_at: new Date().toISOString()
-        } as any)
-
-      if (dbError) {
-        console.error('Database error:', dbError)
-        toast.error('Failed to save profile picture', {
-          description: dbError.message
-        })
-      } else {
-        toast.success('Profile picture updated successfully')
-      }
-    } catch (err) {
-      console.error('Error uploading profile picture:', err)
-      toast.error('An error occurred while uploading')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -299,34 +301,46 @@ function ProfileContent() {
           <CardContent className="pt-6">
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Profile Picture */}
-              <div className="relative">
-                {profileData.profilePicture ? (
-                  <img
-                    src={profileData.profilePicture}
-                    alt="Profile"
-                    className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
-                  />
-                ) : (
-                  <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center border-4 border-gray-200">
-                    <User className="w-12 h-12 text-white" />
-                  </div>
-                )}
+              <div className="relative group">
+                {(() => {
+                  const avatarData = getAvatarGradient(profileData.profilePicture)
+                  
+                  if (avatarData) {
+                    // Show colorful gradient avatar
+                    const IconComponent = avatarData.icon
+                    return (
+                      <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-4 border-gray-200 shadow-lg`}>
+                        <IconComponent className="w-12 h-12 text-white" strokeWidth={1.5} />
+                      </div>
+                    )
+                  } else if (profileData.profilePicture && !profileData.profilePicture.startsWith('avatar-')) {
+                    // Show uploaded image (legacy support)
+                    return (
+                      <img
+                        src={profileData.profilePicture}
+                        alt="Profile"
+                        className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                      />
+                    )
+                  } else {
+                    // Show default avatar
+                    return (
+                      <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center border-4 border-gray-200">
+                        <User className="w-12 h-12 text-white" />
+                      </div>
+                    )
+                  }
+                })()}
+                
+                {/* Change Avatar Button */}
                 {isEditing && (
-                  <>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleProfilePictureUpload}
-                      className="hidden"
-                    />
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 shadow-lg transition-colors"
-                    >
-                      <Camera className="w-4 h-4" />
-                    </button>
-                  </>
+                  <button
+                    onClick={() => setShowAvatarSelector(true)}
+                    className="absolute bottom-0 right-0 bg-primary hover:bg-primary/90 text-white rounded-full p-2 shadow-lg transition-colors"
+                    title="Change avatar"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
                 )}
               </div>
 
@@ -644,6 +658,62 @@ function ProfileContent() {
           open={notificationSettingsOpen}
           onOpenChange={setNotificationSettingsOpen}
         />
+
+        {/* Avatar Selector Modal */}
+        {showAvatarSelector && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Choose Your Avatar</h2>
+                <button
+                  onClick={() => setShowAvatarSelector(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                {AVATAR_OPTIONS.map((avatar) => {
+                  const isSelected = profileData.profilePicture === `avatar-${avatar.id}`
+                  const IconComponent = avatar.icon
+                  return (
+                    <button
+                      key={avatar.id}
+                      onClick={() => handleAvatarSelect(avatar.id)}
+                      disabled={saving}
+                      className={`
+                        relative aspect-square rounded-full bg-gradient-to-br ${avatar.gradient}
+                        flex items-center justify-center
+                        transition-all duration-200 hover:scale-110
+                        ${isSelected ? 'ring-4 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-gray-300'}
+                        ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                      `}
+                    >
+                      <IconComponent className="w-8 h-8 text-white" strokeWidth={1.5} />
+                      {isSelected && (
+                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAvatarSelector(false)}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -12,7 +12,6 @@ import { toast } from 'sonner'
 import { 
   Calendar, 
   Plus, 
-  Edit3, 
   Trash2, 
   ToggleLeft, 
   ToggleRight,
@@ -21,10 +20,7 @@ import {
   Smartphone, 
   Car, 
   Shield, 
-  CreditCard,
-  Clock,
-  DollarSign,
-  AlertCircle
+  CreditCard
 } from 'lucide-react'
 
 interface MonthlyBill {
@@ -171,56 +167,6 @@ export function MonthlyBillsManager() {
     return CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS] || 'text-gray-600 bg-gray-100'
   }
 
-  const getDaysUntilDue = (dueDay: number): number => {
-    const today = new Date()
-    const currentDay = today.getDate()
-    const currentMonth = today.getMonth()
-    const currentYear = today.getFullYear()
-    
-    let dueDate = new Date(currentYear, currentMonth, dueDay)
-    if (currentDay > dueDay) {
-      // Already passed this month, use next month
-      dueDate = new Date(currentYear, currentMonth + 1, dueDay)
-    }
-    
-    const diffTime = dueDate.getTime() - today.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    return diffDays
-  }
-
-  const getDueDateBadge = (daysUntil: number) => {
-    if (daysUntil === 0) {
-      return (
-        <Badge className="bg-red-100 text-red-700 border-red-200">
-          <AlertCircle className="w-3 h-3 mr-1" />
-          Due Today
-        </Badge>
-      )
-    } else if (daysUntil === 1) {
-      return (
-        <Badge className="bg-orange-100 text-orange-700 border-orange-200">
-          <Clock className="w-3 h-3 mr-1" />
-          Due Tomorrow
-        </Badge>
-      )
-    } else if (daysUntil <= 3) {
-      return (
-        <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
-          <Calendar className="w-3 h-3 mr-1" />
-          Due in {daysUntil} days
-        </Badge>
-      )
-    } else if (daysUntil <= 7) {
-      return (
-        <Badge variant="outline" className="text-gray-600">
-          <Calendar className="w-3 h-3 mr-1" />
-          Due in {daysUntil} days
-        </Badge>
-      )
-    }
-    return null // Don't show badge if more than 7 days away
-  }
-
   if (loading) {
     return (
       <Card>
@@ -250,12 +196,9 @@ export function MonthlyBillsManager() {
               <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
               Monthly Bills
             </CardTitle>
-            <div className="flex items-center mt-2">
-              <DollarSign className="w-4 h-4 text-green-600 mr-1" />
-              <span className="text-sm text-gray-600">
-                Total Monthly: <span className="font-semibold text-green-600">₱{totalMonthly.toLocaleString()}</span>
-              </span>
-            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Total Monthly: <span className="font-semibold text-green-600">₱{totalMonthly.toLocaleString()}</span>
+            </p>
           </div>
           <AddMonthlyBillModal 
             onPaymentAdded={fetchMonthlyBills}
@@ -315,21 +258,16 @@ export function MonthlyBillsManager() {
 
                       {/* Bill Info */}
                       <div className="flex-1">
-                        <div className="flex items-center space-x-3">
+                        <div className="flex items-center space-x-2">
                           <h4 className="font-medium text-gray-900">{bill.name}</h4>
-                          <Badge variant="secondary" className="text-xs">
-                            {bill.category}
-                          </Badge>
                           {!bill.is_active && (
                             <Badge variant="outline" className="text-xs text-gray-500">
                               Inactive
                             </Badge>
                           )}
-                          {bill.is_active && getDueDateBadge(getDaysUntilDue(bill.due_day))}
                         </div>
                         <div className="flex items-center mt-1 text-sm text-gray-600">
-                          <Clock className="w-3 h-3 mr-1" />
-                          <span>Due: Day {bill.due_day} of each month</span>
+                          <span>Due on day {bill.due_day}</span>
                           {bill.description && (
                             <span className="ml-2 text-gray-500">• {bill.description}</span>
                           )}
@@ -343,14 +281,11 @@ export function MonthlyBillsManager() {
                         }`}>
                           ₱{Number(bill.amount).toLocaleString()}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          /month
-                        </div>
                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex items-center space-x-1 ml-4">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -362,13 +297,6 @@ export function MonthlyBillsManager() {
                         ) : (
                           <ToggleLeft className="w-5 h-5" />
                         )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-gray-600 hover:text-blue-600"
-                      >
-                        <Edit3 className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -386,12 +314,12 @@ export function MonthlyBillsManager() {
 
             {/* Summary */}
             <div className="pt-4 border-t">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-600">
-                  {bills.filter(b => b.is_active).length} active bills
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">
+                  {bills.filter(b => b.is_active).length} active bill{bills.filter(b => b.is_active).length !== 1 ? 's' : ''}
                 </span>
-                <span className="font-semibold text-indigo-600">
-                  Total: ₱{totalMonthly.toLocaleString()}/month
+                <span className="text-sm font-semibold text-indigo-600">
+                  ₱{totalMonthly.toLocaleString()}/month
                 </span>
               </div>
             </div>

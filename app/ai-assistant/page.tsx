@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
-import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon, AlertTriangle, Mic, MicOff } from 'lucide-react'
+import { Send, User as UserIcon, Bot, Plus, MessageSquare, Settings, Trash2, MoreHorizontal, Search, Sparkles, ArrowUp, Paperclip, Shield, Menu, X, ChevronLeft, ChevronRight, LogOut, Moon, Sun, Languages, History, Camera, Receipt, Upload, FileImage, X as XIcon, AlertTriangle, Mic, MicOff, Palette, Waves, Leaf, Flame, Sparkles as SparklesIcon, Moon as MoonIcon, Flower2, Star, Rainbow, Clover, Heart, Drama } from 'lucide-react'
 import { auth, onAuthStateChange, type User } from '@/lib/auth'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
@@ -37,17 +37,61 @@ export default function AIAssistantPage() {
   )
 }
 
+// Colorful avatar options (matching profile page)
+const AVATAR_OPTIONS = [
+  { id: 1, gradient: 'from-purple-400 via-pink-500 to-red-500', icon: Palette },
+  { id: 2, gradient: 'from-blue-400 via-cyan-500 to-teal-500', icon: Waves },
+  { id: 3, gradient: 'from-green-400 via-emerald-500 to-teal-500', icon: Leaf },
+  { id: 4, gradient: 'from-yellow-400 via-orange-500 to-red-500', icon: Flame },
+  { id: 5, gradient: 'from-pink-400 via-purple-500 to-indigo-500', icon: SparklesIcon },
+  { id: 6, gradient: 'from-indigo-400 via-blue-500 to-purple-500', icon: MoonIcon },
+  { id: 7, gradient: 'from-rose-400 via-pink-500 to-purple-500', icon: Flower2 },
+  { id: 8, gradient: 'from-amber-400 via-yellow-500 to-orange-500', icon: Star },
+  { id: 9, gradient: 'from-cyan-400 via-blue-500 to-indigo-500', icon: Rainbow },
+  { id: 10, gradient: 'from-lime-400 via-green-500 to-emerald-500', icon: Clover },
+  { id: 11, gradient: 'from-fuchsia-400 via-pink-500 to-rose-500', icon: Heart },
+  { id: 12, gradient: 'from-violet-400 via-purple-500 to-fuchsia-500', icon: Drama },
+]
+
+// Get avatar gradient by ID
+const getAvatarGradient = (profilePicture: string) => {
+  if (profilePicture?.startsWith('avatar-')) {
+    const avatarId = parseInt(profilePicture.replace('avatar-', ''))
+    return AVATAR_OPTIONS.find(a => a.id === avatarId)
+  }
+  return null
+}
+
 function AIAssistantContent() {
   const router = useRouter()
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [profilePicture, setProfilePicture] = useState<string>('')
   
-  // Chat history state - starts with one default chat with unique session ID
-  const defaultSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
-  const [currentChatId, setCurrentChatId] = useState(defaultSessionId)
+  // Get or create session ID - persist in sessionStorage so it survives page navigation
+  const getOrCreateSessionId = () => {
+    if (typeof window === 'undefined') return `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    
+    // Check if there's an existing session ID in sessionStorage
+    const existingSessionId = sessionStorage.getItem('plounix_current_chat_session')
+    if (existingSessionId) {
+      console.log('📌 Found persisted session ID:', existingSessionId)
+      return existingSessionId
+    }
+    
+    // Create new session ID and store it
+    const newSessionId = `chat_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+    console.log('✨ Created new session ID:', newSessionId)
+    sessionStorage.setItem('plounix_current_chat_session', newSessionId)
+    return newSessionId
+  }
+  
+  // Initialize with empty string - will be set by loadChatHistory or getOrCreateSessionId
+  const [currentChatId, setCurrentChatId] = useState('')
   
   const [inputMessage, setInputMessage] = useState('')
   const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
@@ -66,27 +110,20 @@ function AIAssistantContent() {
   const [clearHistoryModalOpen, setClearHistoryModalOpen] = useState(false)
   const [chatToDelete, setChatToDelete] = useState<string | null>(null)
   
-  const [chats, setChats] = useState([
-    {
-      id: defaultSessionId,
-      title: 'New Chat',
-      lastMessage: '',
-      timestamp: new Date(),
-      messages: [
-        {
-          id: 1,
-          type: 'bot',
-          content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
-          timestamp: new Date()
-        }
-      ]
-    }
-  ])
-
-  const [messages, setMessages] = useState(chats[0].messages)
+  // Start with empty chats and messages - will be populated by loadChatHistory
+  const [chats, setChats] = useState<any[]>([])
+  const [messages, setMessages] = useState<any[]>([])
 
   // Load chat history from database - group by session_id
   const loadChatHistory = async (userId: string) => {
+    setIsChatHistoryLoading(true)
+    
+    // Check what's in sessionStorage BEFORE loading
+    const existingSessionId = typeof window !== 'undefined' 
+      ? sessionStorage.getItem('plounix_current_chat_session')
+      : null
+    console.log('🔍 BEFORE loading - sessionStorage has:', existingSessionId)
+    
     try {
       console.log('📥 Loading chat history for user:', userId)
       
@@ -100,11 +137,59 @@ function AIAssistantContent() {
 
       if (error) {
         console.error('❌ Error loading chat history:', error)
+        setIsChatHistoryLoading(false)
         return
       }
 
       if (!messages || messages.length === 0) {
         console.log('⚠️ No chat history found in database')
+        // Still need to check for persisted session and set loading to false
+        const persistedSessionId = typeof window !== 'undefined' 
+          ? sessionStorage.getItem('plounix_current_chat_session')
+          : null
+        
+        if (persistedSessionId) {
+          // Session exists but no messages yet
+          console.log('🆕 Restoring empty session:', persistedSessionId)
+          const welcomeMessage = {
+            id: 1,
+            type: 'bot',
+            content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+            timestamp: new Date()
+          }
+          const emptyChat = {
+            id: persistedSessionId,
+            title: 'New Chat',
+            lastMessage: '',
+            timestamp: new Date(),
+            messages: [welcomeMessage]
+          }
+          setChats([emptyChat])
+          setCurrentChatId(persistedSessionId)
+          setMessages([welcomeMessage])
+        } else {
+          // No persisted session and no history - create first chat
+          console.log('📝 Creating first chat')
+          const newSessionId = getOrCreateSessionId()
+          const welcomeMessage = {
+            id: 1,
+            type: 'bot',
+            content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+            timestamp: new Date()
+          }
+          const newChat = {
+            id: newSessionId,
+            title: 'New Chat',
+            lastMessage: '',
+            timestamp: new Date(),
+            messages: [welcomeMessage]
+          }
+          setChats([newChat])
+          setCurrentChatId(newSessionId)
+          setMessages([welcomeMessage])
+        }
+        
+        setIsChatHistoryLoading(false)
         return
       }
 
@@ -174,14 +259,95 @@ function AIAssistantContent() {
         lastMessage: c.lastMessage.substring(0, 30) + '...'
       })))
 
-      if (loadedChats.length > 0) {
-        // Load past chats into sidebar but DON'T switch to them
-        // Always keep the current new chat active (like ChatGPT)
-        setChats([chats[0], ...loadedChats]) // Keep new chat at top, add history below
-        console.log(`📌 Starting with new chat (keeping ${loadedChats.length} in sidebar)`)
+      // Check if we have a persisted session ID to restore
+      const persistedSessionId = typeof window !== 'undefined' 
+        ? sessionStorage.getItem('plounix_current_chat_session')
+        : null
+      
+      console.log('🔍 Persisted session ID:', persistedSessionId)
+      console.log('📚 Loaded chats count:', loadedChats.length)
+      
+      if (persistedSessionId) {
+        // We have a persisted session - ALWAYS try to restore it
+        const persistedChat = loadedChats.find(c => c.id === persistedSessionId)
+        
+        if (persistedChat) {
+          // Found the session with messages in database
+          console.log('✅ Restoring session with messages:', persistedSessionId)
+          setChats(loadedChats)
+          setCurrentChatId(persistedChat.id)
+          setMessages(persistedChat.messages)
+        } else {
+          // Session ID exists but no messages in database yet (fresh chat)
+          // This happens when you start a chat and navigate away before sending a message
+          console.log('🆕 Restoring empty session:', persistedSessionId)
+          const welcomeMessage = {
+            id: 1,
+            type: 'bot',
+            content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+            timestamp: new Date()
+          }
+          const emptyChat = {
+            id: persistedSessionId, // Use the EXISTING session ID, don't create new one
+            title: 'New Chat',
+            lastMessage: '',
+            timestamp: new Date(),
+            messages: [welcomeMessage]
+          }
+          setChats([emptyChat, ...loadedChats])
+          setCurrentChatId(persistedSessionId)
+          setMessages([welcomeMessage])
+        }
+      } else if (loadedChats.length > 0) {
+        // No persisted session, but we have history - load the most recent chat
+        console.log('📌 No persisted session, loading most recent chat')
+        const mostRecentChat = loadedChats[0]
+        setChats(loadedChats)
+        setCurrentChatId(mostRecentChat.id)
+        setMessages(mostRecentChat.messages)
+      } else {
+        // No persisted session and no history - create first chat
+        console.log('📝 No chat history found, creating first chat')
+        const newSessionId = getOrCreateSessionId()
+        const welcomeMessage = {
+          id: 1,
+          type: 'bot',
+          content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+          timestamp: new Date()
+        }
+        const newChat = {
+          id: newSessionId,
+          title: 'New Chat',
+          lastMessage: '',
+          timestamp: new Date(),
+          messages: [welcomeMessage]
+        }
+        setChats([newChat])
+        setCurrentChatId(newSessionId)
+        setMessages([welcomeMessage])
       }
+      
+      setIsChatHistoryLoading(false)
     } catch (error) {
       console.error('Failed to load chat history:', error)
+      // On error, still create a default chat
+      const newSessionId = getOrCreateSessionId()
+      const welcomeMessage = {
+        id: 1,
+        type: 'bot',
+        content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+        timestamp: new Date()
+      }
+      setChats([{
+        id: newSessionId,
+        title: 'New Chat',
+        lastMessage: '',
+        timestamp: new Date(),
+        messages: [welcomeMessage]
+      }])
+      setCurrentChatId(newSessionId)
+      setMessages([welcomeMessage])
+      setIsChatHistoryLoading(false)
     }
   }
 
@@ -194,6 +360,8 @@ function AIAssistantContent() {
       // Load chat history if user is authenticated
       if (result.user) {
         loadChatHistory(result.user.id)
+        // Fetch profile picture on initial load
+        fetchProfilePicture(result.user.id)
       }
     })
 
@@ -204,11 +372,55 @@ function AIAssistantContent() {
       // Load chat history when user logs in
       if (user) {
         loadChatHistory(user.id)
+        // Fetch profile picture
+        fetchProfilePicture(user.id)
       }
     })
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Fetch profile picture
+  const fetchProfilePicture = async (userId: string) => {
+    try {
+      console.log('🖼️ Fetching profile picture for user:', userId)
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('profile_picture')
+        .eq('user_id', userId)
+        .maybeSingle()
+      
+      console.log('🖼️ Profile picture data:', data, 'error:', error)
+      
+      if (data) {
+        setProfilePicture((data as any).profile_picture || '')
+        console.log('✅ Profile picture set to:', (data as any).profile_picture)
+      }
+    } catch (err) {
+      console.error('❌ Error fetching profile picture:', err)
+    }
+  }
+
+  // Refresh profile picture when page becomes visible (user returns from profile page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user?.id) {
+        console.log('👁️ Page visible, refreshing profile picture')
+        fetchProfilePicture(user.id)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user?.id])
+
+  // Sync currentChatId to sessionStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined' && currentChatId) {
+      console.log('💾 Saving session ID to sessionStorage:', currentChatId)
+      sessionStorage.setItem('plounix_current_chat_session', currentChatId)
+    }
+  }, [currentChatId])
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -309,7 +521,7 @@ function AIAssistantContent() {
       
       if (error) {
         console.error('❌ Error deleting chat from database:', error)
-        alert('Failed to delete chat from database. Please try again.')
+        toast.error('Failed to delete chat. Please try again.')
         return
       }
       
@@ -320,15 +532,24 @@ function AIAssistantContent() {
       setChats(updatedChats)
       
       if (currentChatId === chatToDelete) {
-        setCurrentChatId(updatedChats[0].id)
-        setMessages(updatedChats[0].messages)
+        // If deleting current chat, switch to another chat or create new one
+        if (updatedChats.length > 0) {
+          setCurrentChatId(updatedChats[0].id)
+          setMessages(updatedChats[0].messages)
+        } else {
+          // No chats left, create a new one
+          createNewChat()
+        }
       }
       
       // Clear the chatToDelete state
       setChatToDelete(null)
+      
+      // Show success toast
+      toast.success('Chat deleted successfully')
     } catch (error) {
       console.error('❌ Error deleting chat:', error)
-      alert('Failed to delete chat. Please try again.')
+      toast.error('Failed to delete chat. Please try again.')
     }
   }
 
@@ -345,7 +566,7 @@ function AIAssistantContent() {
       
       if (chatError) {
         console.error('❌ Error deleting chat history:', chatError)
-        alert('Failed to delete chat history. Please try again.')
+        toast.error('Failed to delete chat history. Please try again.')
         return
       }
       
@@ -396,13 +617,13 @@ function AIAssistantContent() {
     // Validate file type
     const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
     if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid image file (JPG, PNG, WebP) or PDF')
+      toast.error('Please upload a valid image file (JPG, PNG, WebP) or PDF')
       return
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('File size must be less than 10MB')
+      toast.error('File size must be less than 10MB')
       return
     }
 
@@ -539,7 +760,7 @@ function AIAssistantContent() {
       setIsRecording(true)
     } catch (error) {
       console.error('Error accessing microphone:', error)
-      alert('Could not access microphone. Please grant permission and try again.')
+      toast.error('Could not access microphone. Please grant permission and try again.')
     }
   }
 
@@ -572,7 +793,7 @@ function AIAssistantContent() {
       }
     } catch (error) {
       console.error('Transcription error:', error)
-      alert('Failed to transcribe audio. Please try again.')
+      toast.error('Failed to transcribe audio. Please try again.')
     } finally {
       setIsTranscribing(false)
     }
@@ -709,12 +930,13 @@ function AIAssistantContent() {
       setChats(updatedChats)
     }
     
-    // Show loading message
+    // Show loading message with special flag
     const loadingMessage = {
       id: Date.now(),
       type: 'bot',
       content: 'Thinking...',
-      timestamp: new Date()
+      timestamp: new Date(),
+      isLoading: true // Special flag to show loading animation
     }
     setMessages([...updatedMessages, loadingMessage])
     
@@ -869,7 +1091,7 @@ function AIAssistantContent() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-2">
+              <div className="flex flex-col items-center space-y-2 w-full">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -877,7 +1099,7 @@ function AIAssistantContent() {
                         onClick={createNewChat}
                         variant="ghost"
                         size="icon"
-                        className="w-10 h-10"
+                        className="w-10 h-10 mx-auto"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -894,7 +1116,7 @@ function AIAssistantContent() {
                       <Button 
                         variant="ghost"
                         size="icon"
-                        className="w-10 h-10"
+                        className="w-10 h-10 mx-auto"
                       >
                         <Search className="w-4 h-4" />
                       </Button>
@@ -952,7 +1174,7 @@ function AIAssistantContent() {
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <div className="flex justify-center">
+                          <div className="flex items-center justify-center w-full">
                             <MessageSquare className={`w-4 h-4 ${currentChatId === chat.id ? 'text-gray-900' : 'text-gray-500'}`} />
                           </div>
                         </TooltipTrigger>
@@ -980,9 +1202,36 @@ function AIAssistantContent() {
                   onClick={() => setSettingsOpen(true)}
                 >
                   <div className="flex items-center space-x-3 flex-1 min-w-0">
-                    <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
-                      <UserIcon className="w-4 h-4 text-white" />
-                    </div>
+                    {(() => {
+                      const avatarData = getAvatarGradient(profilePicture)
+                      console.log('🎨 AI Sidebar - profilePicture:', profilePicture, 'avatarData:', avatarData)
+                      
+                      if (avatarData) {
+                        // Show colorful gradient avatar
+                        const IconComponent = avatarData.icon
+                        return (
+                          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center`}>
+                            <IconComponent className="w-4 h-4 text-white" strokeWidth={1.5} />
+                          </div>
+                        )
+                      } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                        // Show uploaded image (legacy support)
+                        return (
+                          <img
+                            src={profilePicture}
+                            alt="Profile"
+                            className="w-8 h-8 rounded-full object-cover"
+                          />
+                        )
+                      } else {
+                        // Show default avatar
+                        return (
+                          <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-4 h-4 text-white" />
+                          </div>
+                        )
+                      }
+                    })()}
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium truncate text-gray-900">
                         {user?.name || user?.email?.split('@')[0] || 'Guest User'}
@@ -994,7 +1243,7 @@ function AIAssistantContent() {
                 </Button>
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-2">
+              <div className="flex flex-col items-center space-y-2 w-full">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1002,11 +1251,37 @@ function AIAssistantContent() {
                         variant="ghost"
                         size="icon"
                         onClick={() => setSettingsOpen(true)}
-                        className="w-10 h-10"
+                        className="w-10 h-10 mx-auto"
                       >
-                        <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
-                          <UserIcon className="w-4 h-4 text-white" />
-                        </div>
+                        {(() => {
+                          const avatarData = getAvatarGradient(profilePicture)
+                          
+                          if (avatarData) {
+                            // Show colorful gradient avatar
+                            const IconComponent = avatarData.icon
+                            return (
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center`}>
+                                <IconComponent className="w-4 h-4 text-white" strokeWidth={1.5} />
+                              </div>
+                            )
+                          } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                            // Show uploaded image (legacy support)
+                            return (
+                              <img
+                                src={profilePicture}
+                                alt="Profile"
+                                className="w-8 h-8 rounded-full object-cover"
+                              />
+                            )
+                          } else {
+                            // Show default avatar
+                            return (
+                              <div className="w-8 h-8 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center">
+                                <UserIcon className="w-4 h-4 text-white" />
+                              </div>
+                            )
+                          }
+                        })()}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right">
@@ -1169,7 +1444,15 @@ function AIAssistantContent() {
 
         {/* Messages Area */}
         <ScrollArea className="flex-1">
-          {messages.length === 1 ? (
+          {isChatHistoryLoading ? (
+            // Loading State
+            <div className="flex items-center justify-center h-full p-8">
+              <div className="text-center">
+                <PageSpinner />
+                <p className="text-gray-500 mt-4">Loading your chat history...</p>
+              </div>
+            </div>
+          ) : messages.length === 0 || messages.length === 1 ? (
             // Welcome Screen
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center max-w-3xl">
@@ -1210,13 +1493,43 @@ function AIAssistantContent() {
                 <div key={message.id} className={`flex gap-4 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                   {/* Avatar */}
                   <div className="flex-shrink-0 pt-1">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      message.type === 'user' 
-                        ? 'bg-primary text-white' 
-                        : 'bg-gray-200 text-gray-700'
-                    }`}>
-                      {message.type === 'user' ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
-                    </div>
+                    {message.type === 'user' ? (
+                      // User avatar - show colorful gradient if selected
+                      (() => {
+                        const avatarData = getAvatarGradient(profilePicture)
+                        
+                        if (avatarData) {
+                          // Show colorful gradient avatar
+                          const IconComponent = avatarData.icon
+                          return (
+                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center`}>
+                              <IconComponent className="w-4 h-4 text-white" strokeWidth={1.5} />
+                            </div>
+                          )
+                        } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                          // Show uploaded image (legacy support)
+                          return (
+                            <img
+                              src={profilePicture}
+                              alt="Profile"
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                          )
+                        } else {
+                          // Show default avatar
+                          return (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-white">
+                              <UserIcon className="w-4 h-4" />
+                            </div>
+                          )
+                        }
+                      })()
+                    ) : (
+                      // Bot avatar
+                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-700">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                    )}
                   </div>
                   
                   {/* Message Content */}
@@ -1233,38 +1546,58 @@ function AIAssistantContent() {
                           ? 'bg-primary text-white rounded-3xl rounded-tr-md px-5 py-3' 
                           : 'text-gray-800'
                       }`}>
-                        <div className={`prose prose-sm max-w-none ${
-                          message.type === 'user' 
-                            ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white' 
-                            : 'prose-gray prose-p:text-gray-800 prose-headings:text-gray-900 prose-strong:font-semibold'
-                        }`}>
-                          <ReactMarkdown 
-                            components={{
-                              p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
-                              strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                              ul: ({ children }) => <ul className="list-disc ml-4 my-3 space-y-2">{children}</ul>,
-                              ol: ({ children }) => <ol className="list-decimal ml-4 my-3 space-y-2">{children}</ol>,
-                              li: ({ children }) => <li className="leading-relaxed">{children}</li>,
-                              h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4">{children}</h1>,
-                              h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
-                              h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3">{children}</h3>,
-                              a: ({ href, children }) => (
-                                <a 
-                                  href={href} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="text-primary hover:text-primary/80 underline font-medium"
-                                >
-                                  {children}
-                                </a>
-                              ),
-                              code: ({ children }) => <code className="bg-gray-800 text-gray-100 px-1.5 py-0.5 rounded text-sm">{children}</code>,
-                              pre: ({ children }) => <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
-                            }}
-                          >
-                            {message.content}
-                          </ReactMarkdown>
-                        </div>
+                        {/* Show loading animation if message has isLoading flag */}
+                        {message.isLoading ? (
+                          <div className="flex items-center py-3 px-4">
+                            <div className="flex space-x-1.5">
+                              <div 
+                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: '0s' }}
+                              ></div>
+                              <div 
+                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: '0.2s' }}
+                              ></div>
+                              <div 
+                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                style={{ animationDelay: '0.4s' }}
+                              ></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className={`prose prose-sm max-w-none ${
+                            message.type === 'user' 
+                              ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white' 
+                              : 'prose-gray prose-p:text-gray-800 prose-headings:text-gray-900 prose-strong:font-semibold'
+                          }`}>
+                            <ReactMarkdown 
+                              components={{
+                                p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                                ul: ({ children }) => <ul className="list-disc ml-4 my-3 space-y-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal ml-4 my-3 space-y-2">{children}</ol>,
+                                li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                                h1: ({ children }) => <h1 className="text-xl font-bold mb-3 mt-4">{children}</h1>,
+                                h2: ({ children }) => <h2 className="text-lg font-bold mb-2 mt-3">{children}</h2>,
+                                h3: ({ children }) => <h3 className="text-base font-semibold mb-2 mt-3">{children}</h3>,
+                                a: ({ href, children }) => (
+                                  <a 
+                                    href={href} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:text-primary/80 underline font-medium"
+                                  >
+                                    {children}
+                                  </a>
+                                ),
+                                code: ({ children }) => <code className="bg-gray-800 text-gray-100 px-1.5 py-0.5 rounded text-sm">{children}</code>,
+                                pre: ({ children }) => <pre className="bg-gray-800 text-gray-100 p-4 rounded-lg overflow-x-auto my-3">{children}</pre>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                        )}
                       </div>
                     </div>
                     

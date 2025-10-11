@@ -7,15 +7,26 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3 } from 'lucide-react'
+import { useAuth } from '@/lib/auth-hooks'
+import { toast } from 'sonner'
 
 export default function TopicLearningPage() {
   const params = useParams()
   const topicId = params.topicId as string
+  const { user } = useAuth()
   
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [showResult, setShowResult] = useState(false)
   const [reflectionInputs, setReflectionInputs] = useState<string[]>([])
+  const [stepCompleted, setStepCompleted] = useState<boolean[]>([]) // Track completion of each step
+  
+  // For calculator activity
+  const [calculatorInputs, setCalculatorInputs] = useState<{[key: string]: string}>({})
+  
+  // For categorization activity
+  const [categorizedItems, setCategorizedItems] = useState<{[key: string]: string[]}>({})
+  const [draggedItem, setDraggedItem] = useState<string | null>(null)
 
   const topicModules = {
     budgeting: {
@@ -56,18 +67,33 @@ export default function TopicLearningPage() {
         },
         {
           type: 'apply',
+          activityType: 'calculator',
           title: 'Apply: Create Your Personal Budget',
           content: {
-            scenario: 'Meet Jana, a 3rd year college student. Her parents give her ₱12,000 monthly allowance. She spends about ₱3,500 on food, ₱1,500 on transportation, ₱800 on school supplies, ₱2,000 on coffee dates and movies, ₱1,200 on clothes/shopping, and usually runs out of money by the 25th of each month.',
-            task: 'Using the 50-30-20 rule, how should Jana allocate her ₱12,000 monthly allowance?',
-            options: [
-              'Needs: ₱6,000, Wants: ₱3,600, Savings: ₱2,400 (standard 50-30-20)',
-              'Needs: ₱8,000, Wants: ₱4,000, Savings: ₱0 (focus on enjoying college)',
-              'Keep current spending pattern and ask parents for more money',
-              'Needs: ₱5,800, Wants: ₱3,200, Savings: ₱3,000 (reduce current spending)'
+            scenario: 'Meet Jana, a 3rd year college student. Her parents give her ₱12,000 monthly allowance. She wants to follow the 50-30-20 budgeting rule.',
+            task: 'Calculate how much Jana should allocate for each category using the 50-30-20 rule:',
+            monthlyIncome: 12000,
+            fields: [
+              { 
+                id: 'needs',
+                label: 'Needs (50%)', 
+                expected: 6000,
+                hint: 'Food, transport, school supplies'
+              },
+              { 
+                id: 'wants',
+                label: 'Wants (30%)', 
+                expected: 3600,
+                hint: 'Entertainment, shopping, hobbies'
+              },
+              { 
+                id: 'savings',
+                label: 'Savings (20%)', 
+                expected: 2400,
+                hint: 'Emergency fund, future goals'
+              }
             ],
-            correctAnswer: 'Needs: ₱6,000, Wants: ₱3,600, Savings: ₱2,400 (standard 50-30-20)',
-            explanation: 'Jana should follow the 50-30-20 rule with ₱12,000: Needs ₱6,000 (covers food ₱3,500, transport ₱1,500, supplies ₱800, plus ₱200 buffer), Wants ₱3,600 (entertainment ₱2,000, shopping ₱1,200, plus ₱400 extra), Savings ₱2,400 monthly (₱28,800 yearly emergency fund!)'
+            explanation: 'Perfect! Jana should allocate ₱6,000 for needs, ₱3,600 for wants, and ₱2,400 for savings. This means she can save ₱28,800 yearly while still enjoying college life!'
           }
         },
         {
@@ -805,8 +831,58 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
   const progress = ((currentStep + 1) / currentTopic.steps.length) * 100
   const IconComponent = currentTopic.icon
 
+  // Check if current step can proceed to next
+  const canProceedToNext = () => {
+    if (currentStepData.type === 'learn') {
+      // Learn step: User must click "I've read this" or similar confirmation
+      return stepCompleted[currentStep] === true
+    }
+    
+    if (currentStepData.type === 'apply') {
+      const activityType = (currentStepData as any).activityType || 'mcq'
+      
+      if (activityType === 'calculator') {
+        // Check if all calculator fields are correct
+        const fields = (currentStepData.content as any).fields || []
+        return fields.every((field: any) => {
+          const userValue = parseInt(calculatorInputs[field.id] || '0')
+          return userValue === field.expected
+        }) && showResult
+      }
+      
+      if (activityType === 'categorize') {
+        // Check if all items are categorized correctly
+        const correctCategories = (currentStepData.content as any).correctCategories || {}
+        return showResult && Object.keys(correctCategories).every(item => {
+          const userCategory = Object.keys(categorizedItems).find(cat => 
+            categorizedItems[cat]?.includes(item)
+          )
+          return userCategory === correctCategories[item]
+        })
+      }
+      
+      // Default MCQ
+      return showResult && selectedAnswer === (currentStepData.content as any).correctAnswer
+    }
+    
+    if (currentStepData.type === 'reflect') {
+      // Reflect step: User must fill in at least 2 out of 3 reflection questions
+      const filledQuestions = reflectionInputs.filter(input => input && input.trim().length > 20).length
+      const totalQuestions = currentStepData.content.questions?.length || 0
+      return filledQuestions >= Math.min(2, totalQuestions) // At least 2 questions or all if less than 2
+    }
+    
+    return false
+  }
+
+  const markStepAsComplete = () => {
+    const newCompleted = [...stepCompleted]
+    newCompleted[currentStep] = true
+    setStepCompleted(newCompleted)
+  }
+
   const nextStep = () => {
-    if (!isLastStep) {
+    if (!isLastStep && canProceedToNext()) {
       setCurrentStep(currentStep + 1)
       setSelectedAnswer('')
       setShowResult(false)
@@ -819,6 +895,37 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
       case 'learn': return <BookOpen className="w-5 h-5 text-blue-600" />
       case 'apply': return <Target className="w-5 h-5 text-green-600" />
       case 'reflect': return <Lightbulb className="w-5 h-5 text-purple-600" />
+    }
+  }
+
+  // Save reflection to database for AI learning
+  const saveReflection = async (question: string, answer: string, questionIndex: number) => {
+    if (!user || !answer || answer.trim().length < 20) return
+
+    try {
+      const response = await fetch('/api/learning-reflections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: user.id,
+          moduleId: topicId,
+          moduleTitle: currentTopic.title,
+          phase: currentStepData.type,
+          stepNumber: currentStep,
+          question,
+          answer
+        })
+      })
+
+      if (!response.ok) {
+        console.error('Failed to save reflection')
+      } else {
+        console.log('Reflection saved for AI learning')
+      }
+    } catch (error) {
+      console.error('Error saving reflection:', error)
     }
   }
 
@@ -897,6 +1004,21 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                     </div>
                   ))}
                 </div>
+
+                {/* Confirmation button for Learn phase */}
+                {!stepCompleted[currentStep] && (
+                  <div className="border-t pt-4 mt-6">
+                    <Button onClick={markStepAsComplete} className="w-full">
+                      ✓ I've Read and Understood This Content
+                    </Button>
+                  </div>
+                )}
+
+                {stepCompleted[currentStep] && (
+                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
+                    <p className="text-green-700 font-medium">✓ Great! You can now proceed to the next step.</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -905,42 +1027,179 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
               <div className="space-y-6">
                 <div className="bg-green-50 p-4 rounded-lg">
                   <h4 className="font-semibold text-green-800 mb-3">Scenario:</h4>
-                  <p className="text-green-700">{currentStepData.content.scenario}</p>
+                  <p className="text-green-700">{(currentStepData.content as any).scenario}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-4">{currentStepData.content.task}</h4>
-                  <div className="space-y-3">
-                    {currentStepData.content.options?.map((option, index) => (
-                      <label key={index} className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
-                        <input
-                          type="radio"
-                          name="answer"
-                          value={option}
-                          checked={selectedAnswer === option}
-                          onChange={(e) => setSelectedAnswer(e.target.value)}
-                          className="mt-1"
-                        />
-                        <span className="text-sm">{option}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <h4 className="font-semibold mb-4">{(currentStepData.content as any).task}</h4>
+                  
+                  {/* Calculator Activity */}
+                  {(currentStepData as any).activityType === 'calculator' && (
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
+                        <p className="text-sm text-blue-800">
+                          <strong>Monthly Income:</strong> ₱{((currentStepData.content as any).monthlyIncome || 0).toLocaleString()}
+                        </p>
+                      </div>
+                      
+                      {((currentStepData.content as any).fields || []).map((field: any, index: number) => (
+                        <div key={field.id} className="bg-white p-4 border rounded-lg">
+                          <label className="block text-sm font-medium mb-2">
+                            {field.label}
+                            <span className="text-gray-500 text-xs ml-2">({field.hint})</span>
+                          </label>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-lg font-bold">₱</span>
+                            <input
+                              type="number"
+                              className="flex-1 p-3 border rounded-lg text-lg"
+                              placeholder="0"
+                              value={calculatorInputs[field.id] || ''}
+                              onChange={(e) => setCalculatorInputs({
+                                ...calculatorInputs,
+                                [field.id]: e.target.value
+                              })}
+                            />
+                            {showResult && (
+                              <span className="text-2xl">
+                                {parseInt(calculatorInputs[field.id] || '0') === field.expected ? '✅' : '❌'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+
+                      {!showResult && (
+                        <Button 
+                          onClick={() => setShowResult(true)} 
+                          disabled={!((currentStepData.content as any).fields || []).every((f: any) => calculatorInputs[f.id])}
+                          className="w-full"
+                        >
+                          Check My Calculations
+                        </Button>
+                      )}
+
+                      {showResult && (
+                        <div className={`p-4 rounded-lg border ${
+                          canProceedToNext()
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-orange-50 border-orange-200'
+                        }`}>
+                          <h4 className={`font-semibold mb-3 ${
+                            canProceedToNext()
+                              ? 'text-green-800' 
+                              : 'text-orange-800'
+                          }`}>
+                            {canProceedToNext()
+                              ? '🎉 Perfect! All calculations are correct!' 
+                              : '❌ Some calculations need adjustment'}
+                          </h4>
+                          
+                          {canProceedToNext() && (
+                            <>
+                              <p className="text-sm mb-3">{(currentStepData.content as any).explanation}</p>
+                              <p className="text-green-700 font-medium mt-2">
+                                ✓ You can now proceed to the next step!
+                              </p>
+                            </>
+                          )}
+                          
+                          {!canProceedToNext() && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-orange-700 mb-3">
+                                Check your answers and try again:
+                              </p>
+                              {((currentStepData.content as any).fields || []).map((field: any) => (
+                                <div key={field.id} className="text-sm mb-2">
+                                  {parseInt(calculatorInputs[field.id] || '0') === field.expected ? (
+                                    <span className="text-green-700">✓ {field.label}: Correct</span>
+                                  ) : (
+                                    <span className="text-orange-700">✗ {field.label}: Review your calculation</span>
+                                  )}
+                                </div>
+                              ))}
+                              <Button 
+                                onClick={() => setShowResult(false)} 
+                                variant="outline"
+                                className="w-full mt-3"
+                              >
+                                Try Again
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* MCQ Activity (default) */}
+                  {(!(currentStepData as any).activityType || (currentStepData as any).activityType === 'mcq') && (
+                    <div className="space-y-3">
+                      {((currentStepData.content as any).options || []).map((option: string, index: number) => (
+                        <label key={index} className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                          <input
+                            type="radio"
+                            name="answer"
+                            value={option}
+                            checked={selectedAnswer === option}
+                            onChange={(e) => setSelectedAnswer(e.target.value)}
+                            className="mt-1"
+                          />
+                          <span className="text-sm">{option}</span>
+                        </label>
+                      ))}
+
+                      {!showResult && (
+                        <Button onClick={() => setShowResult(true)} disabled={!selectedAnswer} className="w-full">
+                          Submit Answer
+                        </Button>
+                      )}
+
+                      {showResult && (
+                        <div className={`p-4 rounded-lg border ${
+                          selectedAnswer === (currentStepData.content as any).correctAnswer 
+                            ? 'bg-green-50 border-green-200' 
+                            : 'bg-orange-50 border-orange-200'
+                        }`}>
+                          <h4 className={`font-semibold mb-3 ${
+                            selectedAnswer === (currentStepData.content as any).correctAnswer 
+                              ? 'text-green-800' 
+                              : 'text-orange-800'
+                          }`}>
+                            {selectedAnswer === (currentStepData.content as any).correctAnswer 
+                              ? '🎉 Correct! Well done!' 
+                              : '❌ Not quite. Let\'s learn from this:'}
+                          </h4>
+                          <p className="text-sm mb-3">{(currentStepData.content as any).explanation}</p>
+                          
+                          {selectedAnswer !== (currentStepData.content as any).correctAnswer && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-orange-700 mb-2">
+                                Please try again to proceed to the next step.
+                              </p>
+                              <Button 
+                                onClick={() => {
+                                  setShowResult(false)
+                                  setSelectedAnswer('')
+                                }} 
+                                variant="outline"
+                                className="w-full"
+                              >
+                                Try Again
+                              </Button>
+                            </div>
+                          )}
+                          
+                          {selectedAnswer === (currentStepData.content as any).correctAnswer && (
+                            <p className="text-green-700 font-medium mt-2">
+                              ✓ You can now proceed to the next step!
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-
-                {!showResult && (
-                  <Button onClick={() => setShowResult(true)} disabled={!selectedAnswer} className="w-full">
-                    Submit Answer
-                  </Button>
-                )}
-
-                {showResult && (
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h4 className="font-semibold text-green-800 mb-3">
-                      {selectedAnswer === currentStepData.content.correctAnswer ? '🎉 Correct!' : '🤔 Let\'s learn from this'}
-                    </h4>
-                    <p className="text-sm">{currentStepData.content.explanation}</p>
-                  </div>
-                )}
               </div>
             )}
 
@@ -962,8 +1221,25 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             const newInputs = [...reflectionInputs]
                             newInputs[index] = e.target.value
                             setReflectionInputs(newInputs)
+                            
+                            // Save to database when user finishes typing (after 2 seconds of no typing)
+                            if (e.target.value.trim().length >= 20) {
+                              // Debounce the save
+                              setTimeout(() => {
+                                saveReflection(question, e.target.value, index)
+                              }, 2000)
+                            }
+                          }}
+                          onBlur={(e) => {
+                            // Also save when user leaves the field
+                            if (e.target.value.trim().length >= 20) {
+                              saveReflection(question, e.target.value, index)
+                            }
                           }}
                         />
+                        {reflectionInputs[index] && reflectionInputs[index].trim().length >= 20 && (
+                          <p className="text-xs text-green-600">✓ Your reflection has been saved and will help the AI understand you better</p>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -980,6 +1256,28 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                     ))}
                   </ul>
                 </div>
+
+                {/* Reflection completion indicator */}
+                <div className={`p-4 rounded-lg border ${
+                  canProceedToNext() 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-blue-50 border-blue-200'
+                }`}>
+                  <p className={`text-sm font-medium ${
+                    canProceedToNext() ? 'text-green-700' : 'text-blue-700'
+                  }`}>
+                    {canProceedToNext() 
+                      ? '✓ Great reflections! You can now proceed to the next step.'
+                      : `📝 Please answer at least 2 questions with thoughtful responses (minimum 20 characters each) to continue.`
+                    }
+                  </p>
+                  {!canProceedToNext() && (
+                    <p className="text-xs text-blue-600 mt-2">
+                      Completed: {reflectionInputs.filter(input => input && input.trim().length > 20).length} / 
+                      {Math.min(2, currentStepData.content.questions?.length || 0)} required
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </CardContent>
@@ -990,7 +1288,11 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
           <Button 
             variant="outline" 
             disabled={currentStep === 0}
-            onClick={() => setCurrentStep(currentStep - 1)}
+            onClick={() => {
+              setCurrentStep(currentStep - 1)
+              setSelectedAnswer('')
+              setShowResult(false)
+            }}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Previous
@@ -998,13 +1300,36 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
           {isLastStep ? (
             <Link href="/learning">
-              <Button>🎉 Complete Module</Button>
+              <Button disabled={!canProceedToNext()}>
+                {canProceedToNext() ? '🎉 Complete Module' : '🔒 Complete This Step First'}
+              </Button>
             </Link>
           ) : (
-            <Button onClick={nextStep}>
-              Next Step
-              <ArrowRight className="w-4 h-4 ml-2" />
-            </Button>
+            <div className="flex flex-col items-end">
+              <Button 
+                onClick={nextStep}
+                disabled={!canProceedToNext()}
+              >
+                {canProceedToNext() ? (
+                  <>
+                    Next Step
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    <span className="mr-2">🔒</span>
+                    Complete This Step First
+                  </>
+                )}
+              </Button>
+              {!canProceedToNext() && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {currentStepData.type === 'learn' && 'Read and confirm understanding'}
+                  {currentStepData.type === 'apply' && 'Answer the question correctly'}
+                  {currentStepData.type === 'reflect' && 'Fill in at least 2 reflections'}
+                </p>
+              )}
+            </div>
           )}
         </div>
       </div>

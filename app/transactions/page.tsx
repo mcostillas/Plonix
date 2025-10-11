@@ -510,7 +510,19 @@ export default function TransactionsPage() {
   transactions
     .filter(t => t.transaction_type === 'expense')
     .forEach(t => {
-      const category = t.category || 'Others'
+      // Normalize category names
+      let category = t.category || 'Others'
+      
+      // Capitalize first letter of each word
+      category = category.split(' ')
+        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ')
+      
+      // Merge "Food" with "Food & Dining"
+      if (category === 'Food') {
+        category = 'Food & Dining'
+      }
+      
       const existing = categoryMap.get(category) || { amount: 0, count: 0 }
       categoryMap.set(category, {
         amount: existing.amount + Number(t.amount),
@@ -527,7 +539,7 @@ export default function TransactionsPage() {
       amount: data.amount,
       transactions: data.count,
       color: categoryColors[index % categoryColors.length],
-      percentage: (data.amount / totalExpenseAmount) * 100
+      percentage: Math.round((data.amount / totalExpenseAmount) * 100 * 10) / 10 // Round to 1 decimal place
     }))
     .sort((a, b) => b.amount - a.amount)
 
@@ -539,15 +551,30 @@ export default function TransactionsPage() {
   })
 
   // Format transaction for display
-  const formattedTransactions = filteredTransactions.map(t => ({
-    id: t.id,
-    type: t.transaction_type,
-    amount: Number(t.amount),
-    description: t.merchant,
-    category: t.category,
-    date: t.date,
-    time: new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-  }))
+  const formattedTransactions = filteredTransactions.map(t => {
+    // Normalize category name
+    let category = t.category || 'Others'
+    
+    // Capitalize first letter of each word
+    category = category.split(' ')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+    
+    // Merge "Food" with "Food & Dining"
+    if (category === 'Food') {
+      category = 'Food & Dining'
+    }
+    
+    return {
+      id: t.id,
+      type: t.transaction_type,
+      amount: Number(t.amount),
+      description: t.merchant,
+      category: category,
+      date: t.date,
+      time: new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    }
+  })
 
   if (loading && transactions.length === 0) {
     return <PageSpinner message="Loading transactions..." />

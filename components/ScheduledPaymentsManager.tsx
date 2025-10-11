@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-hooks'
-import { AddScheduledPaymentModal } from './AddScheduledPaymentModal'
+import { AddMonthlyBillModal } from './AddMonthlyBillModal'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { toast } from 'sonner'
 import { 
@@ -206,7 +206,7 @@ export function ScheduledPaymentsManager() {
               </span>
             </div>
           </div>
-          <AddScheduledPaymentModal 
+          <AddMonthlyBillModal 
             onPaymentAdded={fetchScheduledPayments}
             onShowMessage={(message: string) => {
               toast.success(message)
@@ -216,7 +216,7 @@ export function ScheduledPaymentsManager() {
               <Plus className="w-4 h-4 mr-2" />
               Add Payment
             </Button>
-          </AddScheduledPaymentModal>
+          </AddMonthlyBillModal>
         </div>
       </CardHeader>
 
@@ -228,7 +228,7 @@ export function ScheduledPaymentsManager() {
             <p className="text-gray-600 mb-4">
               Add your recurring expenses like rent, bills, and subscriptions to better track your available money.
             </p>
-            <AddScheduledPaymentModal 
+            <AddMonthlyBillModal 
               onPaymentAdded={fetchScheduledPayments}
               onShowMessage={(message: string) => {
                 toast.success(message)
@@ -238,7 +238,7 @@ export function ScheduledPaymentsManager() {
                 <Plus className="w-4 h-4 mr-2" />
                 Add Your First Payment
               </Button>
-            </AddScheduledPaymentModal>
+            </AddMonthlyBillModal>
           </div>
         ) : (
           <div className="space-y-4">

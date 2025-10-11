@@ -72,8 +72,12 @@ export class AIMemoryManager {
     const profile = await this.getUserProfile(userId)
     const recentMemories = await this.getRecentMemories(userId, 10)
     const conversationHistory = await this.getConversationHistory(userId, 5)
+    const learningReflections = await this.getLearningReflections(userId, 10)
     
     if (!userContext) return this.getDefaultContext()
+
+    // Build learning insights from reflections
+    const learningInsights = this.buildLearningInsights(learningReflections)
 
     const personalizedPrompt = `
 PERSONAL PROFILE:
@@ -90,6 +94,9 @@ FINANCIAL CONTEXT:
 - Budget Preference: ${userContext.preferences?.budgetStyle || '50-30-20'}
 - Communication Style: ${userContext.preferences?.communicationStyle || 'casual'}
 
+LEARNING JOURNEY & REFLECTIONS:
+${learningInsights}
+
 PERSONAL MEMORIES & INSIGHTS:
 - Important Dates: ${userContext.memories?.importantDates?.slice(-3).map(d => `${d.date}: ${d.event}`).join(', ') || 'None recorded'}
 - Recent Achievements: ${userContext.memories?.achievements?.slice(-2).map(a => a.achievement).join(', ') || 'None recorded'}
@@ -104,14 +111,16 @@ RECENT CONVERSATION CONTEXT:
 ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 MEMORY INSTRUCTIONS:
-- Remember personal details shared in conversations
+- Remember personal details shared in conversations AND learning reflections
 - Track progress on goals and celebrate achievements  
-- Reference past conversations and advice given
+- Reference past conversations, advice given, and learning module progress
 - Note user's communication preferences and adapt accordingly
 - Remember what works well for this specific user
-- Be aware of recurring concerns or interests
+- Be aware of recurring concerns or interests from both chats and learning reflections
 - Use their name when appropriate
 - Reference their specific situation and circumstances
+- Connect learning concepts to their real-life situation based on reflections
+- Celebrate completed learning modules and reference their insights
 `
     
     return personalizedPrompt
@@ -459,6 +468,81 @@ Be friendly, encouraging, and use Taglish as appropriate.
     }
 
     await this.updateUserContext(userId, { memories })
+  }
+
+  // Get learning reflections from modules
+  async getLearningReflections(userId: string, limit: number = 10) {
+    const { data, error } = await supabase
+      .from('learning_reflections')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    
+    if (error) return []
+    return data
+  }
+
+  // Build learning insights from reflections
+  buildLearningInsights(reflections: any[]): string {
+    if (!reflections || reflections.length === 0) {
+      return 'User has not completed any learning modules yet.'
+    }
+
+    // Group by module
+    const byModule: any = {}
+    reflections.forEach(r => {
+      if (!byModule[r.module_id]) {
+        byModule[r.module_id] = {
+          title: r.module_title,
+          reflections: []
+        }
+      }
+      byModule[r.module_id].reflections.push(r)
+    })
+
+    let insights = 'Modules Completed & User Insights:\n'
+    
+    Object.keys(byModule).forEach(moduleId => {
+      const module = byModule[moduleId]
+      insights += `\n📚 ${module.title}:\n`
+      
+      // Get key reflections
+      module.reflections.slice(0, 3).forEach((r: any) => {
+        insights += `  Q: ${r.question}\n`
+        insights += `  A: ${r.answer.substring(0, 150)}${r.answer.length > 150 ? '...' : ''}\n`
+        
+        // Add extracted insights
+        if (r.extracted_insights) {
+          if (r.extracted_insights.goals) {
+            insights += `    → Goals mentioned: ${r.extracted_insights.goals.join(', ')}\n`
+          }
+          if (r.extracted_insights.mentionedAmounts) {
+            insights += `    → Amounts: ${r.extracted_insights.mentionedAmounts.join(', ')}\n`
+          }
+          if (r.extracted_insights.hasChallenges) {
+            insights += `    → Facing challenges in this area\n`
+          }
+          if (r.extracted_insights.topics) {
+            insights += `    → Interested in: ${r.extracted_insights.topics.join(', ')}\n`
+          }
+        }
+        
+        // Add sentiment
+        if (r.sentiment) {
+          const sentimentEmoji = {
+            'motivated': '💪',
+            'positive': '😊',
+            'concerned': '😟',
+            'confused': '🤔',
+            'neutral': '😐'
+          }
+          insights += `    Sentiment: ${sentimentEmoji[r.sentiment as keyof typeof sentimentEmoji] || ''} ${r.sentiment}\n`
+        }
+      })
+    })
+
+    return insights
   }
 }
 
