@@ -133,11 +133,21 @@ export default function RegisterPage() {
         
         // Clear saved form data on successful registration
         sessionStorage.removeItem('registerFormData')
-        setMessage('Account created successfully! Redirecting to setup...')
-        // Redirect to onboarding after 2 seconds
-        setTimeout(() => {
-          router.push('/onboarding')
-        }, 2000)
+        
+        // Check if email confirmation is required
+        if (result.session) {
+          // User is logged in, go to onboarding immediately
+          setMessage('Account created successfully! Redirecting to setup...')
+          setTimeout(() => {
+            router.push('/onboarding')
+          }, 1000)
+        } else {
+          // Email confirmation required
+          setMessage('Account created! Please check your email to verify your account, then log in to continue setup.')
+          setTimeout(() => {
+            router.push('/auth/login?message=Please verify your email before logging in')
+          }, 3000)
+        }
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')

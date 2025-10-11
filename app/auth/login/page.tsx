@@ -61,6 +61,22 @@ function LoginForm() {
           localStorage.removeItem('plounix_remember_me')
         }
         
+        // Check if user has completed onboarding
+        if (result.user) {
+          const { supabase } = await import('@/lib/supabase')
+          const { data: profile } = await supabase
+            .from('user_profiles')
+            .select('age, monthly_income')
+            .eq('user_id', result.user.id)
+            .maybeSingle()
+          
+          // If no profile data or missing required fields, redirect to onboarding
+          if (!profile || !(profile as any).age || !(profile as any).monthly_income) {
+            router.push('/onboarding')
+            return
+          }
+        }
+        
         // Get redirect URL from query params or default to dashboard
         const redirectTo = searchParams.get('redirectTo') || '/dashboard'
         router.push(redirectTo)
