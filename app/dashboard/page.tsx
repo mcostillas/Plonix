@@ -108,17 +108,24 @@ function DashboardContent() {
         
         console.log('🔍 Dashboard: Checking onboarding status', { profile, error })
         
-        // If column doesn't exist or error, skip check
+        // If column doesn't exist or error, mark as completed to prevent infinite redirects
         if (error && error.message?.includes('column')) {
-          console.log('⚠️ Column does not exist, skipping onboarding check')
+          console.log('⚠️ Column does not exist, marking onboarding as complete in localStorage')
+          localStorage.setItem('plounix_onboarding_completed', 'true')
+          localStorage.setItem('plounix_onboarding_time', Date.now().toString())
           return
         }
         
-        // Redirect to onboarding if not completed
+        // Redirect to onboarding if not completed (only once per user)
         if (!profile || !(profile as any).onboarding_completed) {
           console.log('❌ Dashboard: Onboarding not complete, redirecting')
           router.push('/onboarding')
         } else {
+          console.log('✅ Dashboard: Onboarding complete in database')
+          // Store in localStorage for faster future checks
+          localStorage.setItem('plounix_onboarding_completed', 'true')
+          localStorage.setItem('plounix_onboarding_time', Date.now().toString())
+          
           // Check if tour was shown
           const tourShown = localStorage.getItem('plounix_tour_shown')
           console.log('🎯 Tour shown status:', tourShown)
@@ -130,8 +137,10 @@ function DashboardContent() {
           }
         }
       } catch (error) {
-        console.error('Error checking onboarding:', error)
-        // Don't redirect on error, just log it
+        console.error('❌ Dashboard: Error checking onboarding', error)
+        // On error, mark as completed to prevent infinite redirects
+        localStorage.setItem('plounix_onboarding_completed', 'true')
+        localStorage.setItem('plounix_onboarding_time', Date.now().toString())
       }
     }
     
