@@ -138,6 +138,37 @@ interface CompletedModule {
   practical_tips: string[]
 }
 
+// Phase 3: Challenges interfaces
+interface ActiveChallenge {
+  id: string
+  user_id: string
+  challenge_id: string
+  title: string
+  description: string
+  icon: string
+  category: string
+  challenge_type: string
+  difficulty: string
+  status: string
+  progress_percent: number
+  checkins_completed: number
+  checkins_required?: number
+  current_streak: number
+  deadline: string
+  points_earned: number
+  points_full: number
+  days_left: number
+  joined_at: string
+}
+
+interface ChallengeStats {
+  total_completed: number
+  active_count: number
+  total_points: number
+  success_rate: number
+  current_longest_streak: number
+}
+
 export class AIMemoryManager {
   // Enhanced context building with personalization
   async buildPersonalizedContext(userId: string): Promise<string> {
@@ -155,6 +186,10 @@ export class AIMemoryManager {
     // ===== PHASE 2: FETCH LEARNING MODULE DATA =====
     const completedModules = await this.getCompletedModules(userId)
     
+    // ===== PHASE 3: FETCH CHALLENGES & GAMIFICATION DATA =====
+    const activeChallenges = await this.getActiveChallenges(userId)
+    const challengeStats = await this.getChallengeStats(userId)
+    
     if (!userContext) return this.getDefaultContext()
 
     // Build learning insights from reflections
@@ -167,6 +202,9 @@ export class AIMemoryManager {
     
     // Build learning module context
     const learningContext = this.formatLearningContext(completedModules)
+    
+    // Build challenges context
+    const challengesContext = this.formatChallengesContext(activeChallenges, challengeStats)
 
     const personalizedPrompt = `
 PERSONAL PROFILE:
@@ -198,6 +236,12 @@ ${learningContext}
 
 ===== END LEARNING DATA =====
 
+===== CHALLENGES & GAMIFICATION =====
+
+${challengesContext}
+
+===== END CHALLENGES DATA =====
+
 LEARNING JOURNEY & REFLECTIONS:
 ${learningInsights}
 
@@ -215,22 +259,27 @@ RECENT CONVERSATION CONTEXT:
 ${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
 
 AI INSTRUCTIONS - CRITICAL:
-1. You now have COMPLETE visibility into the user's finances AND learning journey
+1. You now have COMPLETE visibility into user's finances, learning journey, AND active challenges
 2. Reference SPECIFIC concepts they learned (e.g., "Remember the 50-30-20 rule from Budgeting?")
-3. Connect financial advice to modules they completed (e.g., "Since you learned about digital banks...")
-4. Give ACTIONABLE advice based on their ACTUAL spending patterns AND knowledge
-5. Celebrate progress on goals with EXACT percentages
-6. Warn about upcoming bills if they're within 3 days
-7. Build on their financial education (e.g., "Now that you understand budgeting, let's apply it...")
-8. Reference SPECIFIC numbers from goals, transactions, and bills
-9. Use their name (${profile?.name || 'Friend'}) naturally
-10. Be specific, data-driven, and personalized - not generic!
+3. CELEBRATE challenge progress and streaks with emojis (🔥 for streaks, 🎉 for milestones)
+4. WARN about challenge deadlines if < 3 days and < 80% progress
+5. CONNECT challenges to financial goals (e.g., "Your No-Spend challenge helps reach emergency fund!")
+6. Give ACTIONABLE advice based on ACTUAL spending patterns, knowledge, AND active challenges
+7. Celebrate progress on goals with EXACT percentages
+8. Warn about upcoming bills if they're within 3 days
+9. Build on their financial education (e.g., "Now that you understand budgeting, let's apply it...")
+10. Reference SPECIFIC numbers from goals, transactions, bills, and challenge progress
+11. Use their name (${profile?.name || 'Friend'}) naturally
+12. Be specific, data-driven, and personalized - not generic!
 
-EXAMPLE RESPONSES WITH LEARNING CONTEXT:
-- Instead of "Try the 50-30-20 rule": "I see you completed the Budgeting module! Let's apply that 50-30-20 rule to your ₱25,000 income: ₱12,500 needs, ₱7,500 wants, ₱5,000 savings."
-- Instead of "Save in a bank": "Remember the digital banks you learned about in the Saving module? Your ₱10,000 emergency fund would earn ₱600/year in Tonik (6%) vs ₱25 in traditional banks!"
-- Instead of "Good progress": "Awesome! You're applying what you learned from the Emergency Fund module - already at ₱15,000/₱20,000 (75%)!"
-- Instead of "Consider investing": "Since you completed the Investing module, you understand mutual funds. Ready to start with ₱1,000 monthly in BPI Balanced Fund?"
+EXAMPLE RESPONSES WITH FULL CONTEXT:
+- Learning + Challenge: "I see you're on Day 3 of the No-Spend Weekend challenge (🔥 3-day streak!) and you completed the Budgeting module! That 50-30-20 rule is helping you save - you're at ₱15,000/₱20,000 on your emergency fund (75%)!"
+
+- Challenge + Goal: "Your 7-Day Savings Challenge is at 71% (₱350/₱500 saved)! Keep it up - this directly contributes to your ₱30,000 Emergency Fund goal. Just ₱150 more in 2 days!"
+
+- All Systems: "Amazing progress! You completed Investing module, you're at 90% on your Laptop Fund (₱45k/₱50k), AND you're crushing the Cook-at-Home challenge (Day 5/7 🔥). Your food spending dropped from ₱6,000 to ₱4,000 this month - that's ₱2,000 saved!"
+
+- Urgent Challenge: "⚠️ Heads up! Your Save ₱500 challenge ends in 2 days and you're at 60% (₱300/₱500). Need to save ₱200 more. Your Netflix bill (₱149) is due in 3 days - perfect timing to pause it and save toward your challenge!"
 `
     
     return personalizedPrompt
@@ -1148,6 +1197,166 @@ Be friendly, encouraging, and use Taglish as appropriate.
       coreModulesCompleted: coreCompleted.map(m => m.module_id),
       essentialModulesCompleted: essentialCompleted.map(m => m.module_id),
       recentModule: modules[0] // Most recent
+    }
+  }
+
+  // ===== PHASE 3: CHALLENGES & GAMIFICATION METHODS =====
+  
+  /**
+   * Fetches user's active challenges with progress
+   */
+  async getActiveChallenges(userId: string): Promise<ActiveChallenge[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_active_challenges')
+        .select('*')
+        .eq('user_id', userId)
+        .order('deadline', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching active challenges:', error)
+        return []
+      }
+
+      return (data as any[]) || []
+    } catch (error) {
+      console.error('Error in getActiveChallenges:', error)
+      return []
+    }
+  }
+
+  /**
+   * Gets challenge statistics for user
+   */
+  async getChallengeStats(userId: string): Promise<ChallengeStats> {
+    try {
+      const { data, error } = await supabase
+        .from('user_challenges')
+        .select('status, points_earned, current_streak')
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error fetching challenge stats:', error)
+        return {
+          total_completed: 0,
+          active_count: 0,
+          total_points: 0,
+          success_rate: 0,
+          current_longest_streak: 0
+        }
+      }
+
+      const challenges = (data as any[]) || []
+      const completed = challenges.filter((c: any) => c.status === 'completed').length
+      const active = challenges.filter((c: any) => c.status === 'active').length
+      const failed = challenges.filter((c: any) => c.status === 'failed').length
+      const totalPoints = challenges.reduce((sum: number, c: any) => sum + (c.points_earned || 0), 0)
+      const successRate = challenges.length > 0 ? Math.round((completed / challenges.length) * 100) : 0
+      const longestStreak = challenges.length > 0 
+        ? Math.max(...challenges.map((c: any) => c.current_streak || 0)) 
+        : 0
+
+      return {
+        total_completed: completed,
+        active_count: active,
+        total_points: totalPoints,
+        success_rate: successRate,
+        current_longest_streak: longestStreak
+      }
+    } catch (error) {
+      console.error('Error in getChallengeStats:', error)
+      return {
+        total_completed: 0,
+        active_count: 0,
+        total_points: 0,
+        success_rate: 0,
+        current_longest_streak: 0
+      }
+    }
+  }
+
+  /**
+   * Formats challenges context for AI
+   */
+  formatChallengesContext(challenges: ActiveChallenge[], stats: ChallengeStats): string {
+    if (challenges.length === 0 && stats.total_completed === 0) {
+      return 'No challenges started yet. Encourage user to join a challenge for motivation!'
+    }
+
+    let context = `GAMIFICATION & CHALLENGES:\n\n`
+
+    // Overall stats
+    context += `📊 Challenge Statistics:\n`
+    context += `- Completed: ${stats.total_completed} challenges\n`
+    context += `- Active: ${stats.active_count} challenges\n`
+    context += `- Total Points Earned: ${stats.total_points} points\n`
+    context += `- Success Rate: ${stats.success_rate}%\n`
+    if (stats.current_longest_streak > 0) {
+      context += `- Longest Streak: ${stats.current_longest_streak} days 🔥\n`
+    }
+    context += `\n`
+
+    // Active challenges
+    if (challenges.length > 0) {
+      context += `🎯 ACTIVE CHALLENGES (${challenges.length}):\n\n`
+      
+      challenges.forEach((challenge, index) => {
+        context += `${index + 1}. ${challenge.title} ${challenge.icon}\n`
+        context += `   Category: ${challenge.category} | Difficulty: ${challenge.difficulty}\n`
+        context += `   Progress: ${challenge.progress_percent}% (${challenge.checkins_completed}/${challenge.checkins_required || '?'} check-ins)\n`
+        
+        if (challenge.current_streak > 0) {
+          context += `   Current Streak: ${challenge.current_streak} days 🔥\n`
+        }
+        
+        context += `   Days Remaining: ${challenge.days_left} days\n`
+        context += `   Points: ${challenge.points_earned}/${challenge.points_full}\n`
+        
+        // Urgency warnings
+        if (challenge.days_left <= 2 && challenge.progress_percent < 80) {
+          context += `   ⚠️ URGENT: Only ${challenge.days_left} days left and ${100 - challenge.progress_percent}% remaining!\n`
+        } else if (challenge.progress_percent >= 90) {
+          context += `   🎉 Almost done! Just ${100 - challenge.progress_percent}% to go!\n`
+        }
+        
+        context += `\n`
+      })
+    }
+
+    // AI instructions
+    context += `\n🎯 AI INSTRUCTIONS FOR CHALLENGES:\n`
+    context += `- CELEBRATE progress! Use emojis for streaks (🔥) and achievements (🎉)\n`
+    context += `- ENCOURAGE users on active challenges\n`
+    context += `- WARN about upcoming deadlines (if < 3 days and < 80% progress)\n`
+    context += `- SUGGEST check-ins if user hasn't updated today\n`
+    context += `- CONNECT challenges to financial goals (e.g., "Your No-Spend challenge helps reach your ₱20k emergency fund!")\n`
+    context += `- ACKNOWLEDGE streaks: "Amazing ${stats.current_longest_streak}-day streak! Keep it up!"\n`
+    context += `- RECOMMEND new challenges if none active\n`
+
+    return context
+  }
+
+  /**
+   * Gets recent challenge activity
+   */
+  async getRecentChallengeActivity(userId: string, limit: number = 5): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('user_challenges')
+        .select('*, challenges(*)')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(limit)
+
+      if (error) {
+        console.error('Error fetching recent challenge activity:', error)
+        return []
+      }
+
+      return (data as any[]) || []
+    } catch (error) {
+      console.error('Error in getRecentChallengeActivity:', error)
+      return []
     }
   }
 }
