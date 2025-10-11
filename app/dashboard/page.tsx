@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +10,7 @@ import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { PageLoader } from '@/components/ui/page-loader'
-import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X, Wallet } from 'lucide-react'
+import { PlusCircle, Calculator, TrendingUp, PieChart, Target, Trophy, BookOpen, PiggyBank, Search, Globe, MessageCircle, ArrowUpRight, ArrowDownRight, X, Wallet, Sparkles, PartyPopper } from 'lucide-react'
 import { Spinner } from '@/components/ui/spinner'
 import { supabase } from '@/lib/supabase'
 import { CheckInSuccessModal, ChallengeCanceledModal } from '@/components/ui/success-modal'
@@ -28,7 +29,9 @@ export default function DashboardPage() {
 
 function DashboardContent() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [completedModules, setCompletedModules] = useState<string[]>([])
+  const [showWelcomeMessage, setShowWelcomeMessage] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [monthlySpent, setMonthlySpent] = useState<number>(0)
   const [monthlyIncome, setMonthlyIncome] = useState<number>(0)
@@ -179,6 +182,17 @@ function DashboardContent() {
     fetchFinancialData()
   }, [user, refreshTrigger])
 
+  // Check if user just completed onboarding
+  useEffect(() => {
+    if (searchParams?.get('onboarding') === 'complete') {
+      setShowWelcomeMessage(true)
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setShowWelcomeMessage(false)
+      }, 5000)
+    }
+  }, [searchParams])
+
   // Fetch challenges data
   useEffect(() => {
     async function fetchChallengesData() {
@@ -308,6 +322,55 @@ function DashboardContent() {
       <Navbar currentPage="dashboard" />
 
       <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Welcome Message for New Users */}
+        {showWelcomeMessage && (
+          <div className="mb-6 bg-gradient-to-r from-green-500 to-blue-600 rounded-2xl p-6 text-white shadow-xl animate-in fade-in slide-in-from-top-4 duration-500 relative">
+            <button
+              onClick={() => setShowWelcomeMessage(false)}
+              className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <div className="flex items-start space-x-4">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <PartyPopper className="w-8 h-8" />
+              </div>
+              <div className="flex-1">
+                <h2 className="text-2xl font-bold mb-2 flex items-center">
+                  Welcome to Plounix! <Sparkles className="w-6 h-6 ml-2" />
+                </h2>
+                <p className="text-white/90 mb-4">
+                  Congrats on taking the first step towards financial freedom! Your profile is all set up. 
+                  Here's what you can do next:
+                </p>
+                <div className="grid md:grid-cols-3 gap-3">
+                  <Link href="/ai-assistant">
+                    <div className="bg-white/10 hover:bg-white/20 rounded-lg p-3 transition-all cursor-pointer">
+                      <MessageCircle className="w-5 h-5 mb-1" />
+                      <p className="font-semibold text-sm">Chat with AI</p>
+                      <p className="text-xs text-white/70">Get personalized advice</p>
+                    </div>
+                  </Link>
+                  <Link href="/goals">
+                    <div className="bg-white/10 hover:bg-white/20 rounded-lg p-3 transition-all cursor-pointer">
+                      <Target className="w-5 h-5 mb-1" />
+                      <p className="font-semibold text-sm">Set Your Goals</p>
+                      <p className="text-xs text-white/70">Track your progress</p>
+                    </div>
+                  </Link>
+                  <Link href="/learning">
+                    <div className="bg-white/10 hover:bg-white/20 rounded-lg p-3 transition-all cursor-pointer">
+                      <BookOpen className="w-5 h-5 mb-1" />
+                      <p className="font-semibold text-sm">Learn Basics</p>
+                      <p className="text-xs text-white/70">Financial literacy 101</p>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Welcome Header */}
         <div className="mb-8 bg-gradient-to-r from-primary/10 to-blue-600/10 rounded-2xl p-6 border border-primary/20">
           <h1 className="text-3xl font-bold mb-2 text-gray-900">

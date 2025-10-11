@@ -10,7 +10,10 @@ export async function middleware(req: NextRequest) {
     '/',           // Landing page
     '/auth/login', // Login page
     '/auth/register', // Register page
+    '/onboarding', // Onboarding page (after registration)
     '/pricing',    // Pricing page (if you want it public)
+    '/terms',      // Terms of service
+    '/privacy',    // Privacy policy
     // Add any other public routes here
   ]
 
