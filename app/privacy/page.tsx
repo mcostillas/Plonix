@@ -35,7 +35,7 @@ export default function PrivacyPage() {
             <Shield className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Privacy Policy</h1>
-          <p className="text-lg text-gray-600">Last updated: October 3, 2025</p>
+          <p className="text-lg text-gray-600">Last updated: October 12, 2025</p>
         </div>
 
         <Card className="p-8 shadow-lg mb-8">
@@ -71,10 +71,12 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
                 <li><strong>Account Information:</strong> Name, email address, password (encrypted)</li>
-                <li><strong>Profile Information:</strong> Age, location, financial goals, preferences</li>
-                <li><strong>Financial Data:</strong> Budget information, savings goals, expense categories, transaction data</li>
-                <li><strong>AI Conversations:</strong> Messages exchanged with our AI financial assistant</li>
-                {/* <li><strong>Receipt Data:</strong> Images and extracted text from receipts you upload</li> */}
+                <li><strong>Profile Information:</strong> Age preferences, onboarding responses, user preferences (theme, language)</li>
+                <li><strong>Financial Data:</strong> Income, expenses, savings goals, transaction details with categories, monthly bills, scheduled payments</li>
+                <li><strong>AI Conversations:</strong> Messages exchanged with Fili (your AI financial coach), including web search queries and results</li>
+                <li><strong>Learning Progress:</strong> Completed modules, reflection answers, action items, quiz responses</li>
+                <li><strong>Goal Data:</strong> Financial goals, target amounts, deadlines, progress updates, savings contributions</li>
+                <li><strong>Challenge Participation:</strong> Active challenges, check-ins, completion status, points earned</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">2.2 Automatically Collected Information</h3>
@@ -82,17 +84,21 @@ export default function PrivacyPage() {
                 When you access Plounix, we automatically collect:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
-                <li><strong>Usage Data:</strong> Pages visited, features used, time spent on platform, click patterns</li>
-                <li><strong>Device Information:</strong> Browser type, operating system, device model, IP address</li>
-                <li><strong>Log Data:</strong> Access times, error logs, performance data</li>
-                <li><strong>Cookies:</strong> Session tokens, authentication cookies, preference cookies</li>
+                <li><strong>Usage Data:</strong> Pages visited, features used, time spent on platform, click patterns, navigation flow</li>
+                <li><strong>Device Information:</strong> Browser type, operating system, device model, screen resolution, IP address</li>
+                <li><strong>Log Data:</strong> Access times, error logs, performance data, API calls</li>
+                <li><strong>Cookies & Local Storage:</strong> Session tokens, authentication cookies, preference cookies, onboarding status, tour completion</li>
+                <li><strong>Interaction Data:</strong> Button clicks, form submissions, modal interactions, feature usage patterns</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-gray-800 mb-3">2.3 Third-Party Information</h3>
               <p className="text-gray-700 leading-relaxed">
-                We may receive information from third-party services you connect to Plounix, such as social media login 
-                providers (if applicable in the future).
+                We may receive information from third-party services:
               </p>
+              <ul className="list-disc pl-6 text-gray-700 space-y-2 mt-2">
+                <li><strong>Web Search Results:</strong> Real-time financial information, prices, and news from web searches conducted through our AI assistant</li>
+                <li><strong>Social Login:</strong> Information from social media login providers (if you choose to use them in the future)</li>
+              </ul>
             </section>
 
             {/* How We Use Your Information */}
@@ -105,14 +111,15 @@ export default function PrivacyPage() {
                 We use your personal information for the following purposes:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li><strong>Provide Services:</strong> Deliver AI financial assistance, educational content, and tools</li>
-                <li><strong>Personalization:</strong> Tailor content, recommendations, and experiences to your needs</li>
-                <li><strong>Account Management:</strong> Create and manage your account, authenticate users</li>
-                <li><strong>Communication:</strong> Send updates, newsletters, educational content, and support responses</li>
-                <li><strong>Analytics:</strong> Understand usage patterns, improve features, fix bugs</li>
-                <li><strong>Security:</strong> Detect fraud, prevent abuse, ensure platform security</li>
+                <li><strong>Provide Services:</strong> Deliver Fili AI financial coach with web search, expense tracking, learning modules, goal tracking, and money missions</li>
+                <li><strong>Personalization:</strong> Tailor content, recommendations, and AI responses based on your financial profile and goals</li>
+                <li><strong>Account Management:</strong> Create and manage your account, authenticate users, handle onboarding</li>
+                <li><strong>Communication:</strong> Send updates, learning content, challenge reminders, goal progress notifications, and support responses</li>
+                <li><strong>Analytics:</strong> Understand usage patterns, improve features, fix bugs, optimize user experience</li>
+                <li><strong>Security:</strong> Detect fraud, prevent abuse, ensure platform security and data integrity</li>
                 <li><strong>Legal Compliance:</strong> Comply with legal obligations and protect our rights</li>
-                <li><strong>AI Training:</strong> Improve AI models (anonymized and aggregated data only)</li>
+                <li><strong>AI Training:</strong> Improve AI models and responses (anonymized and aggregated data only)</li>
+                <li><strong>Gamification:</strong> Track challenge progress, award points, and provide achievement notifications</li>
               </ul>
             </section>
 
@@ -120,18 +127,20 @@ export default function PrivacyPage() {
             <section className="mb-8 bg-blue-50 border-l-4 border-blue-400 p-6 rounded">
               <h2 className="text-2xl font-bold text-gray-900 mb-4">4. AI and Machine Learning</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Plounix uses AI technology (powered by OpenAI and other providers) to deliver personalized financial guidance:
+                Plounix uses advanced AI technology (powered by OpenRouter and other providers) to deliver personalized financial guidance:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
-                <li>Your conversations with the AI assistant are processed to generate relevant responses</li>
-                <li>We store conversation history to provide context-aware assistance</li>
-                <li>Your data may be sent to third-party AI providers (OpenAI) for processing</li>
-                <li>We implement measures to anonymize sensitive data before AI processing</li>
+                <li>Your conversations with Fili (AI assistant) are processed to generate contextually relevant responses</li>
+                <li>We store conversation history to provide context-aware and personalized assistance</li>
+                <li>Your data may be sent to third-party AI providers (OpenRouter, OpenAI) for processing</li>
+                <li>Fili has real-time web search capabilities to provide current financial information, prices, and bank rates</li>
+                <li>Web search queries and results are processed to enhance AI responses</li>
+                <li>We implement measures to anonymize sensitive data before AI processing where possible</li>
                 <li>AI-generated advice is for educational purposes only, not professional financial advice</li>
               </ul>
               <p className="text-gray-700 leading-relaxed font-medium">
                 Note: Third-party AI providers have their own privacy policies. We select vendors with strong data 
-                protection practices.
+                protection practices and compliance standards.
               </p>
             </section>
 
@@ -147,10 +156,12 @@ export default function PrivacyPage() {
                 We work with trusted third-party service providers who assist in operating Plounix:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2 mb-4">
-                <li><strong>Supabase:</strong> Database and authentication services</li>
-                <li><strong>OpenAI:</strong> AI language models for chatbot functionality</li>
-                <li><strong>Hosting Providers:</strong> Cloud infrastructure (Vercel, AWS, etc.)</li>
-                <li><strong>Analytics:</strong> Usage analytics and performance monitoring</li>
+                <li><strong>Supabase:</strong> Database, authentication, and backend services</li>
+                <li><strong>OpenRouter:</strong> AI routing and language models for chatbot functionality</li>
+                <li><strong>OpenAI:</strong> AI language models and processing</li>
+                <li><strong>Vercel:</strong> Cloud hosting and deployment infrastructure</li>
+                <li><strong>Web Search APIs:</strong> Real-time financial information and news retrieval</li>
+                <li><strong>Analytics:</strong> Usage analytics and performance monitoring tools</li>
               </ul>
               <p className="text-gray-700 leading-relaxed mb-4">
                 These providers are contractually obligated to protect your data and only use it for specified purposes.

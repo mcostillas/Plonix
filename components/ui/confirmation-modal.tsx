@@ -23,7 +23,7 @@ export function ConfirmationModal({
   message,
   type = 'danger',
   confirmText = 'Confirm',
-  cancelText = 'Cancel',
+  cancelText = 'Cancel',  
   icon = 'warning'
 }: ConfirmationModalProps) {
   if (!isOpen) return null
@@ -48,39 +48,41 @@ export function ConfirmationModal({
   }
 
   return (
-  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-4 animate-in fade-in duration-200">
+  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-100 flex items-center justify-center p-2 md:p-4 animate-in fade-in duration-200">
       <div 
         className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200">
-          <div className="flex items-start space-x-4">
-            <div className={`w-12 h-12 rounded-full ${getIconBgColor()} flex items-center justify-center ${getIconColor()}`}>
-              {getIcon()}
+        <div className="flex items-start justify-between p-3 md:p-6 border-b border-gray-200">
+          <div className="flex items-start space-x-2 md:space-x-4">
+            <div className={`w-8 h-8 md:w-12 md:h-12 rounded-full ${getIconBgColor()} flex items-center justify-center ${getIconColor()}`}>
+              <div className="[&>svg]:w-4 [&>svg]:h-4 md:[&>svg]:w-6 md:[&>svg]:h-6">
+                {getIcon()}
+              </div>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{title}</h2>
-              <p className="text-sm text-gray-600 mt-1">{message}</p>
+              <h2 className="text-sm md:text-xl font-bold text-gray-900">{title}</h2>
+              <p className="text-[10px] md:text-sm text-gray-600 mt-0.5 md:mt-1">{message}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={onClose}
-            className="w-8 h-8 p-0 hover:bg-gray-100 rounded-lg"
+            className="w-6 h-6 md:w-8 md:h-8 p-0 hover:bg-gray-100 rounded-lg"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3 h-3 md:w-4 md:h-4" />
           </Button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
-          <div className={`p-4 rounded-lg ${type === 'danger' ? 'bg-red-50 border border-red-200' : 'bg-orange-50 border border-orange-200'}`}>
-            <p className={`text-sm font-medium ${type === 'danger' ? 'text-red-800' : 'text-orange-800'}`}>
+        <div className="p-3 md:p-6">
+          <div className={`p-2 md:p-4 rounded-lg ${type === 'danger' ? 'bg-red-50 border border-red-200' : 'bg-orange-50 border border-orange-200'}`}>
+            <p className={`text-[10px] md:text-sm font-medium ${type === 'danger' ? 'text-red-800' : 'text-orange-800'}`}>
               This action cannot be undone
             </p>
-            <p className={`text-xs ${type === 'danger' ? 'text-red-600' : 'text-orange-600'} mt-1`}>
+            <p className={`text-[8px] md:text-xs ${type === 'danger' ? 'text-red-600' : 'text-orange-600'} mt-0.5 md:mt-1`}>
               {type === 'danger' 
                 ? 'All data will be permanently deleted from the database.'
                 : 'Please make sure you want to proceed with this action.'}
@@ -89,11 +91,11 @@ export function ConfirmationModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end space-x-3 p-6 bg-gray-50 rounded-b-2xl">
+        <div className="flex items-center justify-end space-x-2 md:space-x-3 p-3 md:p-6 bg-gray-50 rounded-b-2xl">
           <Button
             variant="outline"
             onClick={onClose}
-            className="px-6 py-2 border-gray-300 hover:bg-gray-100"
+            className="px-3 md:px-6 py-1 md:py-2 h-7 md:h-auto text-[10px] md:text-sm border-gray-300 hover:bg-gray-100"
           >
             {cancelText}
           </Button>
@@ -102,7 +104,7 @@ export function ConfirmationModal({
               onConfirm()
               onClose()
             }}
-            className={`px-6 py-2 ${
+            className={`px-3 md:px-6 py-1 md:py-2 h-7 md:h-auto text-[10px] md:text-sm ${
               type === 'danger' 
                 ? 'bg-red-600 hover:bg-red-700 text-white' 
                 : 'bg-orange-600 hover:bg-orange-700 text-white'

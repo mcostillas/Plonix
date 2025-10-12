@@ -58,9 +58,9 @@ export function NotificationBell() {
       <Button
         variant="ghost"
         size="sm"
-        className="relative p-2 h-9"
+        className="relative p-1 md:p-2 h-7 md:h-9"
       >
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Bell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
       </Button>
     )
   }
@@ -71,11 +71,11 @@ export function NotificationBell() {
         variant="ghost"
         size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 h-9 hover:bg-gray-100"
+        className="relative p-1 md:p-2 h-7 md:h-9 hover:bg-gray-100"
       >
-        <Bell className="w-5 h-5 text-gray-600" />
+        <Bell className="w-4 h-4 md:w-5 md:h-5 text-gray-600" />
         {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+          <span className="absolute top-0 right-0 md:top-1 md:right-1 w-3 h-3 md:w-4 md:h-4 bg-red-500 text-white text-[8px] md:text-xs rounded-full flex items-center justify-center font-medium">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}

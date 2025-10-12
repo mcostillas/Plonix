@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useAuth } from '@/lib/auth-hooks'
 import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { 
   Bell, 
   Calendar, 
@@ -202,50 +203,49 @@ export function NotificationCenter({
   return (
     <div 
       ref={panelRef}
-      className="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+      className="fixed md:absolute right-2 md:right-0 top-14 md:top-full mt-2 w-[calc(100vw-16px)] md:w-96 bg-white rounded-lg shadow-2xl border border-gray-200 z-[9999]"
     >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-2 md:p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900 flex items-center">
-            <Bell className="w-4 h-4 mr-2" />
+          <h3 className="text-xs md:text-base font-semibold text-gray-900 flex items-center">
+            <Bell className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
             Notifications
           </h3>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 md:space-x-2">
             {hasUnread && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={markAllAsRead}
-                className="text-xs text-indigo-600 hover:text-indigo-700 h-7 px-2"
+                className="text-[8px] md:text-xs text-indigo-600 hover:text-indigo-700 h-6 md:h-7 px-1 md:px-2"
               >
-                Mark all as read
+                Mark all read
               </Button>
             )}
             <Button
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="p-1 h-7 w-7"
+              className="p-0.5 md:p-1 h-6 md:h-7 w-6 md:w-7"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3 h-3 md:w-4 md:h-4" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Notification List */}
-      <div className="max-h-96 overflow-y-auto">
+      <div className="max-h-[60vh] md:max-h-96 overflow-y-auto">
         {loading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block w-8 h-8 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin"></div>
-            <p className="text-sm text-gray-500 mt-2">Loading...</p>
+          <div className="p-4 md:p-8 text-center">
+            <Spinner size="lg" color="primary" className="mx-auto" />
           </div>
         ) : notifications.length === 0 ? (
-          <div className="p-8 text-center">
-            <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-900">No notifications yet</p>
-            <p className="text-xs text-gray-500 mt-1">
+          <div className="p-4 md:p-8 text-center">
+            <Bell className="w-8 h-8 md:w-12 md:h-12 text-gray-300 mx-auto mb-2 md:mb-3" />
+            <p className="text-xs md:text-sm font-medium text-gray-900">No notifications yet</p>
+            <p className="text-[10px] md:text-xs text-gray-500 mt-1">
               We'll notify you about bills, achievements, and more
             </p>
           </div>
@@ -255,37 +255,39 @@ export function NotificationCenter({
               <div
                 key={notification.id}
                 onClick={() => handleNotificationClick(notification)}
-                className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
+                className={`p-2 md:p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${
                   !notification.is_read ? 'bg-indigo-50' : ''
                 }`}
               >
-                <div className="flex items-start space-x-3">
+                <div className="flex items-start space-x-2 md:space-x-3">
                   {/* Icon */}
-                  <div className={`p-2 rounded-lg ${getIconBgColor(notification.type)} flex-shrink-0`}>
-                    {getIcon(notification.type)}
+                  <div className={`p-1 md:p-2 rounded-lg ${getIconBgColor(notification.type)} flex-shrink-0`}>
+                    <div className="[&>svg]:w-3 [&>svg]:h-3 md:[&>svg]:w-4 md:[&>svg]:h-4">
+                      {getIcon(notification.type)}
+                    </div>
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-[10px] md:text-sm font-medium text-gray-900">
                       {notification.title}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <p className="text-[9px] md:text-sm text-gray-600 mt-0.5 md:mt-1 line-clamp-2">
                       {notification.message}
                     </p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-gray-500">
+                    <div className="flex items-center justify-between mt-1 md:mt-2">
+                      <p className="text-[8px] md:text-xs text-gray-500">
                         {formatTimeAgo(notification.created_at)}
                       </p>
                       {notification.action_url && (
-                        <ExternalLink className="w-3 h-3 text-gray-400" />
+                        <ExternalLink className="w-2 h-2 md:w-3 md:h-3 text-gray-400" />
                       )}
                     </div>
                   </div>
                   
                   {/* Unread indicator */}
                   {!notification.is_read && (
-                    <div className="w-2 h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-1"></div>
+                    <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-indigo-600 rounded-full flex-shrink-0 mt-1"></div>
                   )}
                 </div>
               </div>
@@ -296,7 +298,7 @@ export function NotificationCenter({
 
       {/* Footer */}
       {notifications.length > 0 && (
-        <div className="p-3 border-t border-gray-200">
+        <div className="p-2 md:p-3 border-t border-gray-200">
           <Button
             variant="ghost"
             size="sm"
@@ -304,7 +306,7 @@ export function NotificationCenter({
               onClose()
               router.push('/notifications')
             }}
-            className="w-full text-sm text-center text-gray-600 hover:text-gray-900 h-8"
+            className="w-full text-[10px] md:text-sm text-center text-gray-600 hover:text-gray-900 h-6 md:h-8"
           >
             View all notifications
           </Button>

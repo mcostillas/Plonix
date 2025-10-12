@@ -12,6 +12,8 @@ import { useAuth } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { NotificationSettingsModal } from '@/components/NotificationSettingsModal'
+import { PrivacySettingsModal } from '@/components/PrivacySettingsModal'
+import { DeleteAccountModal } from '@/components/DeleteAccountModal'
 
 export default function ProfilePage() {
   return (
@@ -45,6 +47,8 @@ function ProfileContent() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [notificationSettingsOpen, setNotificationSettingsOpen] = useState(false)
+  const [privacySettingsOpen, setPrivacySettingsOpen] = useState(false)
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
   const [showAvatarSelector, setShowAvatarSelector] = useState(false)
   const [profileData, setProfileData] = useState({
     name: '',
@@ -162,15 +166,20 @@ function ProfileContent() {
       // Get chat history stats
       const { data: chatHistory } = await supabase
         .from('chat_history')
-        .select('id, message')
+        .select('id, session_id, content')
         .eq('user_id', user.id)
+
+      // Count unique conversations (sessions)
+      const uniqueSessions = chatHistory 
+        ? new Set(chatHistory.map((msg: any) => msg.session_id)).size 
+        : 0
 
       setStats({
         totalSaved: totalIncome - totalExpenses,
         goalsCompleted: completedGoals,
         totalGoals: totalGoals,
         learningStreak: 0, // TODO: Implement streak calculation
-        totalConversations: 0, // TODO: Count unique sessions
+        totalConversations: uniqueSessions,
         totalMessages: chatHistory?.length || 0,
         // receiptsScanned: 0 // TODO: Re-enable with image API
       })
@@ -291,15 +300,16 @@ function ProfileContent() {
     )
   }
 
+  // TODO: Dark mode under works - will be implemented next time
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="profile" />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8 max-w-6xl">
         {/* Profile Header */}
-        <Card className="mb-8">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
+        <Card className="mb-4 md:mb-8">
+          <CardContent className="pt-3 md:pt-6 p-3 md:p-6">
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-3 md:gap-6">
               {/* Profile Picture */}
               <div className="relative group">
                 {(() => {
@@ -309,8 +319,8 @@ function ProfileContent() {
                     // Show colorful gradient avatar
                     const IconComponent = avatarData.icon
                     return (
-                      <div className={`w-24 h-24 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-4 border-gray-200 shadow-lg`}>
-                        <IconComponent className="w-12 h-12 text-white" strokeWidth={1.5} />
+                      <div className={`w-16 h-16 md:w-24 md:h-24 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-2 md:border-4 border-gray-200 shadow-lg`}>
+                        <IconComponent className="w-8 h-8 md:w-12 md:h-12 text-white" strokeWidth={1.5} />
                       </div>
                     )
                   } else if (profileData.profilePicture && !profileData.profilePicture.startsWith('avatar-')) {
@@ -319,14 +329,14 @@ function ProfileContent() {
                       <img
                         src={profileData.profilePicture}
                         alt="Profile"
-                        className="w-24 h-24 rounded-full object-cover border-4 border-gray-200"
+                        className="w-16 h-16 md:w-24 md:h-24 rounded-full object-cover border-2 md:border-4 border-gray-200"
                       />
                     )
                   } else {
                     // Show default avatar
                     return (
-                      <div className="w-24 h-24 bg-primary rounded-full flex items-center justify-center border-4 border-gray-200">
-                        <User className="w-12 h-12 text-white" />
+                      <div className="w-16 h-16 md:w-24 md:h-24 bg-primary rounded-full flex items-center justify-center border-2 md:border-4 border-gray-200">
+                        <User className="w-8 h-8 md:w-12 md:h-12 text-white" />
                       </div>
                     )
                   }
@@ -346,8 +356,8 @@ function ProfileContent() {
 
               {/* Profile Info */}
               <div className="flex-1 text-center md:text-left">
-                <div className="flex flex-col md:flex-row md:items-center gap-3 mb-2">
-                  <h1 className="text-3xl font-bold text-gray-900">
+                <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-3 mb-1 md:mb-2">
+                  <h1 className="text-xl md:text-3xl font-bold text-gray-900">
                     {profileData.name || 'Your Name'}
                   </h1>
                   {!isEditing ? (
@@ -355,25 +365,27 @@ function ProfileContent() {
                       onClick={() => setIsEditing(true)}
                       variant="outline"
                       size="sm"
+                      className="h-7 md:h-9 text-[10px] md:text-sm"
                     >
-                      <Edit className="w-4 h-4 mr-2" />
+                      <Edit className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                       Edit Profile
                     </Button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-1 md:gap-2">
                       <Button
                         onClick={handleSaveProfile}
                         disabled={saving}
                         size="sm"
+                        className="h-7 md:h-9 text-[10px] md:text-sm"
                       >
                         {saving ? (
                           <>
-                            <Spinner size="sm" className="mr-2" />
+                            <Spinner size="sm" className="mr-1 md:mr-2" />
                             Saving...
                           </>
                         ) : (
                           <>
-                            <Save className="w-4 h-4 mr-2" />
+                            <Save className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                             Save
                           </>
                         )}
@@ -383,72 +395,74 @@ function ProfileContent() {
                         disabled={saving}
                         variant="outline"
                         size="sm"
+                        className="h-7 md:h-9 text-[10px] md:text-sm"
                       >
-                        <X className="w-4 h-4 mr-2" />
+                        <X className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                         Cancel
                       </Button>
                     </div>
                   )}
                 </div>
-                <p className="text-gray-600 flex items-center justify-center md:justify-start gap-2">
-                  <Mail className="w-4 h-4" />
+                <p className="text-xs md:text-base text-gray-600 flex items-center justify-center md:justify-start gap-1 md:gap-2">
+                  <Mail className="w-3 h-3 md:w-4 md:h-4" />
                   {profileData.email}
                 </p>
-                <p className="text-gray-500 text-sm mt-1">
+                <p className="text-gray-500 text-[10px] md:text-sm mt-0.5 md:mt-1">
                   Member since {new Date(user?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                 </p>
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="bg-gray-100 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">₱{stats.totalSaved.toLocaleString()}</p>
-                  <p className="text-xs text-gray-600">Total Saved</p>
+              <div className="grid grid-cols-3 gap-2 md:gap-4 text-center w-full md:w-auto">
+                <div className="bg-gray-100 rounded-lg p-2 md:p-3">
+                  <p className="text-sm md:text-2xl font-bold text-gray-900">₱{stats.totalSaved.toLocaleString()}</p>
+                  <p className="text-[8px] md:text-xs text-gray-600">Total Saved</p>
                 </div>
-                <div className="bg-gray-100 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{stats.goalsCompleted}</p>
-                  <p className="text-xs text-gray-600">Goals Done</p>
+                <div className="bg-gray-100 rounded-lg p-2 md:p-3">
+                  <p className="text-sm md:text-2xl font-bold text-gray-900">{stats.goalsCompleted}</p>
+                  <p className="text-[8px] md:text-xs text-gray-600">Goals Done</p>
                 </div>
-                <div className="bg-gray-100 rounded-lg p-3">
-                  <p className="text-2xl font-bold text-gray-900">{stats.totalMessages}</p>
-                  <p className="text-xs text-gray-600">AI Chats</p>
+                <div className="bg-gray-100 rounded-lg p-2 md:p-3">
+                  <p className="text-sm md:text-2xl font-bold text-gray-900">{stats.totalMessages}</p>
+                  <p className="text-[8px] md:text-xs text-gray-600">AI Chats</p>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-3 md:gap-8">
           {/* Personal Information */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-3 md:space-y-6">
             <Card>
-              <CardHeader>
-                <CardTitle>Personal Information</CardTitle>
-                <CardDescription>Manage your account details</CardDescription>
+              <CardHeader className="p-3 md:p-6">
+                <CardTitle className="text-base md:text-lg">Personal Information</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Manage your account details</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
+              <CardContent className="space-y-3 md:space-y-4 p-3 md:p-6 pt-0">
+                <div className="grid md:grid-cols-2 gap-2 md:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Full Name</label>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 block mb-1 md:mb-2">Full Name</label>
                     {isEditing ? (
                       <Input
                         value={profileData.name}
                         onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
                         placeholder="Enter your name"
+                        className="h-8 md:h-10 text-xs md:text-base"
                       />
                     ) : (
-                      <p className="px-3 py-2 text-gray-900">{profileData.name || 'Not set'}</p>
+                      <p className="px-2 md:px-3 py-1 md:py-2 text-xs md:text-base text-gray-900">{profileData.name || 'Not set'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Email</label>
-                    <p className="px-3 py-2 text-gray-900">{profileData.email}</p>
-                    <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 block mb-1 md:mb-2">Email</label>
+                    <p className="px-2 md:px-3 py-1 md:py-2 text-xs md:text-base text-gray-900">{profileData.email}</p>
+                    <p className="text-[9px] md:text-xs text-gray-500 mt-0.5 md:mt-1">Email cannot be changed</p>
                   </div>
                 </div>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-2 md:gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Age</label>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 block mb-1 md:mb-2">Age</label>
                     {isEditing ? (
                       <Input
                         type="number"
@@ -457,13 +471,14 @@ function ProfileContent() {
                         placeholder="Enter your age"
                         min="1"
                         max="120"
+                        className="h-8 md:h-10 text-xs md:text-base"
                       />
                     ) : (
-                      <p className="px-3 py-2 text-gray-900">{profileData.age ? `${profileData.age} years old` : 'Not set'}</p>
+                      <p className="px-2 md:px-3 py-1 md:py-2 text-xs md:text-base text-gray-900">{profileData.age ? `${profileData.age} years old` : 'Not set'}</p>
                     )}
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 block mb-2">Monthly Income (₱)</label>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 block mb-1 md:mb-2">Monthly Income (₱)</label>
                     {isEditing ? (
                       <Input
                         type="number"
@@ -471,9 +486,10 @@ function ProfileContent() {
                         onChange={(e) => setProfileData({ ...profileData, monthlyIncome: e.target.value })}
                         placeholder="Enter monthly income"
                         min="0"
+                        className="h-8 md:h-10 text-xs md:text-base"
                       />
                     ) : (
-                      <p className="px-3 py-2 text-gray-900">
+                      <p className="px-2 md:px-3 py-1 md:py-2 text-xs md:text-base text-gray-900">
                         {profileData.monthlyIncome ? `₱${parseFloat(profileData.monthlyIncome).toLocaleString()}` : 'Not set'}
                       </p>
                     )}
@@ -484,30 +500,30 @@ function ProfileContent() {
 
             {/* Financial Goals */}
             <Card>
-              <CardHeader>
-                <CardTitle>Financial Goals</CardTitle>
-                <CardDescription>Your active savings goals</CardDescription>
+              <CardHeader className="p-3 md:p-6">
+                <CardTitle className="text-base md:text-lg">Financial Goals</CardTitle>
+                <CardDescription className="text-xs md:text-sm">Your active savings goals</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2 md:space-y-4 p-3 md:p-6 pt-0">
                 {goals.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="space-y-2 md:space-y-4">
                     {goals.map((goal) => {
                       const progress = (goal.current_amount / goal.target_amount) * 100
                       return (
-                        <div key={goal.id} className="p-4 bg-gray-50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
+                        <div key={goal.id} className="p-2 md:p-4 bg-gray-50 rounded-lg">
+                          <div className="flex items-center justify-between mb-1 md:mb-2">
                             <div>
-                              <h4 className="font-medium text-gray-900">{goal.name}</h4>
-                              <p className="text-sm text-gray-600">₱{goal.target_amount.toLocaleString()} target</p>
+                              <h4 className="font-medium text-[10px] md:text-base text-gray-900 line-clamp-1">{goal.name}</h4>
+                              <p className="text-[8px] md:text-sm text-gray-600">₱{goal.target_amount.toLocaleString()} target</p>
                             </div>
                             <div className="text-right">
-                              <p className="font-bold text-primary">₱{goal.current_amount.toLocaleString()}</p>
-                              <p className="text-xs text-gray-600">{progress.toFixed(0)}% complete</p>
+                              <p className="font-bold text-[10px] md:text-base text-primary">₱{goal.current_amount.toLocaleString()}</p>
+                              <p className="text-[7px] md:text-xs text-gray-600">{progress.toFixed(0)}% complete</p>
                             </div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="w-full bg-gray-200 rounded-full h-1 md:h-2">
                             <div
-                              className="bg-primary h-2 rounded-full transition-all"
+                              className="bg-primary h-1 md:h-2 rounded-full transition-all"
                               style={{ width: `${Math.min(progress, 100)}%` }}
                             />
                           </div>
@@ -516,12 +532,13 @@ function ProfileContent() {
                     })}
                   </div>
                 ) : (
-                  <div className="text-center py-8">
-                    <Target className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500 mb-4">No active goals yet</p>
+                  <div className="text-center py-4 md:py-8">
+                    <Target className="w-8 h-8 md:w-12 md:h-12 text-gray-300 mx-auto mb-2 md:mb-3" />
+                    <p className="text-[10px] md:text-base text-gray-500 mb-2 md:mb-4">No active goals yet</p>
                     <Button
                       onClick={() => window.location.href = '/goals'}
                       variant="outline"
+                      className="h-6 md:h-9 text-[8px] md:text-sm"
                     >
                       Create Your First Goal
                     </Button>
@@ -531,9 +548,9 @@ function ProfileContent() {
                   <Button
                     onClick={() => window.location.href = '/goals'}
                     variant="outline"
-                    className="w-full"
+                    className="w-full h-6 md:h-9 text-[8px] md:text-sm"
                   >
-                    <Target className="w-4 h-4 mr-2" />
+                    <Target className="w-2 h-2 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Manage All Goals
                   </Button>
                 )}
@@ -542,51 +559,51 @@ function ProfileContent() {
           </div>
 
           {/* Stats & Achievements */}
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-6">
             {/* Quick Stats */}
             <Card>
-              <CardHeader>
-                <CardTitle>Your Progress</CardTitle>
+              <CardHeader className="p-3 md:p-6">
+                <CardTitle className="text-base md:text-lg">Your Progress</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-white" />
+              <CardContent className="space-y-2 md:space-y-4 p-3 md:p-6 pt-0">
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="w-6 h-6 md:w-10 md:h-10 bg-primary rounded-full flex items-center justify-center">
+                    <MessageSquare className="w-3 h-3 md:w-5 md:h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">AI Conversations</p>
-                    <p className="text-sm text-gray-600">{stats.totalMessages} messages sent</p>
+                    <p className="font-medium text-[10px] md:text-base text-gray-900">AI Conversations</p>
+                    <p className="text-[8px] md:text-sm text-gray-600">{stats.totalMessages} messages sent</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <Target className="w-5 h-5 text-white" />
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="w-6 h-6 md:w-10 md:h-10 bg-primary rounded-full flex items-center justify-center">
+                    <Target className="w-3 h-3 md:w-5 md:h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">Goals Completed</p>
-                    <p className="text-sm text-gray-600">{stats.goalsCompleted} of {stats.totalGoals} goals</p>
+                    <p className="font-medium text-[10px] md:text-base text-gray-900">Goals Completed</p>
+                    <p className="text-[8px] md:text-sm text-gray-600">{stats.goalsCompleted} of {stats.totalGoals} goals</p>
                   </div>
                 </div>
                 
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                    <DollarSign className="w-5 h-5 text-white" />
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="w-6 h-6 md:w-10 md:h-10 bg-primary rounded-full flex items-center justify-center">
+                    <DollarSign className="w-3 h-3 md:w-5 md:h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900">Total Saved</p>
-                    <p className="text-sm text-gray-600">₱{stats.totalSaved.toLocaleString()}</p>
+                    <p className="font-medium text-[10px] md:text-base text-gray-900">Total Saved</p>
+                    <p className="text-[8px] md:text-sm text-gray-600">₱{stats.totalSaved.toLocaleString()}</p>
                   </div>
                 </div>
 
                 {stats.goalsCompleted > 0 && (
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-yellow-500 rounded-full flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-white" />
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <div className="w-6 h-6 md:w-10 md:h-10 bg-yellow-500 rounded-full flex items-center justify-center">
+                      <Trophy className="w-3 h-3 md:w-5 md:h-5 text-white" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">Achievement Unlocked</p>
-                      <p className="text-sm text-gray-600">Goal Crusher 🎯</p>
+                      <p className="font-medium text-[10px] md:text-base text-gray-900">Achievement Unlocked</p>
+                      <p className="text-[8px] md:text-sm text-gray-600">Goal Crusher 🎯</p>
                     </div>
                   </div>
                 )}
@@ -595,57 +612,65 @@ function ProfileContent() {
 
             {/* Learning Stats */}
             <Card>
-              <CardHeader>
-                <CardTitle>Account Details</CardTitle>
+              <CardHeader className="p-3 md:p-6">
+                <CardTitle className="text-base md:text-lg">Account Details</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 md:space-y-3 p-3 md:p-6 pt-0">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Calendar className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900">Member Since</span>
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <Calendar className="w-3 h-3 md:w-5 md:h-5 text-gray-400" />
+                    <span className="text-[10px] md:text-sm font-medium text-gray-900">Member Since</span>
                   </div>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-[10px] md:text-sm text-gray-600">
                     {new Date(user?.created_at || Date.now()).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <MessageSquare className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900">AI Messages</span>
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <MessageSquare className="w-3 h-3 md:w-5 md:h-5 text-gray-400" />
+                    <span className="text-[10px] md:text-sm font-medium text-gray-900">AI Messages</span>
                   </div>
-                  <span className="text-sm font-semibold text-primary">{stats.totalMessages}</span>
+                  <span className="text-[10px] md:text-sm font-semibold text-primary">{stats.totalMessages}</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Target className="w-5 h-5 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-900">Active Goals</span>
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <Target className="w-3 h-3 md:w-5 md:h-5 text-gray-400" />
+                    <span className="text-[10px] md:text-sm font-medium text-gray-900">Active Goals</span>
                   </div>
-                  <span className="text-sm font-semibold text-primary">{stats.totalGoals}</span>
+                  <span className="text-[10px] md:text-sm font-semibold text-primary">{stats.totalGoals}</span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Account Settings */}
             <Card>
-              <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
+              <CardHeader className="p-3 md:p-6">
+                <CardTitle className="text-base md:text-lg">Account Settings</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className="space-y-2 md:space-y-3 p-3 md:p-6 pt-0">
                 <Button 
                   variant="outline" 
-                  className="w-full justify-start"
+                  className="w-full justify-start h-7 md:h-10 text-[10px] md:text-sm"
                   onClick={() => setNotificationSettingsOpen(true)}
                 >
-                  <Bell className="w-4 h-4 mr-2" />
+                  <Bell className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Notification Settings
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <User className="w-4 h-4 mr-2" />
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-7 md:h-10 text-[10px] md:text-sm"
+                  onClick={() => setPrivacySettingsOpen(true)}
+                >
+                  <User className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Privacy Settings
                 </Button>
-                <Button variant="outline" className="w-full justify-start text-red-600 hover:text-red-700">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start h-7 md:h-10 text-[10px] md:text-sm text-red-600 hover:text-red-700"
+                  onClick={() => setDeleteAccountOpen(true)}
+                >
                   Delete Account
                 </Button>
               </CardContent>
@@ -659,21 +684,33 @@ function ProfileContent() {
           onOpenChange={setNotificationSettingsOpen}
         />
 
+        {/* Privacy Settings Modal */}
+        <PrivacySettingsModal
+          open={privacySettingsOpen}
+          onOpenChange={setPrivacySettingsOpen}
+        />
+
+        {/* Delete Account Modal */}
+        <DeleteAccountModal
+          open={deleteAccountOpen}
+          onOpenChange={setDeleteAccountOpen}
+        />
+
         {/* Avatar Selector Modal */}
         {showAvatarSelector && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Choose Your Avatar</h2>
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 md:p-4">
+            <div className="bg-white rounded-lg p-3 md:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 md:mb-6">
+                <h2 className="text-base md:text-2xl font-bold text-gray-900">Choose Your Avatar</h2>
                 <button
                   onClick={() => setShowAvatarSelector(false)}
                   className="text-gray-400 hover:text-gray-600 transition-colors"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-4 h-4 md:w-6 md:h-6" />
                 </button>
               </div>
 
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+              <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-6 gap-2 md:gap-4">
                 {AVATAR_OPTIONS.map((avatar) => {
                   const isSelected = profileData.profilePicture === `avatar-${avatar.id}`
                   const IconComponent = avatar.icon
@@ -686,14 +723,14 @@ function ProfileContent() {
                         relative aspect-square rounded-full bg-gradient-to-br ${avatar.gradient}
                         flex items-center justify-center
                         transition-all duration-200 hover:scale-110
-                        ${isSelected ? 'ring-4 ring-primary ring-offset-2' : 'hover:ring-2 hover:ring-gray-300'}
+                        ${isSelected ? 'ring-2 md:ring-4 ring-primary ring-offset-1 md:ring-offset-2' : 'hover:ring-2 hover:ring-gray-300'}
                         ${saving ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                       `}
                     >
-                      <IconComponent className="w-8 h-8 text-white" strokeWidth={1.5} />
+                      <IconComponent className="w-4 h-4 md:w-8 md:h-8 text-white" strokeWidth={1.5} />
                       {isSelected && (
-                        <div className="absolute -top-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                          <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <div className="absolute -top-1 -right-1 w-4 h-4 md:w-6 md:h-6 bg-primary rounded-full flex items-center justify-center">
+                          <svg className="w-2 h-2 md:w-4 md:h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         </div>
@@ -703,10 +740,11 @@ function ProfileContent() {
                 })}
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="mt-3 md:mt-6 flex justify-end">
                 <Button
                   variant="outline"
                   onClick={() => setShowAvatarSelector(false)}
+                  className="h-7 md:h-9 text-[10px] md:text-sm"
                 >
                   Close
                 </Button>

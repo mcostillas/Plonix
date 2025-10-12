@@ -27,10 +27,7 @@ export function AuthGuard({ children, redirectTo = '/auth/login' }: AuthGuardPro
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Spinner size="xl" color="primary" className="mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
+        <Spinner size="xl" color="primary" />
       </div>
     )
   }
@@ -39,10 +36,7 @@ export function AuthGuard({ children, redirectTo = '/auth/login' }: AuthGuardPro
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <Spinner size="xl" color="primary" className="mx-auto mb-4" />
-          <p className="text-gray-600">Redirecting to login...</p>
-        </div>
+        <Spinner size="xl" color="primary" />
       </div>
     )
   }

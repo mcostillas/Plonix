@@ -33,6 +33,11 @@ function GoalsContent() {
   const [loading, setLoading] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editFormData, setEditFormData] = useState({
+    title: '',
+    targetAmount: ''
+  })
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deletingGoalId, setDeletingGoalId] = useState<string | null>(null)
   const [deletingGoalTitle, setDeletingGoalTitle] = useState('')
@@ -213,6 +218,50 @@ function GoalsContent() {
     }
   }
 
+  const handleEditGoal = async () => {
+    if (!editingGoal || !editFormData.title || !editFormData.targetAmount) {
+      toast.error('Missing required fields')
+      return
+    }
+
+    setLoading(true)
+    try {
+      const { error } = await (supabase as any)
+        .from('goals')
+        .update({
+          title: editFormData.title,
+          target_amount: parseFloat(editFormData.targetAmount),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingGoal.id)
+
+      if (error) {
+        toast.error('Failed to update goal', {
+          description: error.message
+        })
+      } else {
+        toast.success('Goal updated successfully')
+        setEditModalOpen(false)
+        setEditingGoal(null)
+        fetchGoals()
+      }
+    } catch (err) {
+      console.error('Error:', err)
+      toast.error('An error occurred while updating the goal')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openEditModal = (goal: Goal) => {
+    setEditingGoal(goal)
+    setEditFormData({
+      title: goal.title,
+      targetAmount: goal.target_amount.toString()
+    })
+    setEditModalOpen(true)
+  }
+
   const categories = [
     { value: 'phone', label: 'Phone/Gadgets', icon: Smartphone, color: 'blue' },
     { value: 'laptop', label: 'Laptop/Computer', icon: Laptop, color: 'purple' },
@@ -238,11 +287,12 @@ function GoalsContent() {
     return <PageLoader message="Loading your goals..." />
   }
 
+  // TODO: Dark mode under works
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <Navbar />
       
-      <div className="container mx-auto px-6 py-10 max-w-7xl">
+      <div className="container mx-auto px-2 md:px-6 py-4 md:py-10 max-w-7xl">
         {/* Uniform Header */}
         <PageHeader
           title="My Financial Goals"
@@ -255,14 +305,14 @@ function GoalsContent() {
 
         {/* Create Goal Button - Always visible */}
         {!showCreateForm && goals.length > 0 && (
-          <div className="mb-6 flex gap-3">
-            <Button onClick={() => setShowCreateForm(true)} size="lg" className="shadow-lg">
-              <Plus className="w-5 h-5 mr-2" />
+          <div className="mb-4 md:mb-6 flex gap-2 md:gap-3">
+            <Button onClick={() => setShowCreateForm(true)} size="sm" className="shadow-lg h-8 md:h-11 text-[10px] md:text-base px-2 md:px-4">
+              <Plus className="w-3 h-3 md:w-5 md:h-5 mr-1 md:mr-2" />
               Create New Goal
             </Button>
             <Link href="/ai-assistant">
-              <Button variant="outline" size="lg" className="shadow-sm">
-                <Target className="w-5 h-5 mr-2" />
+              <Button variant="outline" size="sm" className="shadow-sm h-8 md:h-11 text-[10px] md:text-base px-2 md:px-4">
+                <Target className="w-3 h-3 md:w-5 md:h-5 mr-1 md:mr-2" />
                 Ask Fili for Goal Ideas
               </Button>
             </Link>
@@ -271,63 +321,63 @@ function GoalsContent() {
 
         {/* Create Goal Form */}
         {showCreateForm && (
-          <Card className="mb-8 border-l-4 border-l-primary shadow-lg">
-            <CardHeader className="bg-gradient-to-r from-primary/5 to-blue-50">
-              <CardTitle className="flex items-center space-x-2">
-                <Plus className="w-5 h-5 text-primary" />
+          <Card className="mb-4 md:mb-8 border-l-2 md:border-l-4 border-l-primary shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-primary/5 to-blue-50 p-2 md:p-6">
+              <CardTitle className="flex items-center space-x-1 md:space-x-2 text-sm md:text-lg">
+                <Plus className="w-3 h-3 md:w-5 md:h-5 text-primary" />
                 <span>Create New Financial Goal</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6 p-6">
-              <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="space-y-2 md:space-y-6 p-2 md:p-6">
+              <div className="grid md:grid-cols-2 gap-2 md:gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Goal Title</label>
+                  <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Goal Title</label>
                   <Input
                     placeholder="e.g., First Job Emergency Fund"
                     value={formData.title}
                     onChange={(e) => setFormData({...formData, title: e.target.value})}
-                    className="border-2 focus:border-primary"
+                    className="border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Target Amount (₱)</label>
+                  <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Target Amount (₱)</label>
                   <Input
                     type="number"
                     placeholder="e.g., 30000"
                     value={formData.targetAmount}
                     onChange={(e) => setFormData({...formData, targetAmount: e.target.value})}
-                    className="border-2 focus:border-primary"
+                    className="border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
                   />
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-semibold mb-2 text-gray-700">Description</label>
+                <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Description</label>
                 <Input
                   placeholder="Build a safety net for when I start working"
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  className="border-2 focus:border-primary"
+                  className="border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
                 />
               </div>
 
-              <div className="grid md:grid-cols-2 gap-6">
+              <div className="grid md:grid-cols-2 gap-2 md:gap-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Deadline (optional)</label>
+                  <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Deadline (optional)</label>
                   <Input
                     type="date"
                     value={formData.deadline}
                     onChange={(e) => setFormData({...formData, deadline: e.target.value})}
-                    className="border-2 focus:border-primary"
+                    className="border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2 text-gray-700">Category</label>
+                  <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Category</label>
                   <Select
                     value={formData.category}
                     onValueChange={(value) => setFormData({...formData, category: value})}
                   >
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className="w-full h-8 md:h-10 text-xs md:text-base">
                       <SelectValue placeholder="Select category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -341,12 +391,12 @@ function GoalsContent() {
                 </div>
               </div>
 
-              <div className="flex space-x-3 pt-4">
-                <Button onClick={handleCreateGoal} className="flex-1 h-12 text-base">
-                  <Target className="w-4 h-4 mr-2" />
+              <div className="flex space-x-2 md:space-x-3 pt-2 md:pt-4">
+                <Button onClick={handleCreateGoal} className="flex-1 h-8 md:h-12 text-[10px] md:text-base">
+                  <Target className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Create Goal
                 </Button>
-                <Button variant="outline" onClick={() => setShowCreateForm(false)} className="h-12 px-8">
+                <Button variant="outline" onClick={() => setShowCreateForm(false)} className="h-8 md:h-12 px-3 md:px-8 text-[10px] md:text-base">
                   Cancel
                 </Button>
               </div>
@@ -356,21 +406,21 @@ function GoalsContent() {
 
         {/* Goals List */}
         {goals.length === 0 ? (
-          <Card className="text-center py-12">
+          <Card className="text-center py-6 md:py-12">
             <CardContent>
-              <Target className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Goals Yet</h3>
-              <p className="text-gray-600 mb-6">
+              <Target className="w-8 h-8 md:w-16 md:h-16 text-gray-400 mx-auto mb-2 md:mb-4" />
+              <h3 className="text-base md:text-xl font-semibold mb-1 md:mb-2">No Goals Yet</h3>
+              <p className="text-xs md:text-base text-gray-600 mb-3 md:mb-6">
                 Create your first financial goal or chat with our AI assistant to get personalized suggestions!
               </p>
-              <div className="flex justify-center space-x-4">
-                <Button onClick={() => setShowCreateForm(true)}>
-                  <Plus className="w-4 h-4 mr-2" />
+              <div className="flex justify-center space-x-2 md:space-x-4">
+                <Button onClick={() => setShowCreateForm(true)} className="h-8 md:h-10 text-[10px] md:text-base">
+                  <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Create Manual Goal
                 </Button>
                 <Link href="/ai-assistant">
-                  <Button variant="outline" className="flex items-center space-x-2">
-                    <Target className="w-4 h-4" />
+                  <Button variant="outline" className="flex items-center space-x-1 md:space-x-2 h-8 md:h-10 text-[10px] md:text-base">
+                    <Target className="w-3 h-3 md:w-4 md:h-4" />
                     <span>Ask Fili for Goal Ideas</span>
                   </Button>
                 </Link>
@@ -378,93 +428,110 @@ function GoalsContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2 md:gap-4">
             {goals.map((goal) => {
               const progressPercentage = (goal.current_amount / goal.target_amount) * 100;
+              const remaining = goal.target_amount - goal.current_amount;
               
               return (
-                <Card key={goal.id} className="border border-gray-200">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg font-medium text-gray-900">{goal.title}</CardTitle>
-                        <p className="text-sm text-gray-500">{goal.description}</p>
-                      </div>
+                <Card key={goal.id} className="border border-gray-200 hover:shadow-md transition-shadow">
+                  <CardContent className="p-1.5 md:p-6">
+                    {/* Title & Edit on one line */}
+                    <div className="flex items-center justify-between mb-1 md:mb-3">
+                      <h3 className="text-[10px] md:text-lg font-semibold text-gray-900 line-clamp-1 flex-1">{goal.title}</h3>
                       <Button 
                         variant="ghost"
                         size="sm"
-                        onClick={() => {
-                          setDeletingGoalId(goal.id)
-                          setDeletingGoalTitle(goal.title)
-                          setDeleteModalOpen(true)
-                        }}
-                        className="text-gray-400 hover:text-red-500"
+                        onClick={() => openEditModal(goal)}
+                        className="text-gray-400 hover:text-primary h-5 w-5 md:h-8 md:w-8 p-0 flex-shrink-0"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Edit className="w-2 h-2 md:w-4 md:h-4" />
                       </Button>
                     </div>
-                  </CardHeader>
-                  
-                  <CardContent className="space-y-4">
-                    {/* Progress */}
-                    <div>
-                      <div className="flex justify-between text-sm mb-2">
-                        <span className="text-gray-600">Progress</span>
-                        <span className="font-medium">{progressPercentage.toFixed(0)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div 
-                          className="bg-green-500 h-2 rounded-full"
-                          style={{width: `${Math.min(progressPercentage, 100)}%`}}
-                        />
-                      </div>
-                    </div>
 
-                    {/* Amounts */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
-                        <div className="text-xs text-gray-500">Saved</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-lg font-semibold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
-                        <div className="text-xs text-gray-500">Target</div>
-                      </div>
-                    </div>
+                    {/* Description - Hide on mobile */}
+                    {goal.description && (
+                      <p className="hidden md:block text-sm text-gray-500 mb-3 line-clamp-2">{goal.description}</p>
+                    )}
 
-                    {/* Details */}
-                    <div className="space-y-1 text-sm text-gray-600">
+                    {/* Details in One Row - Hide on mobile */}
+                    <div className="hidden md:flex gap-6 text-sm mb-4">
                       {goal.deadline && (
-                        <div className="flex justify-between">
-                          <span>Deadline:</span>
-                          <span>{new Date(goal.deadline).toLocaleDateString()}</span>
+                        <div>
+                          <span className="text-gray-500">Deadline: </span>
+                          <span className="font-medium text-gray-900">
+                            {new Date(goal.deadline).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+                          </span>
                         </div>
                       )}
-                      <div className="flex justify-between">
-                        <span>Category:</span>
-                        <span className="capitalize">{goal.category}</span>
+                      <div>
+                        <span className="text-gray-500">Category: </span>
+                        <span className="font-medium text-gray-900 capitalize">{goal.category}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Status:</span>
-                        <span className={goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'}>
+                      <div>
+                        <span className="text-gray-500">Status: </span>
+                        <span className={`font-medium ${
+                          goal.status === 'completed' ? 'text-green-600' : 'text-blue-600'
+                        }`}>
                           {goal.status}
                         </span>
                       </div>
                     </div>
 
-                    {/* Update Button */}
-                    <Button 
-                      className="w-full"
-                      onClick={() => {
-                        setSelectedGoal(goal)
-                        setAmountToAdd('')
-                        setAddAmountModalOpen(true)
-                      }}
-                      disabled={loading || goal.status === 'completed'}
-                    >
-                      <TrendingUp className="w-4 h-4 mr-2" />
-                      Update Progress
-                    </Button>
+                    {/* Mobile: Cards stacked, Desktop: Everything in one row */}
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-1 md:gap-3">
+                      {/* Amount Cards Container - Side by Side on Mobile */}
+                      <div className="flex gap-1 md:gap-3 flex-1">
+                        {/* Saved */}
+                        <div className="flex-1 text-center px-1 py-0.5 md:px-5 md:py-3 bg-blue-50 rounded border border-blue-100">
+                          <div className="text-[9px] md:text-xl font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
+                          <div className="text-[7px] md:text-xs text-gray-600">Saved</div>
+                        </div>
+
+                        {/* Target */}
+                        <div className="flex-1 text-center px-1 py-0.5 md:px-5 md:py-3 bg-green-50 rounded border border-green-100">
+                          <div className="text-[9px] md:text-xl font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
+                          <div className="text-[7px] md:text-xs text-gray-600">Target</div>
+                        </div>
+                      </div>
+
+                      {/* Remaining */}
+                      {remaining > 0 && (
+                        <div className="text-center px-1 py-0.5 md:px-5 md:py-3 bg-amber-50 rounded border border-amber-200 lg:w-auto">
+                          <div className="text-[9px] md:text-base font-semibold text-amber-700">
+                            ₱{remaining.toLocaleString()} left
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Buttons */}
+                      <div className="flex gap-1 md:gap-2 lg:flex-shrink-0">
+                        <Button 
+                          className="bg-green-600 hover:bg-green-700 text-white px-1.5 md:px-5 h-6 md:h-10 text-[8px] md:text-sm"
+                          onClick={() => {
+                            setSelectedGoal(goal)
+                            setAmountToAdd('')
+                            setAddAmountModalOpen(true)
+                          }}
+                          disabled={loading || goal.status === 'completed'}
+                        >
+                          <TrendingUp className="w-2 h-2 md:w-4 md:h-4 mr-0.5 md:mr-1.5" />
+                          Update
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          size="icon"
+                          onClick={() => {
+                            setDeletingGoalId(goal.id)
+                            setDeletingGoalTitle(goal.title)
+                            setDeleteModalOpen(true)
+                          }}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 h-6 w-6 md:h-10 md:w-10"
+                        >
+                          <Trash2 className="w-2 h-2 md:w-4 md:h-4" />
+                        </Button>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -473,67 +540,67 @@ function GoalsContent() {
         )}
 
         {/* Quick Tips */}
-        <Card className="mt-8 bg-gradient-to-r from-primary/5 to-blue-50 border border-primary/20">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <TrendingUp className="w-5 h-5 text-primary" />
+        <Card className="mt-4 md:mt-8 bg-gradient-to-r from-primary/5 to-blue-50 border border-primary/20">
+          <CardHeader className="p-2 md:p-6">
+            <CardTitle className="flex items-center space-x-1 md:space-x-2 text-xs md:text-lg">
+              <TrendingUp className="w-3 h-3 md:w-5 md:h-5 text-primary" />
               <span>Goal Setting Tips</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-2 gap-6 text-sm">
-              <div className="space-y-3">
-                <h4 className="font-semibold mb-3 flex items-center text-primary">
-                  <Target className="w-4 h-4 mr-2" />
+          <CardContent className="p-2 md:p-6">
+            <div className="grid md:grid-cols-2 gap-3 md:gap-6 text-[9px] md:text-sm">
+              <div className="space-y-1.5 md:space-y-3">
+                <h4 className="font-semibold mb-1.5 md:mb-3 flex items-center text-primary text-[10px] md:text-base">
+                  <Target className="w-2.5 h-2.5 md:w-4 md:h-4 mr-1 md:mr-2" />
                   SMART Goals Framework
                 </h4>
-                <ul className="space-y-2 text-gray-700">
+                <ul className="space-y-1 md:space-y-2 text-gray-700">
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-primary rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span><strong>Specific:</strong> "First job emergency fund" not "save money"</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-primary rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span><strong>Measurable:</strong> ₱30,000 (2-3 months expenses)</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-primary rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span><strong>Achievable:</strong> ₱2,000-3,000 monthly savings</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-primary rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span><strong>Relevant:</strong> Financial independence from family</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-primary rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-primary rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span><strong>Time-bound:</strong> Build within 12-15 months</span>
                   </li>
                 </ul>
               </div>
-              <div className="space-y-3">
-                <h4 className="font-semibold mb-3 flex items-center text-green-600">
-                  <TrendingUp className="w-4 h-4 mr-2" />
+              <div className="space-y-1.5 md:space-y-3">
+                <h4 className="font-semibold mb-1.5 md:mb-3 flex items-center text-green-600 text-[10px] md:text-base">
+                  <TrendingUp className="w-2.5 h-2.5 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Success Strategies
                 </h4>
-                <ul className="space-y-2 text-gray-700">
+                <ul className="space-y-1 md:space-y-2 text-gray-700">
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-green-500 rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span>Start with ₱1,000 emergency fund goal</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-green-500 rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span>Save first before buying wants</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-green-500 rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span>Build good financial habits early</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-green-500 rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span>Track every peso to learn spending patterns</span>
                   </li>
                   <li className="flex items-start">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 mr-3 flex-shrink-0"></div>
+                    <div className="w-1 h-1 md:w-2 md:h-2 bg-green-500 rounded-full mt-1 md:mt-2 mr-1.5 md:mr-3 flex-shrink-0"></div>
                     <span>Use Fili AI for student financial tips</span>
                   </li>
                 </ul>
@@ -646,6 +713,95 @@ function GoalsContent() {
             >
               <TrendingUp className="w-4 h-4 mr-2" />
               Add Amount
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Goal Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                <Edit className="w-5 h-5 text-white" />
+              </div>
+              <DialogTitle className="text-xl">Edit Goal</DialogTitle>
+            </div>
+            <DialogDescription>
+              Update your goal title and target amount
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Goal Title
+              </label>
+              <Input
+                type="text"
+                value={editFormData.title}
+                onChange={(e) => setEditFormData({...editFormData, title: e.target.value})}
+                placeholder="e.g., First Emergency Fund"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Target Amount
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₱</span>
+                <Input
+                  type="number"
+                  value={editFormData.targetAmount}
+                  onChange={(e) => setEditFormData({...editFormData, targetAmount: e.target.value})}
+                  placeholder="0.00"
+                  className="pl-8"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            </div>
+
+            {editingGoal && (
+              <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
+                <div className="text-sm text-blue-800">
+                  <strong>Current saved:</strong> ₱{editingGoal.current_amount.toLocaleString()}
+                </div>
+                <div className="text-xs text-blue-600 mt-1">
+                  Make sure the new target amount is reasonable based on your current progress
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end space-x-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditModalOpen(false)
+                setEditingGoal(null)
+              }}
+              disabled={loading}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleEditGoal}
+              disabled={loading || !editFormData.title || !editFormData.targetAmount}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              {loading ? (
+                <>
+                  <span className="mr-2">Saving...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 mr-2" />
+                  Save Changes
+                </>
+              )}
             </Button>
           </div>
         </DialogContent>

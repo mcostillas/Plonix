@@ -254,19 +254,19 @@ function ChallengesContent() {
     const IconComponent = displayChallenge.icon
     
     return (
-    <Card key={challenge.id} className="hover:shadow-xl transition-all duration-300 border-l-4 border-l-primary/20 hover:border-l-primary">
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <IconComponent className="w-6 h-6 text-primary" />
+    <Card key={challenge.id} className="hover:shadow-xl transition-all duration-300 border-l-2 md:border-l-4 border-l-primary/20 hover:border-l-primary">
+      <CardHeader className="pb-1 md:pb-4 p-1.5 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-1 md:gap-2">
+          <div className="flex items-start space-x-1 md:space-x-3 flex-1 min-w-0">
+            <div className="p-0.5 md:p-2 bg-primary/10 rounded flex-shrink-0">
+              <IconComponent className="w-2.5 h-2.5 md:w-6 md:h-6 text-primary" />
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-lg font-semibold text-gray-900">{displayChallenge.title}</CardTitle>
-              <CardDescription className="mt-1 text-gray-600">{displayChallenge.description}</CardDescription>
+            <div className="flex-1 min-w-0">
+              <CardTitle className="text-[10px] md:text-lg font-semibold text-gray-900 leading-tight">{displayChallenge.title}</CardTitle>
+              <CardDescription className="mt-0.5 md:mt-1 text-gray-600 text-[8px] md:text-sm line-clamp-1 md:line-clamp-2">{displayChallenge.description}</CardDescription>
             </div>
           </div>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          <span className={`px-1 md:px-3 py-0.5 md:py-1 rounded-full text-[7px] md:text-xs font-semibold flex-shrink-0 self-start ${
             displayChallenge.difficulty === 'Easy' ? 'bg-green-100 text-green-700 border border-green-200' :
             displayChallenge.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700 border border-yellow-200' :
             'bg-red-100 text-red-700 border border-red-200'
@@ -276,43 +276,44 @@ function ChallengesContent() {
         </div>
       </CardHeader>
       
-      <CardContent className="pt-0">
-        <div className="space-y-4">
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center space-x-4 text-gray-500">
-              <div className="flex items-center space-x-1">
-                <Calendar className="w-4 h-4" />
+      <CardContent className="pt-0 p-1.5 md:p-6">
+        <div className="space-y-1 md:space-y-4">
+          <div className="flex items-center justify-between text-[8px] md:text-sm flex-wrap gap-0.5 md:gap-2">
+            <div className="flex items-center space-x-1 md:space-x-4 text-gray-500">
+              <div className="flex items-center space-x-0.5 md:space-x-1">
+                <Calendar className="w-1.5 h-1.5 md:w-4 md:h-4" />
                 <span>{displayChallenge.duration}</span>
               </div>
-              <div className="flex items-center space-x-1">
-                <Users className="w-4 h-4" />
-                <span>{displayChallenge.participants.toLocaleString()} joined</span>
+              <div className="flex items-center space-x-0.5 md:space-x-1">
+                <Users className="w-1.5 h-1.5 md:w-4 md:h-4" />
+                <span className="hidden lg:inline">{displayChallenge.participants.toLocaleString()} joined</span>
+                <span className="lg:hidden">{displayChallenge.participants.toLocaleString()}</span>
               </div>
             </div>
-            <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-md font-medium">
+            <span className="bg-primary/10 text-primary text-[7px] md:text-xs px-0.5 md:px-2 py-0.5 md:py-1 rounded-md font-medium">
               {displayChallenge.category}
             </span>
           </div>
 
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border border-green-100">
-            <div className="flex items-start space-x-2">
-              <Trophy className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-1 md:p-4 rounded border border-green-100">
+            <div className="flex items-start space-x-0.5 md:space-x-2">
+              <Trophy className="w-1.5 h-1.5 md:w-4 md:h-4 text-green-600 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-semibold text-green-800 text-sm">Reward</h4>
-                <p className="text-green-700 text-sm mt-1">{displayChallenge.reward}</p>
+                <h4 className="font-semibold text-green-800 text-[8px] md:text-sm leading-tight">Reward</h4>
+                <p className="text-green-700 text-[8px] md:text-sm mt-0.5 md:mt-1 leading-tight">{displayChallenge.reward}</p>
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm text-gray-900 flex items-center space-x-2">
-              <Target className="w-4 h-4 text-primary" />
+          <div className="space-y-0.5 md:space-y-2 hidden md:block">
+            <h4 className="font-semibold text-[9px] md:text-sm text-gray-900 flex items-center space-x-1 md:space-x-2">
+              <Target className="w-2 h-2 md:w-4 md:h-4 text-primary" />
               <span>Success Tips</span>
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-0.5 md:space-y-2">
               {displayChallenge.tips.slice(0, 2).map((tip: string, index: number) => (
-                <li key={index} className="text-sm text-gray-600 flex items-start space-x-2">
-                  <CheckCircle className="w-3 h-3 text-primary mt-1 flex-shrink-0" />
+                <li key={index} className="text-[9px] md:text-sm text-gray-600 flex items-start space-x-1 md:space-x-2">
+                  <CheckCircle className="w-1.5 h-1.5 md:w-3 md:h-3 text-primary mt-0.5 md:mt-1 flex-shrink-0" />
                   <span>{tip}</span>
                 </li>
               ))}
@@ -320,17 +321,18 @@ function ChallengesContent() {
           </div>
 
           {isJoined ? (
-            <div className="flex gap-2">
+            <div className="flex gap-0.5 md:gap-2">
               <Button 
-                className="flex-1 h-11 font-medium" 
+                className="flex-1 h-6 md:h-11 font-medium text-[8px] md:text-sm px-1 md:px-4" 
                 variant="outline"
                 disabled
               >
-                <CheckCircle className="w-4 h-4 mr-2" />
-                Challenge Joined
+                <CheckCircle className="w-1.5 h-1.5 md:w-4 md:h-4 mr-0.5 md:mr-2" />
+                <span className="hidden lg:inline">Challenge Joined</span>
+                <span className="lg:hidden">Joined</span>
               </Button>
               <Button
-                className="h-11 px-4"
+                className="h-6 md:h-11 px-1 md:px-4 text-[8px] md:text-sm"
                 variant="outline"
                 onClick={() => cancelChallenge(challenge.id, challenge.title)}
               >
@@ -339,14 +341,15 @@ function ChallengesContent() {
             </div>
           ) : (
             <Button 
-              className="w-full h-11 font-medium transition-all duration-200" 
+              className="w-full h-6 md:h-11 font-medium transition-all duration-200 text-[8px] md:text-sm" 
               onClick={() => joinChallenge(challenge)}
               disabled={joiningId === challenge.id}
             >
               {joiningId === challenge.id ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Joining...
+                  <Loader2 className="w-1.5 h-1.5 md:w-4 md:h-4 mr-0.5 md:mr-2 animate-spin" />
+                  <span className="hidden sm:inline">Joining...</span>
+                  <span className="sm:hidden">...</span>
                 </>
               ) : (
                 'Join Challenge'
@@ -356,14 +359,15 @@ function ChallengesContent() {
         </div>
       </CardContent>
     </Card>
-    )
+  )
   }
 
+  // TODO: Dark mode under works
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="challenges" />
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8">
         {/* Uniform Header */}
         <PageHeader
           title="Financial Challenges"
@@ -376,37 +380,37 @@ function ChallengesContent() {
 
         {/* Stats Overview */}
         {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+          <div className="flex justify-center py-8 md:py-12">
+            <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-primary animate-spin" />
           </div>
         ) : (
           <>
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-3 gap-2 md:gap-6 mb-4 md:mb-12">
               <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-                <CardContent className="text-center pt-6">
-                  <div className="p-3 bg-yellow-500 rounded-full w-fit mx-auto mb-3">
-                    <Trophy className="w-6 h-6 text-white" />
+                <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
+                  <div className="p-1 md:p-3 bg-yellow-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
+                    <Trophy className="w-3 h-3 md:w-6 md:h-6 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">{stats.completed}</h3>
-                  <p className="text-gray-600 font-medium">Challenges Completed</p>
+                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.completed}</h3>
+                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Challenges</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="text-center pt-6">
-                  <div className="p-3 bg-green-500 rounded-full w-fit mx-auto mb-3">
-                    <PiggyBank className="w-6 h-6 text-white" />
+                <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
+                  <div className="p-1 md:p-3 bg-green-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
+                    <PiggyBank className="w-3 h-3 md:w-6 md:h-6 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">₱{stats.totalSaved.toLocaleString()}</h3>
-                  <p className="text-gray-600 font-medium">Total Money Saved</p>
+                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">₱{stats.totalSaved.toLocaleString()}</h3>
+                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Saved</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <CardContent className="text-center pt-6">
-                  <div className="p-3 bg-blue-500 rounded-full w-fit mx-auto mb-3">
-                    <Users className="w-6 h-6 text-white" />
+                <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
+                  <div className="p-1 md:p-3 bg-blue-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
+                    <Users className="w-3 h-3 md:w-6 md:h-6 text-white" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900">{stats.totalMembers.toLocaleString()}</h3>
-                  <p className="text-gray-600 font-medium">Community Members</p>
+                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.totalMembers.toLocaleString()}</h3>
+                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Members</p>
                 </CardContent>
               </Card>
             </div>
@@ -414,15 +418,15 @@ function ChallengesContent() {
         )}
 
         {/* Student Challenges */}
-        <div className="mb-12">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <GraduationCap className="w-5 h-5 text-blue-600" />
+        <div className="mb-6 md:mb-12">
+          <div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4">
+            <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg">
+              <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Student Challenges</h2>
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900">Student Challenges</h2>
           </div>
-          <p className="text-gray-600 mb-6 text-lg">Perfect for college students managing allowances and building first financial habits.</p>
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <p className="text-gray-600 mb-4 md:mb-6 text-xs md:text-lg">Perfect for college students managing allowances and building first financial habits.</p>
+          <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 md:gap-6">
             {studentChallenges.map((challenge) => 
               renderChallengeCard(challenge, joinedChallenges.includes(challenge.id))
             )}
@@ -430,15 +434,15 @@ function ChallengesContent() {
         </div>
 
         {/* Graduate Challenges */}
-        <div className="mb-12">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Briefcase className="w-5 h-5 text-purple-600" />
+        <div className="mb-6 md:mb-12">
+          <div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4">
+            <div className="p-1.5 md:p-2 bg-purple-100 rounded-lg">
+              <Briefcase className="w-4 h-4 md:w-5 md:h-5 text-purple-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900">Fresh Graduate Challenges</h2>
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900">Fresh Graduate Challenges</h2>
           </div>
-          <p className="text-gray-600 mb-6 text-lg">Level up your financial game with your first salary and career goals.</p>
-          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          <p className="text-gray-600 mb-4 md:mb-6 text-xs md:text-lg">Level up your financial game with your first salary and career goals.</p>
+          <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-2 md:gap-6">
             {graduateChallenges.map((challenge) => 
               renderChallengeCard(challenge, joinedChallenges.includes(challenge.id))
             )}

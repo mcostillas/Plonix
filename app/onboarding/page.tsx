@@ -319,18 +319,14 @@ export default function OnboardingTourPage() {
         </Card>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4 mt-6 text-center">
-          <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-2xl font-bold text-primary">100%</p>
-            <p className="text-xs text-gray-600">Free Forever</p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 mt-6 text-center">
           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
             <p className="text-2xl font-bold text-green-600">24/7</p>
             <p className="text-xs text-gray-600">AI Available</p>
           </div>
           <div className="bg-white/70 backdrop-blur-sm rounded-lg p-4">
-            <p className="text-2xl font-bold text-blue-600">10k+</p>
-            <p className="text-xs text-gray-600">Users</p>
+            <p className="text-2xl font-bold text-primary">Smart</p>
+            <p className="text-xs text-gray-600">Financial AI</p>
           </div>
         </div>
       </div>

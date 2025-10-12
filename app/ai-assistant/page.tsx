@@ -23,6 +23,8 @@ import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import TextareaAutosize from 'react-textarea-autosize'
 import { Spinner, PageSpinner } from '@/components/ui/spinner'
+// TODO: Dark mode under works - Theme toggle temporarily disabled
+// import { useTheme } from '@/components/ThemeProvider'
 import {
   InputGroup,
   InputGroupAddon,
@@ -68,9 +70,12 @@ function AIAssistantContent() {
   const [isLoading, setIsLoading] = useState(true)
   const [isChatHistoryLoading, setIsChatHistoryLoading] = useState(true)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [profilePicture, setProfilePicture] = useState<string>('')
+  // TODO: Dark mode under works - Theme toggle temporarily disabled
+  // const { theme, setTheme } = useTheme()
+  const [language, setLanguage] = useState<'en' | 'tl' | 'taglish'>('taglish')
   
   // Get or create session ID - persist in sessionStorage so it survives page navigation
   const getOrCreateSessionId = () => {
@@ -381,26 +386,94 @@ function AIAssistantContent() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Fetch profile picture
+  // Fetch profile picture and preferences
   const fetchProfilePicture = async (userId: string) => {
     try {
-      console.log('🖼️ Fetching profile picture for user:', userId)
+      console.log('🖼️ Fetching profile picture and preferences for user:', userId)
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('profile_picture')
+        .select('profile_picture, preferences')
         .eq('user_id', userId)
         .maybeSingle()
       
-      console.log('🖼️ Profile picture data:', data, 'error:', error)
+      console.log('🖼️ Profile data:', data, 'error:', error)
       
       if (data) {
         setProfilePicture((data as any).profile_picture || '')
         console.log('✅ Profile picture set to:', (data as any).profile_picture)
+        
+        // Load theme and language preferences
+        const prefs = (data as any).preferences || {}
+        if (prefs.language) {
+          setLanguage(prefs.language)
+          console.log('✅ Language preference loaded:', prefs.language)
+        }
       }
     } catch (err) {
-      console.error('❌ Error fetching profile picture:', err)
+      console.error('❌ Error fetching profile data:', err)
     }
   }
+
+  // Save language preference
+  const saveLanguagePreference = async (newLanguage: 'en' | 'tl' | 'taglish') => {
+    console.log('💾 saveLanguagePreference called with:', newLanguage)
+    console.log('💾 Current user:', user)
+    
+    if (!user?.id) {
+      console.error('❌ No user ID available')
+      toast.error('User not logged in')
+      return
+    }
+    
+    try {
+      console.log('💾 Fetching current preferences for user:', user.id)
+      // First get current preferences
+      const { data: currentData, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('preferences')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (fetchError) {
+        console.error('❌ Error fetching preferences:', fetchError)
+        throw fetchError
+      }
+      
+      console.log('💾 Current preferences:', currentData)
+      const currentPrefs = (currentData as any)?.preferences || {}
+      console.log('💾 Merged preferences will be:', { ...currentPrefs, language: newLanguage })
+      
+      // Update with new language
+      const { error: updateError } = await (supabase
+        .from('user_profiles')
+        .upsert as any)({
+        user_id: user.id,
+        preferences: {
+          ...currentPrefs,
+          language: newLanguage
+        },
+        updated_at: new Date().toISOString()
+      })
+      
+      if (updateError) {
+        console.error('❌ Error updating preferences:', updateError)
+        throw updateError
+      }
+      
+      console.log('✅ Language preference saved successfully!')
+    } catch (err) {
+      console.error('❌ Error saving language preference:', err)
+      toast.error('Failed to save language preference')
+      throw err
+    }
+  }
+
+  // TODO: Dark mode under works - Theme toggle temporarily disabled
+  // Apply theme to document
+  // useEffect(() => {
+  //   // Theme is now handled by ThemeProvider
+  //   console.log('🎨 Current theme:', theme)
+  // }, [theme])
 
   // Refresh profile picture when page becomes visible (user returns from profile page)
   useEffect(() => {
@@ -999,7 +1072,8 @@ function AIAssistantContent() {
         body: JSON.stringify({
           message: messageToSend,
           sessionId: sessionIdToUse, // Use the appropriate session ID (may be new if rotated)
-          recentMessages: recentMessages // Pass recent chat history for context
+          recentMessages: recentMessages, // Pass recent chat history for context
+          language: language // Pass user's language preference
         })
       })
       
@@ -1044,12 +1118,12 @@ function AIAssistantContent() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gray-50 dark:bg-gray-900 flex flex-col overflow-hidden transition-colors duration-200">
       <Navbar currentPage="ai assistant" />
       
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar */}
-        <div className={`${sidebarOpen ? 'w-72' : 'w-16'} transition-all duration-300 bg-white border-r border-gray-200 flex flex-col shadow-lg relative`}>
+        <div className={`${sidebarOpen ? 'w-72' : 'w-16'} transition-all duration-300 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col shadow-lg relative`}>
           {/* Sidebar Toggle Button - Floating */}
           <TooltipProvider>
             <Tooltip>
@@ -1079,7 +1153,7 @@ function AIAssistantContent() {
                 <Button 
                   onClick={createNewChat}
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all duration-200"
+                  className="w-full justify-start text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 hover:border-green-200 dark:hover:border-green-800 transition-all duration-200"
                 >
                   <Plus className="w-4 h-4 mr-3" />
                   <span className="font-medium">New chat</span>
@@ -1088,7 +1162,7 @@ function AIAssistantContent() {
                 {/* Search Chats Button */}
                 <Button 
                   variant="ghost"
-                  className="w-full justify-start text-gray-700 hover:bg-green-50 hover:text-green-700 hover:border-green-200 transition-all duration-200"
+                  className="w-full justify-start text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 hover:border-green-200 dark:hover:border-green-800 transition-all duration-200"
                 >
                   <Search className="w-4 h-4 mr-3" />
                   <span className="font-medium">Search chats</span>
@@ -1140,7 +1214,7 @@ function AIAssistantContent() {
           <div className="flex-1 overflow-hidden flex flex-col">
             {sidebarOpen && (
               <div className="px-3 py-2">
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Chats</h3>
+                <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Chats</h3>
               </div>
             )}
             <ScrollArea className="flex-1 px-2">
@@ -1148,16 +1222,16 @@ function AIAssistantContent() {
                 <div
                   key={chat.id}
                   onClick={() => switchChat(chat.id)}
-                  className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-green-50 hover:border hover:border-green-200 mb-1 transition-all duration-200 ${
-                    currentChatId === chat.id ? 'bg-green-100 border border-green-200' : ''
+                  className={`group flex items-center justify-between p-2 rounded-lg cursor-pointer hover:bg-green-50 dark:hover:bg-green-900/20 hover:border hover:border-green-200 dark:hover:border-green-800 mb-1 transition-all duration-200 ${
+                    currentChatId === chat.id ? 'bg-green-100 dark:bg-green-900/30 border border-green-200 dark:border-green-800' : ''
                   } ${!sidebarOpen ? 'justify-center' : ''}`}
                 >
                   {sidebarOpen ? (
                     <>
                       <div className="flex items-center space-x-3 flex-1 min-w-0">
-                        <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-gray-900' : 'text-gray-500'}`} />
+                        <MessageSquare className={`w-4 h-4 flex-shrink-0 ${currentChatId === chat.id ? 'text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400'}`} />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-sm truncate ${currentChatId === chat.id ? 'text-gray-900 font-medium' : 'text-gray-700'}`}>
+                          <p className={`text-sm truncate ${currentChatId === chat.id ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-700 dark:text-gray-300'}`}>
                             {chat.title}
                           </p>
                         </div>
@@ -1237,10 +1311,10 @@ function AIAssistantContent() {
                       }
                     })()}
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium truncate text-gray-900">
+                      <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
                         {user?.name || user?.email?.split('@')[0] || 'Guest User'}
                       </p>
-                      <p className="text-xs text-gray-500">View settings</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">View settings</p>
                     </div>
                   </div>
                   <Settings className="w-4 h-4 text-gray-400" />
@@ -1300,14 +1374,12 @@ function AIAssistantContent() {
 
         {/* Settings Modal */}
         <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
-          <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                  <Settings className="w-5 h-5 text-white" />
-                </div>
-                <DialogTitle className="text-xl">Settings</DialogTitle>
-              </div>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
+                Settings
+              </DialogTitle>
               <DialogDescription>
                 Manage your account and preferences
               </DialogDescription>
@@ -1316,7 +1388,7 @@ function AIAssistantContent() {
             {/* Modal Content */}
             <div className="space-y-6">
                 {/* User Info Section */}
-                <div className="bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl p-4 border border-primary/10">
+                {/* <div className="bg-gradient-to-r from-primary/5 to-blue-50 rounded-xl p-4 border border-primary/10">
                   <div className="flex items-center space-x-3 mb-2">
                     <div className="w-12 h-12 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">
                       {user?.name?.[0] || 'U'}
@@ -1331,35 +1403,80 @@ function AIAssistantContent() {
                   </div>
                 </div>
 
-                <Separator />
+                <Separator /> */}
 
                 {/* Settings Options */}
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Preferences</h3>
                   
+                  {/* TODO: Dark mode under works - Theme toggle temporarily disabled */}
                   {/* Theme Setting */}
-                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                  {/* <button 
+                    onClick={async () => {
+                      try {
+                        console.log('🎨 Theme button clicked, current theme:', theme)
+                        const newTheme = theme === 'light' ? 'dark' : 'light'
+                        console.log('🎨 Switching to theme:', newTheme)
+                        setTheme(newTheme)
+                        toast.success(`Theme changed to ${newTheme} mode`)
+                      } catch (error) {
+                        console.error('🎨 Error in theme button:', error)
+                        toast.error('Failed to change theme')
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 group"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-primary/10 transition-all">
-                        <Sun className="w-4 h-4 text-gray-600 group-hover:text-primary" />
+                        {theme === 'light' ? (
+                          <Sun className="w-4 h-4 text-gray-600 group-hover:text-primary" />
+                        ) : (
+                          <Moon className="w-4 h-4 text-gray-600 group-hover:text-primary" />
+                        )}
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-gray-900 text-sm">Appearance</p>
-                        <p className="text-xs text-gray-500">Light mode</p>
+                        <p className="text-xs text-gray-500 capitalize">{theme} mode</p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
-                  </button>
+                  </button> */}
 
                   {/* Language Setting */}
-                  <button className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group">
+                  <button 
+                    onClick={async () => {
+                      try {
+                        console.log('🌐 Language button clicked, current language:', language)
+                        const languages: Array<'en' | 'tl' | 'taglish'> = ['taglish', 'en', 'tl']
+                        const currentIndex = languages.indexOf(language)
+                        const nextLanguage = languages[(currentIndex + 1) % languages.length]
+                        console.log('🌐 Switching to language:', nextLanguage)
+                        setLanguage(nextLanguage)
+                        console.log('🌐 Calling saveLanguagePreference...')
+                        await saveLanguagePreference(nextLanguage)
+                        console.log('🌐 Language saved successfully!')
+                        const languageNames = {
+                          'taglish': 'English (Taglish)',
+                          'en': 'English',
+                          'tl': 'Tagalog'
+                        }
+                        toast.success(`Language changed to ${languageNames[nextLanguage]}`)
+                      } catch (error) {
+                        console.error('🌐 Error in language button:', error)
+                        toast.error('Failed to change language')
+                      }
+                    }}
+                    className="w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-all duration-200 group"
+                  >
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center group-hover:bg-primary/10 transition-all">
                         <Languages className="w-4 h-4 text-gray-600 group-hover:text-primary" />
                       </div>
                       <div className="text-left">
                         <p className="font-medium text-gray-900 text-sm">Language</p>
-                        <p className="text-xs text-gray-500">English (Taglish)</p>
+                        <p className="text-xs text-gray-500">
+                          {language === 'taglish' ? 'English (Taglish)' : language === 'en' ? 'English' : 'Tagalog'}
+                        </p>
                       </div>
                     </div>
                     <ChevronRight className="w-4 h-4 text-gray-400" />
@@ -1427,19 +1544,20 @@ function AIAssistantContent() {
         </Dialog>      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col">
         {/* Top Header */}
-        <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200 p-4 flex items-center justify-between shadow-sm">
-          <div className="flex items-center space-x-3">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 p-2 md:p-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center space-x-2 md:space-x-3">
             <div className="relative">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                <Bot className="w-5 h-5 text-white" />
+              <div className="w-8 h-8 md:w-9 md:h-9 bg-gradient-to-r from-primary to-blue-600 rounded-lg md:rounded-xl flex items-center justify-center shadow-md">
+                <Bot className="w-4 h-4 md:w-5 md:h-5 text-white" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 md:w-3 md:h-3 bg-green-500 rounded-full border-2 border-white"></div>
             </div>
             <div>
-              <h1 className="font-bold text-gray-900 text-lg">Fili</h1>
-              <div className="text-sm text-gray-500 flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                <span>Financial Assistant • Ready to help</span>
+              <h1 className="font-bold text-gray-900 text-sm md:text-base">Fili</h1>
+              <div className="text-[10px] md:text-xs text-gray-500 flex items-center">
+                <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-green-500 rounded-full mr-1 md:mr-1.5 animate-pulse"></div>
+                <span className="hidden sm:inline">Financial Assistant • Ready to help</span>
+                <span className="sm:hidden">Ready to help</span>
               </div>
             </div>
           </div>
@@ -1453,37 +1571,38 @@ function AIAssistantContent() {
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center">
                 <PageSpinner />
-                <p className="text-gray-500 mt-4">Loading your chat history...</p>
               </div>
             </div>
           ) : messages.length === 0 || messages.length === 1 ? (
             // Welcome Screen
-            <div className="flex items-center justify-center h-full p-8">
+            <div className="flex items-center justify-center h-full p-3 md:p-6">
               <div className="text-center max-w-3xl">
-                <div className="w-20 h-20 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-8 shadow-lg">
-                  <Sparkles className="w-10 h-10 text-white" />
+                <div className="w-14 h-14 md:w-16 md:h-16 bg-gradient-to-r from-primary to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 md:mb-6 shadow-lg">
+                  <Sparkles className="w-7 h-7 md:w-8 md:h-8 text-white" />
                 </div>
-                <h2 className="text-3xl font-bold mb-4 text-gray-900">Welcome to Fili</h2>
-                <p className="text-gray-600 mb-10 leading-relaxed text-lg">
-                  Your personal financial assistant for budgeting, investing, and saving strategies.
+                <h2 className="text-xl md:text-2xl lg:text-3xl font-bold mb-2 md:mb-3 text-gray-900 dark:text-gray-100">Welcome to Fili</h2>
+                <p className="text-gray-600 dark:text-gray-300 mb-4 md:mb-8 leading-relaxed text-xs md:text-sm lg:text-base px-2">
+                  Hi there! I'm Fili, your personal AI financial coach designed specifically for Filipino youth. 
+                  Whether you're managing your first allowance, planning your first budget, or dreaming about your financial future, 
+                  I'm here to guide you every step of the way. Ask me anything about budgeting, saving, investing, or managing your money!
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
                   {[
-                    "How should I budget my ₱25,000 salary?",
-                    "Best investment options for beginners?",
-                    "Help me create an emergency fund plan",
-                    "Compare bank savings account rates"
+                    "How can I start saving with my ₱5,000 weekly allowance?",
+                    "What's the best way to build an emergency fund as a student?",
+                    "Help me understand the 50-30-20 budgeting rule",
+                    "What should I do with my first salary of ₱20,000?"
                   ].map((suggestion, index) => (
                     <Card
                       key={index}
-                      className="p-4 cursor-pointer hover:bg-gray-50 hover:border-primary/40 transition-all duration-200 group"
+                      className="p-2 md:p-3 cursor-pointer hover:bg-gray-50 hover:border-primary/40 transition-all duration-200 group"
                       onClick={() => setInputMessage(suggestion)}
                     >
-                      <div className="flex items-start gap-3 text-left">
-                        <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
-                          <MessageSquare className="w-4 h-4 text-gray-500 group-hover:text-primary" />
+                      <div className="flex items-start gap-2 text-left">
+                        <div className="w-6 h-6 md:w-7 md:h-7 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0 group-hover:bg-primary/10 transition-colors">
+                          <MessageSquare className="w-3 h-3 md:w-3.5 md:h-3.5 text-gray-500 group-hover:text-primary" />
                         </div>
-                        <span className="text-sm text-gray-700 leading-relaxed flex-1">{suggestion}</span>
+                        <span className="text-[11px] md:text-xs lg:text-sm text-gray-700 leading-relaxed flex-1">{suggestion}</span>
                       </div>
                     </Card>
                   ))}
@@ -1492,9 +1611,9 @@ function AIAssistantContent() {
             </div>
           ) : (
             // Chat Messages
-            <div className="p-6 space-y-8 max-w-4xl mx-auto">
+            <div className="p-3 md:p-4 lg:p-6 space-y-4 md:space-y-6 max-w-4xl mx-auto">
               {messages.slice(1).map((message, index) => (
-                <div key={message.id} className={`flex gap-4 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
+                <div key={message.id} className={`flex gap-2 md:gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`}>
                   {/* Avatar */}
                   <div className="flex-shrink-0 pt-1">
                     {message.type === 'user' ? (
@@ -1506,8 +1625,8 @@ function AIAssistantContent() {
                           // Show colorful gradient avatar
                           const IconComponent = avatarData.icon
                           return (
-                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center`}>
-                              <IconComponent className="w-4 h-4 text-white" strokeWidth={1.5} />
+                            <div className={`w-6 h-6 md:w-7 md:h-7 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center`}>
+                              <IconComponent className="w-3 h-3 md:w-3.5 md:h-3.5 text-white" strokeWidth={1.5} />
                             </div>
                           )
                         } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
@@ -1516,64 +1635,66 @@ function AIAssistantContent() {
                             <img
                               src={profilePicture}
                               alt="Profile"
-                              className="w-8 h-8 rounded-full object-cover"
+                              className="w-6 h-6 md:w-7 md:h-7 rounded-full object-cover"
                             />
                           )
                         } else {
                           // Show default avatar
                           return (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center bg-primary text-white">
-                              <UserIcon className="w-4 h-4" />
+                            <div className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center bg-primary text-white">
+                              <UserIcon className="w-3 h-3 md:w-3.5 md:h-3.5" />
                             </div>
                           )
                         }
                       })()
                     ) : (
                       // Bot avatar
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center bg-gray-200 text-gray-700">
-                        <Bot className="w-4 h-4" />
+                      <div className="w-6 h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300">
+                        <Bot className="w-3 h-3 md:w-3.5 md:h-3.5" />
                       </div>
                     )}
                   </div>
                   
                   {/* Message Content */}
-                  <div className={`flex-1 space-y-2 ${message.type === 'user' ? 'flex flex-col items-end' : ''}`}>
+                  <div className={`flex-1 space-y-1 md:space-y-1.5 ${message.type === 'user' ? 'flex flex-col items-end' : ''}`}>
                     {/* Sender Name */}
-                    <div className={`text-sm font-semibold text-gray-900 ${message.type === 'user' ? 'text-right' : ''}`}>
+                    <div className={`text-[11px] md:text-xs font-semibold text-gray-900 dark:text-gray-100 ${message.type === 'user' ? 'text-right' : ''}`}>
                       {message.type === 'user' ? 'You' : 'Fili'}
                     </div>
                     
                     {/* Message Bubble */}
-                    <div className={`${message.type === 'user' ? 'text-right' : ''}`}>
-                      <div className={`inline-block text-left max-w-[85%] ${
+                    <div className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}>
+                      <div className={`${
                         message.type === 'user' 
-                          ? 'bg-primary text-white rounded-3xl rounded-tr-md px-5 py-3' 
-                          : 'text-gray-800'
+                          ? 'bg-primary text-primary-foreground rounded-lg px-3 py-2 max-w-[85%]' 
+                          : 'bg-muted rounded-lg px-3 py-2 text-foreground max-w-[85%]'
                       }`}>
                         {/* Show loading animation if message has isLoading flag */}
                         {message.isLoading ? (
-                          <div className="flex items-center py-3 px-4">
-                            <div className="flex space-x-1.5">
+                          <div className="flex items-center py-2 px-3 md:py-2.5 md:px-4">
+                            <div className="flex space-x-1">
                               <div 
-                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                className="w-2 h-2 md:w-2.5 md:h-2.5 bg-gray-400 rounded-full animate-bounce"
                                 style={{ animationDelay: '0s' }}
                               ></div>
                               <div 
-                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                className="w-2 h-2 md:w-2.5 md:h-2.5 bg-gray-400 rounded-full animate-bounce"
                                 style={{ animationDelay: '0.2s' }}
                               ></div>
                               <div 
-                                className="w-2.5 h-2.5 bg-gray-400 rounded-full animate-bounce"
+                                className="w-2 h-2 md:w-2.5 md:h-2.5 bg-gray-400 rounded-full animate-bounce"
                                 style={{ animationDelay: '0.4s' }}
                               ></div>
                             </div>
                           </div>
+                        ) : message.type === 'user' ? (
+                          // Simple text for user messages - no markdown
+                          <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                            {message.content}
+                          </div>
                         ) : (
-                          <div className={`prose prose-sm max-w-none ${
-                            message.type === 'user' 
-                              ? 'prose-invert prose-p:text-white prose-strong:text-white prose-headings:text-white' 
-                              : 'prose-gray prose-p:text-gray-800 prose-headings:text-gray-900 prose-strong:font-semibold'
-                          }`}>
+                          // Markdown for bot messages
+                          <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                             <ReactMarkdown 
                               components={{
                                 p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
@@ -1606,7 +1727,7 @@ function AIAssistantContent() {
                     </div>
                     
                     {/* Timestamp */}
-                    <div className={`text-xs text-gray-400 px-1 ${message.type === 'user' ? 'text-right' : ''}`}>
+                    <div className={`text-[10px] md:text-xs text-gray-400 px-1 ${message.type === 'user' ? 'text-right' : ''}`}>
                       {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   </div>
@@ -1619,24 +1740,24 @@ function AIAssistantContent() {
         </ScrollArea>
 
         {/* Input Area */}
-        <div className="bg-white/95 backdrop-blur-sm border-t border-gray-200 p-4 shadow-lg">
+        <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-t border-gray-200 dark:border-gray-700 p-2 md:p-3 lg:p-4 shadow-lg">
           <div className="max-w-4xl mx-auto">
             {/* Long Session Warning */}
             {messages.length >= 150 && messages.length < 200 && (
-              <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start space-x-3">
-                <AlertTriangle className="w-5 h-5 text-orange-600 flex-shrink-0 mt-0.5" />
+              <div className="mb-2 md:mb-3 p-2 md:p-3 bg-orange-50 border border-orange-200 rounded-lg flex items-start space-x-2 md:space-x-3">
+                <AlertTriangle className="w-4 h-4 md:w-5 md:h-5 text-orange-600 flex-shrink-0 mt-0.5" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-orange-900">
+                  <p className="text-xs md:text-sm font-semibold text-orange-900">
                     Long conversation detected ({messages.length} messages)
                   </p>
-                  <p className="text-xs text-orange-700 mt-1">
-                    Consider starting a new chat for better performance. Your conversation will auto-rotate at 200 messages.
+                  <p className="text-[10px] md:text-xs text-orange-700 mt-0.5 md:mt-1">
+                    Consider starting a new chat for better performance. Auto-rotates at 200 messages.
                   </p>
                 </div>
                 <Button
                   onClick={createNewChat}
                   size="sm"
-                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs px-3"
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-[10px] md:text-xs px-2 md:px-3 h-7 md:h-8"
                 >
                   New Chat
                 </Button>
@@ -1685,8 +1806,8 @@ function AIAssistantContent() {
 
             {/* Character counter */}
             {inputMessage.length > 0 && (
-              <div className="flex justify-end mb-2">
-                <span className={`text-xs font-medium ${
+              <div className="flex justify-end mb-1 md:mb-1.5">
+                <span className={`text-[10px] md:text-xs font-medium ${
                   inputMessage.length > 2000 
                     ? 'text-red-500' 
                     : inputMessage.length > 1800 
@@ -1697,7 +1818,7 @@ function AIAssistantContent() {
                 </span>
               </div>
             )}
-            <div className="flex items-end space-x-3">
+            <div className="flex items-end space-x-2 md:space-x-3">
               <div className="flex-1">
                 <InputGroup className="rounded-full">
                   {/* Hidden file input */}
@@ -1736,7 +1857,7 @@ function AIAssistantContent() {
                         ? "Listening..." 
                         : isTranscribing 
                         ? "Transcribing..." 
-                        : "Ask FILI about budgeting, investments, savings, or any financial question..."
+                        : "Type your message..."
                     }
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
@@ -1747,21 +1868,21 @@ function AIAssistantContent() {
                       }
                     }}
                     minRows={1}
-                    maxRows={8}
-                    className="flex items-center field-sizing-content min-h-[40px] w-full resize-none rounded-full bg-transparent px-4 py-2.5 text-base transition-[color,box-shadow] outline-none md:text-sm placeholder:text-gray-400 leading-normal"
+                    maxRows={6}
+                    className="flex items-center field-sizing-content min-h-[32px] md:min-h-[36px] w-full resize-none rounded-full bg-transparent px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm transition-[color,box-shadow] outline-none placeholder:text-gray-400 leading-normal"
                     disabled={isTranscribing}
                   />
                   
                   {/* Voice and Send buttons - Right side */}
                   <InputGroupAddon align="center">
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-0.5 md:gap-1">
                       {/* Microphone button */}
                       <Button
                         onClick={toggleRecording}
                         variant="ghost"
                         size="sm"
                         disabled={isTranscribing}
-                        className={`h-8 w-8 p-0 rounded-full transition-colors ${
+                        className={`h-7 w-7 md:h-8 md:w-8 p-0 rounded-full transition-colors ${
                           isRecording 
                             ? 'bg-red-100 hover:bg-red-200 text-red-600' 
                             : isTranscribing
@@ -1777,11 +1898,11 @@ function AIAssistantContent() {
                         }
                       >
                         {isRecording ? (
-                          <MicOff className="w-4 h-4 animate-pulse" />
+                          <MicOff className="w-3.5 h-3.5 md:w-4 md:h-4 animate-pulse" />
                         ) : isTranscribing ? (
                           <Spinner size="sm" className="text-blue-600" />
                         ) : (
-                          <Mic className="w-4 h-4 text-gray-400 group-hover:text-primary" />
+                          <Mic className="w-3.5 h-3.5 md:w-4 md:h-4 text-gray-400 group-hover:text-primary" />
                         )}
                       </Button>
                       
@@ -1789,31 +1910,29 @@ function AIAssistantContent() {
                       <Button
                         onClick={sendMessage}
                         disabled={!inputMessage.trim() || inputMessage.length > 2000}
-                        className="h-8 w-8 p-0 rounded-full" 
+                        className="h-7 w-7 md:h-8 md:w-8 p-0 rounded-full" 
                         size="sm" 
                         variant="default"
                         title={inputMessage.length > 2000 ? 'Message too long' : 'Send message'}
                       >
-                        <ArrowUp className="w-4 h-4" />
+                        <ArrowUp className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </Button>
                     </div>
                   </InputGroupAddon>
                 </InputGroup>
               </div>
             </div>
-            <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
-              <div className="flex items-center space-x-4">
-                <div className="flex items-center space-x-2">
-                  <Shield className="w-3 h-3" />
-                  <span>Your conversations are private and secure</span>
-                </div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 md:gap-2 mt-2 md:mt-2.5 text-xs text-gray-500">
+              <div className="flex items-center space-x-1.5 sm:space-x-3">
+                <Shield className="w-2.5 h-2.5 md:w-3 md:h-3 flex-shrink-0" />
+                <span className="text-[9px] md:text-[10px]">Private & secure</span>
               </div>
-              <div className="flex items-center space-x-4">
-                <span className={`${inputMessage.length > 1800 ? 'text-orange-500' : 'text-gray-400'}`}>
+              <div className="flex items-center justify-between sm:justify-end space-x-2 sm:space-x-3">
+                <span className={`text-[9px] md:text-[10px] ${inputMessage.length > 1800 ? 'text-orange-500' : 'text-gray-400'}`}>
                   {inputMessage.length}/2000
                 </span>
-                <span className="text-gray-300">•</span>
-                <Link href="/learning" className="text-primary hover:text-primary/80 font-medium transition-colors">
+                <span className="text-gray-300 hidden sm:inline">•</span>
+                <Link href="/learning" className="text-primary hover:text-primary/80 font-medium transition-colors text-[9px] md:text-[10px] whitespace-nowrap">
                   Learn Finance →
                 </Link>
               </div>

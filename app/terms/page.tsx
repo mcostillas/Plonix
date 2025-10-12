@@ -35,7 +35,7 @@ export default function TermsPage() {
             <FileText className="w-10 h-10 text-primary" />
           </div>
           <h1 className="text-4xl font-bold text-gray-900 mb-4">Terms and Conditions</h1>
-          <p className="text-lg text-gray-600">Last updated: October 3, 2025</p>
+          <p className="text-lg text-gray-600">Last updated: October 12, 2025</p>
         </div>
 
         <Card className="p-8 shadow-lg mb-8">
@@ -104,12 +104,14 @@ export default function TermsPage() {
                 Plounix provides the following services:
               </p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
-                <li><strong>AI Financial Assistant:</strong> Conversational AI-powered guidance on financial topics, budgeting, 
-                savings, and investment advice tailored for Filipino youth</li>
-                <li><strong>Educational Content:</strong> Learning modules, articles, and resources on financial literacy</li>
-                <li><strong>Financial Tools:</strong> Budget calculators, savings trackers, goal setting, and expense management</li>
-                {/* <li><strong>Receipt Scanner:</strong> OCR technology to digitize and track expenses from receipts</li> */}
-                <li><strong>Challenges & Gamification:</strong> Interactive challenges to build financial habits</li>
+                <li><strong>AI Financial Coach (Fili):</strong> Conversational AI-powered guidance on financial topics with 
+                real-time web search capabilities to provide current prices, bank rates, and financial news tailored for Filipino youth</li>
+                <li><strong>Expense Tracker:</strong> Real-time tracking of income and expenses with categorization and cash flow monitoring</li>
+                <li><strong>Interactive Learning Modules:</strong> Learn-Apply-Reflect method with bite-sized lessons on budgeting, 
+                saving, and investing, complete with reflection exercises and action items</li>
+                <li><strong>Goal Tracking:</strong> Set and track your financial goals with visual progress indicators and milestone achievements</li>
+                <li><strong>Smart Savings:</strong> Automated savings tracking with insights to help build wealth</li>
+                <li><strong>Money Missions:</strong> Interactive challenges and gamification to build financial habits and earn rewards</li>
               </ul>
             </section>
 
