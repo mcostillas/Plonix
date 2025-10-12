@@ -48,6 +48,7 @@ export default function RegisterPage() {
     firstName: '',
     lastName: '',
     email: '',
+    age: '',
     password: '',
     confirmPassword: ''
   })
@@ -85,8 +86,16 @@ export default function RegisterPage() {
     setMessage('')
 
     // Validation
-    if (!formData.firstName || !formData.lastName) {
+    if (!formData.firstName || !formData.lastName || !formData.age) {
       setError('Please fill in all fields')
+      setIsLoading(false)
+      return
+    }
+
+    // Validate age
+    const ageNum = parseInt(formData.age)
+    if (isNaN(ageNum) || ageNum < 13 || ageNum > 100) {
+      setError('Please enter a valid age (13-100)')
       setIsLoading(false)
       return
     }
@@ -113,7 +122,8 @@ export default function RegisterPage() {
       const result = await signUp(
         formData.email,
         formData.password,
-        fullName
+        fullName,
+        parseInt(formData.age)
       )
 
       if (!result.success || result.error) {
@@ -338,6 +348,24 @@ export default function RegisterPage() {
                       required
                       disabled={isLoading}
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] md:text-sm font-medium text-gray-700 mb-1.5 md:mb-2">
+                      Age
+                    </label>
+                    <Input
+                      type="number"
+                      placeholder="18"
+                      min="13"
+                      max="100"
+                      value={formData.age}
+                      onChange={(e) => setFormData({...formData, age: e.target.value})}
+                      className="h-9 md:h-11 text-[11px] md:text-base"
+                      required
+                      disabled={isLoading}
+                    />
+                    <p className="text-[10px] md:text-xs text-gray-500 mt-1">You must be at least 13 years old to register</p>
                   </div>
 
                   <div>

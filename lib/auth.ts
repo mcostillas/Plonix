@@ -15,8 +15,8 @@ export interface AuthSession {
 }
 
 // Standalone functions for backward compatibility
-export async function signUp(email: string, password: string, name?: string) {
-  return await auth.signUp(email, password, name)
+export async function signUp(email: string, password: string, name?: string, age?: number) {
+  return await auth.signUp(email, password, name, age)
 }
 
 export async function signIn(email: string, password: string) {
@@ -68,7 +68,7 @@ export const auth = {
   },
 
   // Sign up with email and password
-  async signUp(email: string, password: string, name?: string) {
+  async signUp(email: string, password: string, name?: string, age?: number) {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -76,12 +76,29 @@ export const auth = {
         options: {
           data: {
             name: name || email.split('@')[0],
+            age: age,
           },
         },
       })
 
       if (error) {
         throw error
+      }
+
+      // If user was created, also save age to user_profiles
+      if (data.user && age) {
+        try {
+          await (supabase
+            .from('user_profiles')
+            .upsert as any)({
+              user_id: data.user.id,
+              age: age,
+              updated_at: new Date().toISOString()
+            })
+        } catch (profileError) {
+          console.error('Error saving age to profile:', profileError)
+          // Don't fail registration if profile update fails
+        }
       }
 
       return {
