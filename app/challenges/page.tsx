@@ -378,13 +378,15 @@ function ChallengesContent() {
           }}
         />
 
-        {/* Stats Overview */}
+        {/* Loading State */}
         {loading ? (
-          <div className="flex justify-center py-8 md:py-12">
-            <Loader2 className="w-6 h-6 md:w-8 md:h-8 text-primary animate-spin" />
+          <div className="flex flex-col items-center justify-center py-12 md:py-20">
+            <Loader2 className="w-8 h-8 md:w-12 md:h-12 text-primary animate-spin mb-4" />
+            <p className="text-gray-600 text-sm md:text-base">Loading challenges...</p>
           </div>
         ) : (
           <>
+            {/* Stats Overview */}
             <div className="grid grid-cols-3 gap-2 md:gap-6 mb-4 md:mb-12">
               <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
                 <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
@@ -414,11 +416,9 @@ function ChallengesContent() {
                 </CardContent>
               </Card>
             </div>
-          </>
-        )}
 
-        {/* Student Challenges */}
-        <div className="mb-6 md:mb-12">
+            {/* Student Challenges */}
+            <div className="mb-6 md:mb-12">
           <div className="flex items-center space-x-2 md:space-x-3 mb-3 md:mb-4">
             <div className="p-1.5 md:p-2 bg-blue-100 rounded-lg">
               <GraduationCap className="w-4 h-4 md:w-5 md:h-5 text-blue-600" />
@@ -481,6 +481,8 @@ function ChallengesContent() {
           onClose={() => setCanceledModalOpen(false)}
           partialPoints={partialPointsEarned}
         />
+          </>
+        )}
       </div>
     </div>
   )
