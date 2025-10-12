@@ -1,11 +1,14 @@
 # AI Chat Session Persistence Fix
 
-## Problem
+## Problem 1: Page Navigation (FIXED)
 When navigating away from the AI Assistant page and returning, a new chat session was created instead of continuing the existing conversation. This happened because:
 
 1. A new `sessionId` was generated every time the component mounted
 2. No persistence mechanism to remember the current active chat
 3. Session state was lost on page navigation
+
+## Problem 2: Tab Switching (LATEST FIX - December 2024)
+When users clicked "New Chat", sent messages, then switched to another browser tab and returned, the AI would reset to the welcome screen. The chat history sidebar would show "New Chat" but messages would disappear from the main view. Messages were still saved in the database but the UI lost track of the current session.
 
 ## Solution Implemented
 
@@ -142,15 +145,110 @@ To verify the fix works:
    - Switch between tabs
    - ✅ Each tab maintains its own session
 
+## Latest Fix: Tab Switching Restoration (December 2024)
+
+### Root Cause
+The `visibilitychange` event listener only refreshed the profile picture when the user returned to the tab. It did **not** restore the current chat session from sessionStorage. When the browser tab became inactive and then active again, the component state would sometimes be cleared, but there was no handler to restore the session.
+
+### The Solution
+Modified the `visibilitychange` event handler in `app/ai-assistant/page.tsx` (lines 478-508) to:
+
+1. **Check for persisted session ID** in sessionStorage when page becomes visible
+2. **Compare with current session** to see if restoration is needed
+3. **Restore from memory** if the chat exists in the `chats` array
+4. **Reload from database** if the chat is not in memory
+5. **Update useEffect dependencies** to include `currentChatId` and `chats`
+
+### Code Changes
+
+```typescript
+// BEFORE
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (!document.hidden && user?.id) {
+      console.log('👁️ Page visible, refreshing profile picture')
+      fetchProfilePicture(user.id)
+    }
+  }
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+}, [user?.id])
+
+// AFTER
+useEffect(() => {
+  const handleVisibilityChange = () => {
+    if (!document.hidden && user?.id) {
+      console.log('👁️ Page visible again')
+      
+      // Refresh profile picture
+      fetchProfilePicture(user.id)
+      
+      // Restore chat session from sessionStorage
+      const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
+      console.log('🔍 Checking for persisted session:', persistedSessionId)
+      
+      if (persistedSessionId && persistedSessionId !== currentChatId) {
+        console.log('🔄 Restoring chat session:', persistedSessionId)
+        
+        // Find the chat in the current chats array
+        const persistedChat = chats.find(c => c.id === persistedSessionId)
+        
+        if (persistedChat) {
+          // Chat exists in memory, restore it
+          console.log('✅ Chat found in memory, restoring')
+          setCurrentChatId(persistedChat.id)
+          setMessages(persistedChat.messages)
+        } else {
+          // Chat not in memory, reload from database
+          console.log('📥 Chat not in memory, reloading from database')
+          loadChatHistory(user.id)
+        }
+      }
+    }
+  }
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+  return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+}, [user?.id, currentChatId, chats]) // ← Added currentChatId and chats dependencies
+```
+
+### How Tab Restoration Works
+
+1. **User starts new chat**: `createNewChat()` generates session ID, saves to sessionStorage via useEffect
+2. **User sends message**: Message is saved to database with session ID
+3. **User switches tab**: Browser fires `visibilitychange` event (document.hidden = true)
+4. **User returns to tab**: Browser fires `visibilitychange` event again (document.hidden = false)
+5. **Restoration kicks in**:
+   - Reads persisted session ID from sessionStorage
+   - Checks if it differs from current session
+   - Finds chat in memory or reloads from database
+   - Restores `currentChatId` and `messages` state
+
+### Testing Tab Restoration
+
+**Before Fix:**
+1. Click "New Chat"
+2. Send a message (e.g., "Hello")
+3. Switch to another browser tab (Gmail, YouTube, etc.)
+4. Return to Plounix tab
+5. ❌ **BUG**: AI shows welcome screen, message disappears
+6. Chat history shows "New Chat" but clicking it shows the message was saved
+
+**After Fix:**
+1. Click "New Chat"
+2. Send a message (e.g., "Hello")
+3. Switch to another browser tab
+4. Return to Plounix tab
+5. ✅ **FIXED**: Chat session is automatically restored with your message visible
+
 ## Related Files Modified
 
-- `app/ai-assistant/page.tsx` - Main AI chat interface
+- `app/ai-assistant/page.tsx` - Main AI chat interface (lines 478-508 for tab restoration fix)
 
 ## No Database Changes Required
 
-This fix is entirely client-side and doesn't require:
+These fixes are entirely client-side and don't require:
 - Database schema changes
 - API modifications
 - Migration scripts
 
-The session IDs are already being stored in the database correctly. This fix just ensures the client remembers which session to use.
+The session IDs are already being stored in the database correctly. These fixes ensure the client remembers which session to use and restores it properly when switching tabs.
