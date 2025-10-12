@@ -111,10 +111,10 @@ export async function POST(request: NextRequest) {
     const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser, recentMessages, language)
 
     // Save to memory if user is authenticated
-    // Use user.id for database storage, sessionId for chat session grouping
+    // CRITICAL FIX: Pass effectiveSessionId (not user.id!) as first parameter for session_id
     if (authenticatedUser) {
       try {
-        await addToUserMemory(authenticatedUser.id, message, response, authenticatedUser)
+        await addToUserMemory(effectiveSessionId, message, response, authenticatedUser)
       } catch (error) {
         console.log('Could not save to memory, continuing without persistence:', error)
       }
