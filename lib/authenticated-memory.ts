@@ -30,22 +30,22 @@ export class AuthenticatedMemoryManager {
   // ===== MEMORY MANAGEMENT =====
 
   // Get or create conversation memory for a user
-  async getConversationMemory(userId: string, user: any | null = null): Promise<ConversationSummaryBufferMemory> {
+  async getConversationMemory(sessionId: string, user: any | null = null): Promise<ConversationSummaryBufferMemory> {
     // Validate user if provided (for authenticated access)
     if (user) {
       this.validateUser(user)
     }
     
-    // Check if memory already exists for this user
-    if (this.conversationMemories.has(userId)) {
-      return this.conversationMemories.get(userId)!
+    // Check if memory already exists for this session
+    if (this.conversationMemories.has(sessionId)) {
+      return this.conversationMemories.get(sessionId)!
     }
 
     // Create new memory with chat history
     const chatHistory = new ChatMessageHistory()
 
-    // Load existing messages from database
-    await this.loadExistingMessages(userId, chatHistory)
+    // Load existing messages from database for this session
+    await this.loadExistingMessages(sessionId, chatHistory)
 
     const memory = new ConversationSummaryBufferMemory({
       llm: this.llm,
@@ -54,17 +54,17 @@ export class AuthenticatedMemoryManager {
       returnMessages: true,
     })
 
-    this.conversationMemories.set(userId, memory)
+    this.conversationMemories.set(sessionId, memory)
     return memory
   }
 
   // Load existing conversation history from database
-  private async loadExistingMessages(userId: string, chatHistory: ChatMessageHistory) {
+  private async loadExistingMessages(sessionId: string, chatHistory: ChatMessageHistory) {
     try {
       const { data: messages, error } = await (supabase as any)
         .from('chat_history')
         .select('message_type, content, created_at')
-        .eq('session_id', userId)
+        .eq('session_id', sessionId)
         .order('created_at', { ascending: false })
         .limit(10) // Load only last 10 messages (5 exchanges) - reduced for less aggressive memory
 
@@ -74,7 +74,7 @@ export class AuthenticatedMemoryManager {
       }
 
       if (messages && messages.length > 0) {
-        console.log(`Loading ${messages.length} previous messages for user ${userId}`)
+        console.log(`Loading ${messages.length} previous messages for session ${sessionId}`)
         
         // Reverse to get chronological order (since we fetched descending)
         const chronologicalMessages = messages.reverse()
@@ -93,11 +93,11 @@ export class AuthenticatedMemoryManager {
   }
 
   // Add a message to memory
-  async addMessage(userId: string, messageType: 'human' | 'ai', content: string, user: any | null = null) {
+  async addMessage(sessionId: string, messageType: 'human' | 'ai', content: string, user: any | null = null) {
     try {
       // Debug logging
       console.log('💾 addMessage called:', {
-        userId,
+        sessionId,
         messageType,
         hasUser: !!user,
         contentPreview: content.substring(0, 50)
@@ -108,13 +108,13 @@ export class AuthenticatedMemoryManager {
         this.validateUser(user)
       }
       
-      // Store in database first with actual user ID
+      // Store in database first with session_id and user_id
       const actualUserId = user?.id || null
-      await this.saveMessageToDatabase(userId, messageType, content, actualUserId)
+      await this.saveMessageToDatabase(sessionId, messageType, content, actualUserId)
       console.log('✅ Message saved to database')
       
-      // Get memory
-      const memory = await this.getConversationMemory(userId, user)
+      // Get memory (using sessionId for conversation grouping)
+      const memory = await this.getConversationMemory(sessionId, user)
       
       // Add to memory using the correct method
       if (messageType === 'human') {
@@ -420,14 +420,14 @@ export async function getAuthenticatedMemoryContext(userId: string, userMessage:
   return await authenticatedMemory.buildSmartContext(userId, userMessage, user, recentMessages)
 }
 
-export async function addToUserMemory(userId: string, userMessage: string, aiResponse: string, user: any | null = null) {
-  await authenticatedMemory.addMessage(userId, 'human', userMessage, user)
-  await authenticatedMemory.addMessage(userId, 'ai', aiResponse, user)
+export async function addToUserMemory(sessionId: string, userMessage: string, aiResponse: string, user: any | null = null) {
+  await authenticatedMemory.addMessage(sessionId, 'human', userMessage, user)
+  await authenticatedMemory.addMessage(sessionId, 'ai', aiResponse, user)
   
   // Extract and store cross-session memories
   if (user?.id) {
     try {
-      await crossSessionMemory.extractAndStoreMemories(user.id, userId, userMessage, aiResponse)
+      await crossSessionMemory.extractAndStoreMemories(user.id, sessionId, userMessage, aiResponse)
     } catch (error) {
       console.log('Could not extract memories:', error)
     }
