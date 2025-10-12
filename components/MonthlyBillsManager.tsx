@@ -7,12 +7,14 @@ import { Badge } from '@/components/ui/badge'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-hooks'
 import { AddMonthlyBillModal } from './AddMonthlyBillModal'
+import { EditMonthlyBillModal } from './EditMonthlyBillModal'
 import { ConfirmDialog } from './ui/ConfirmDialog'
 import { toast } from 'sonner'
 import { 
   Calendar, 
   Plus, 
   Trash2, 
+  Edit3,
   ToggleLeft, 
   ToggleRight,
   Home, 
@@ -301,6 +303,14 @@ export function MonthlyBillsManager() {
                       <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => setEditingBill(bill)}
+                        className="text-gray-600 hover:text-blue-600 h-6 w-6 md:h-8 md:w-8 p-0"
+                      >
+                        <Edit3 className="w-3 h-3 md:w-4 md:h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => deleteBill(bill.id, bill.name)}
                         className="text-gray-600 hover:text-red-600 h-6 w-6 md:h-8 md:w-8 p-0"
                       >
@@ -326,6 +336,20 @@ export function MonthlyBillsManager() {
           </div>
         )}
       </CardContent>
+
+      {/* Edit Bill Modal */}
+      <EditMonthlyBillModal
+        bill={editingBill || null}
+        open={!!editingBill}
+        onOpenChange={(open) => {
+          if (!open) setEditingBill(undefined)
+        }}
+        onBillUpdated={() => {
+          fetchMonthlyBills()
+          setEditingBill(undefined)
+        }}
+        onShowMessage={(message) => toast.success(message)}
+      />
 
       {/* Confirm Dialog */}
       <ConfirmDialog
