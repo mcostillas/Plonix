@@ -34,6 +34,7 @@
     "langchain": "^0.3.31",
     "lucide-react": "^0.292.0",
     "next": "14.2.29",
+    "nodemailer": "^7.0.9",
     "react": "^18",
     "react-day-picker": "^9.11.0",
     "react-dom": "^18",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.2",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.0.1",
