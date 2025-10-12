@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3, CheckCircle, Lock, Edit3 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-hooks'
+import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 
 export default function TopicLearningPage() {
@@ -890,7 +891,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
   }
 
-  const completeModule = () => {
+  const completeModule = async () => {
     if (canProceedToNext()) {
       // Save module completion to localStorage
       const savedProgress = localStorage.getItem('plounix-learning-progress')
@@ -908,9 +909,49 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
       if (!completedModules.includes(topicId)) {
         completedModules.push(topicId)
         localStorage.setItem('plounix-learning-progress', JSON.stringify(completedModules))
+
+        // Save to database
+        if (user?.id) {
+          try {
+            console.log('💾 Saving module completion to database:', topicId)
+            
+            // Get current preferences
+            const { data: currentData } = await supabase
+              .from('user_profiles')
+              .select('preferences')
+              .eq('user_id', user.id)
+              .maybeSingle()
+
+            const currentPrefs = (currentData as any)?.preferences || {}
+
+            // Update with new learning progress
+            const { error } = await (supabase
+              .from('user_profiles')
+              .upsert as any)({
+              user_id: user.id,
+              preferences: {
+                ...currentPrefs,
+                learning_progress: {
+                  completed_modules: completedModules,
+                  current_level: completedModules.length >= 3 ? 'intermediate' : 'beginner',
+                  badges_earned: currentPrefs.learning_progress?.badges_earned || []
+                }
+              },
+              updated_at: new Date().toISOString()
+            })
+
+            if (error) {
+              console.error('❌ Error saving learning progress:', error)
+            } else {
+              console.log('✅ Learning progress saved to database!')
+            }
+          } catch (error) {
+            console.error('Failed to save learning progress to database:', error)
+          }
+        }
       }
       
-      // Mark module as completed (you can add database save here if needed)
+      // Mark module as completed
       toast.success('Module completed!', {
         description: 'Great job! You\'ve completed this learning module.'
       })

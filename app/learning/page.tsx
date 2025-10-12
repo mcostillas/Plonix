@@ -7,6 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
 import { PageLoader } from '@/components/ui/page-loader'
+import { useAuth } from '@/lib/auth-hooks'
+import { supabase } from '@/lib/supabase'
 import { Calculator, PiggyBank, TrendingUp, BookOpen, Users, Target, CheckCircle, ArrowRight, Globe, Shield, CreditCard, Lock, Brain, Award, Trophy } from 'lucide-react'
 
 export default function LearningPage() {
@@ -18,29 +20,114 @@ export default function LearningPage() {
 }
 
 function LearningContent() {
+  const { user } = useAuth()
   const [completedModules, setCompletedModules] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  // Load completed modules from localStorage on mount
+  // Load completed modules from database (with localStorage fallback)
   useEffect(() => {
-    const savedProgress = localStorage.getItem('plounix-learning-progress')
-    if (savedProgress) {
+    const loadProgress = async () => {
+      if (!user?.id) {
+        setLoading(false)
+        return
+      }
+
       try {
-        const parsed = JSON.parse(savedProgress)
-        setCompletedModules(parsed)
+        // Try to load from database first
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('preferences')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!error && data) {
+          const prefs = (data as any)?.preferences || {}
+          const dbProgress = prefs.learning_progress?.completed_modules || []
+          
+          if (dbProgress.length > 0) {
+            console.log('📚 Loaded learning progress from database:', dbProgress)
+            setCompletedModules(dbProgress)
+            // Also sync to localStorage for offline access
+            localStorage.setItem('plounix-learning-progress', JSON.stringify(dbProgress))
+            setLoading(false)
+            setMounted(true)
+            return
+          }
+        }
+
+        // Fallback to localStorage if database is empty
+        const savedProgress = localStorage.getItem('plounix-learning-progress')
+        if (savedProgress) {
+          try {
+            const parsed = JSON.parse(savedProgress)
+            console.log('📚 Loaded learning progress from localStorage:', parsed)
+            setCompletedModules(parsed)
+            // Migrate to database
+            await saveLearningProgress(parsed)
+          } catch (error) {
+            console.error('Failed to load learning progress from localStorage:', error)
+          }
+        }
       } catch (error) {
         console.error('Failed to load learning progress:', error)
+      } finally {
+        setLoading(false)
+        setMounted(true)
       }
     }
-    setMounted(true)
-  }, [])
 
-  // Save to localStorage whenever completedModules changes
-  useEffect(() => {
-    if (mounted && completedModules.length > 0) {
-      localStorage.setItem('plounix-learning-progress', JSON.stringify(completedModules))
+    loadProgress()
+  }, [user?.id])
+
+  // Save learning progress to database
+  const saveLearningProgress = async (modules: string[]) => {
+    if (!user?.id) return
+
+    try {
+      // Get current preferences
+      const { data: currentData } = await supabase
+        .from('user_profiles')
+        .select('preferences')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      const currentPrefs = (currentData as any)?.preferences || {}
+
+      // Update with new learning progress
+      const { error } = await (supabase
+        .from('user_profiles')
+        .upsert as any)({
+        user_id: user.id,
+        preferences: {
+          ...currentPrefs,
+          learning_progress: {
+            completed_modules: modules,
+            current_level: modules.length >= 3 ? 'intermediate' : 'beginner',
+            badges_earned: []
+          }
+        },
+        updated_at: new Date().toISOString()
+      })
+
+      if (error) {
+        console.error('❌ Error saving learning progress:', error)
+      } else {
+        console.log('✅ Learning progress saved to database:', modules)
+        // Also save to localStorage as backup
+        localStorage.setItem('plounix-learning-progress', JSON.stringify(modules))
+      }
+    } catch (error) {
+      console.error('Failed to save learning progress:', error)
     }
-  }, [completedModules, mounted])
+  }
+
+  // Save to database whenever completedModules changes
+  useEffect(() => {
+    if (mounted && user?.id) {
+      saveLearningProgress(completedModules)
+    }
+  }, [completedModules, mounted, user?.id])
 
   // Function to mark module as completed
   const markModuleCompleted = (moduleId: string) => {
@@ -50,9 +137,12 @@ function LearningContent() {
   }
 
   // Function to reset progress (for testing/debugging)
-  const resetProgress = () => {
+  const resetProgress = async () => {
     setCompletedModules([])
     localStorage.removeItem('plounix-learning-progress')
+    if (user?.id) {
+      await saveLearningProgress([])
+    }
   }
 
   // Function to check if a module is accessible
@@ -170,6 +260,11 @@ function LearningContent() {
   }
 
   // TODO: Dark mode under works
+  // Show loading state while fetching progress
+  if (loading) {
+    return <PageLoader />
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="learning" />
