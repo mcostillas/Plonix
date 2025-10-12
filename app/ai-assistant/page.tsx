@@ -1230,12 +1230,32 @@ function AIAssistantContent() {
         const finalMessages = [...updatedMessages, aiMessage]
         setMessages(finalMessages)
         
-        // Update chat messages
-        const updatedChats = chats.map(chat => 
-          chat.id === currentChatId 
-            ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
-            : chat
-        )
+        // Update chat messages - CRITICAL: Check if chat exists first
+        const currentChatExists = chats.some(chat => chat.id === currentChatId)
+        let updatedChats
+        
+        if (currentChatExists) {
+          // Chat exists in array, update it
+          updatedChats = chats.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
+              : chat
+          )
+        } else {
+          // Chat doesn't exist in array yet (new session), add it
+          console.log('🆕 Adding new chat to chats array:', currentChatId)
+          const chatTitle = generateChatTitle(messageToSend)
+          updatedChats = [
+            {
+              id: currentChatId,
+              title: chatTitle,
+              messages: finalMessages,
+              lastMessage: messageToSend,
+              timestamp: new Date()
+            },
+            ...chats
+          ]
+        }
         setChats(updatedChats)
       } else {
         throw new Error(data.error || 'AI request failed')
@@ -1251,12 +1271,32 @@ function AIAssistantContent() {
       const finalMessages = [...updatedMessages, errorMessage]
       setMessages(finalMessages)
       
-      // Update chat messages even on error to persist the user's message
-      const updatedChats = chats.map(chat => 
-        chat.id === currentChatId 
-          ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
-          : chat
-      )
+      // Update chat messages even on error to persist the user's message - CRITICAL: Check if chat exists first
+      const currentChatExists = chats.some(chat => chat.id === currentChatId)
+      let updatedChats
+      
+      if (currentChatExists) {
+        // Chat exists in array, update it
+        updatedChats = chats.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
+            : chat
+        )
+      } else {
+        // Chat doesn't exist in array yet (new session), add it
+        console.log('🆕 Adding new chat to chats array (error case):', currentChatId)
+        const chatTitle = generateChatTitle(messageToSend)
+        updatedChats = [
+          {
+            id: currentChatId,
+            title: chatTitle,
+            messages: finalMessages,
+            lastMessage: messageToSend,
+            timestamp: new Date()
+          },
+          ...chats
+        ]
+      }
       setChats(updatedChats)
     }
     // Input already cleared at the start of function
