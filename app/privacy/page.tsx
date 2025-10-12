@@ -14,13 +14,13 @@ export default function PrivacyPage() {
       {/* Header */}
       <div className="bg-white border-b shadow-sm sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <button 
-            onClick={() => router.back()}
+          <Link 
+            href="/auth/register"
             className="flex items-center space-x-2 text-primary hover:text-primary/80 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Back</span>
-          </button>
+            <span>Back to Register</span>
+          </Link>
           <div className="flex items-center space-x-2">
             <PiggyBank className="w-6 h-6 text-primary" />
             <span className="text-xl font-bold text-primary">Plounix</span>
