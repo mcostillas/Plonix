@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth-hooks'
 import { useRouter } from 'next/navigation'
+import { AuthGuard } from '@/components/AuthGuard'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -64,6 +65,14 @@ function SettingToggle({ icon, label, description, checked, onChange }: SettingT
 }
 
 export default function NotificationSettingsPage() {
+  return (
+    <AuthGuard>
+      <NotificationSettingsContent />
+    </AuthGuard>
+  )
+}
+
+function NotificationSettingsContent() {
   const { user } = useAuth()
   const router = useRouter()
   const [loading, setLoading] = useState(true)

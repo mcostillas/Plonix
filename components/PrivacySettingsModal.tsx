@@ -66,8 +66,8 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [deleting, setDeleting] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [clearingAll, setClearingAll] = useState(false)
+  const [showClearAllConfirm, setShowClearAllConfirm] = useState(false)
   const [preferences, setPreferences] = useState<PrivacyPreferences>({
     data_sharing: false,
     ai_learning: true,
@@ -150,33 +150,97 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
     }
   }
 
-  const handleClearData = async () => {
+  const handleClearAllData = async () => {
     if (!user?.id) return
 
-    setDeleting(true)
+    setClearingAll(true)
     try {
-      // Clear AI memory and chat history
-      const { error: memoryError } = await supabase
+      // Clear all user data for a fresh start
+      const errors: string[] = []
+
+      // 1. Clear transactions
+      const { error: transError } = await supabase
+        .from('transactions')
+        .delete()
+        .eq('user_id', user.id)
+      if (transError) errors.push('transactions')
+
+      // 2. Clear goals
+      const { error: goalsError } = await supabase
+        .from('goals')
+        .delete()
+        .eq('user_id', user.id)
+      if (goalsError) errors.push('goals')
+
+      // 3. Clear chat history
+      const { error: chatError } = await supabase
         .from('chat_history')
         .delete()
         .eq('user_id', user.id)
+      if (chatError) errors.push('chat history')
 
-      if (memoryError) throw memoryError
-
-      const { error: crossSessionError } = await supabase
+      // 4. Clear financial memories
+      const { error: memoriesError } = await supabase
         .from('financial_memories')
         .delete()
         .eq('user_id', user.id)
+      if (memoriesError) errors.push('AI memories')
 
-      if (crossSessionError) throw crossSessionError
+      // 5. Clear monthly bills/scheduled payments
+      const { error: billsError } = await supabase
+        .from('scheduled_payments')
+        .delete()
+        .eq('user_id', user.id)
+      if (billsError) errors.push('monthly bills')
 
-      toast.success('Your AI data has been cleared!')
-      setShowDeleteConfirm(false)
+      // 6. Clear learning reflections
+      const { error: learningError } = await supabase
+        .from('learning_reflections')
+        .delete()
+        .eq('user_id', user.id)
+      if (learningError) errors.push('learning progress')
+
+      // 7. Clear user challenges
+      const { error: challengesError } = await supabase
+        .from('user_challenges')
+        .delete()
+        .eq('user_id', user.id)
+      if (challengesError) errors.push('challenges')
+
+      // 8. Reset user profile (keep user_id and email, clear other data)
+      const { error: profileError } = await (supabase
+        .from('user_profiles')
+        .update as any)({
+          name: null,
+          age: null,
+          monthly_income: null,
+          profile_picture: null,
+          preferences: {},
+          financial_data: {},
+          ai_insights: {},
+          persona_data: {},
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+      if (profileError) errors.push('profile data')
+
+      if (errors.length > 0) {
+        toast.error(`Failed to clear some data: ${errors.join(', ')}`)
+      } else {
+        toast.success('All your data has been cleared! You have a fresh start.', {
+          description: 'Your account is still active. You can start adding new data anytime.'
+        })
+        setShowClearAllConfirm(false)
+        // Reload the page after a short delay
+        setTimeout(() => {
+          window.location.reload()
+        }, 2000)
+      }
     } catch (err) {
-      console.error('Error clearing data:', err)
-      toast.error('Failed to clear data')
+      console.error('Error clearing all data:', err)
+      toast.error('An error occurred while clearing data')
     } finally {
-      setDeleting(false)
+      setClearingAll(false)
     }
   }
 
@@ -189,27 +253,27 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-3 md:p-6">
+        <DialogHeader className="space-y-1 md:space-y-1.5">
+          <DialogTitle className="flex items-center gap-1 md:gap-2 text-base md:text-lg">
+            <Shield className="w-4 h-4 md:w-5 md:h-5 text-primary" />
             Privacy & Data Settings
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs md:text-sm">
             Control how your data is used and stored
           </DialogDescription>
         </DialogHeader>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary mb-4" />
-            <p className="text-sm text-gray-600">Loading your settings...</p>
+          <div className="flex flex-col items-center justify-center py-8 md:py-12">
+            <Loader2 className="w-6 h-6 md:w-8 md:h-8 animate-spin text-primary mb-3 md:mb-4" />
+            <p className="text-xs md:text-sm text-gray-600">Loading your settings...</p>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-3 md:space-y-6">
             {/* Privacy Settings */}
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-900 mb-3">Privacy Controls</h3>
+              <h3 className="text-[10px] md:text-sm font-semibold text-gray-900 mb-2 md:mb-3">Privacy Controls</h3>
               
               <SettingToggle
                 icon={<Eye className="w-5 h-5" />}
@@ -240,53 +304,69 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
             <div className="space-y-3 pt-4 border-t">
               <h3 className="text-sm font-semibold text-gray-900">Data Management</h3>
               
-              <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-5 h-5 text-orange-600 mt-0.5" />
+                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
                   <div className="flex-1">
-                    <h4 className="text-sm font-medium text-orange-900 mb-1">
-                      Clear AI Memory
+                    <h4 className="text-sm font-medium text-red-900 mb-1">
+                      Clear All Data - Fresh Start
                     </h4>
-                    <p className="text-xs text-orange-700 mb-3">
-                      Delete all AI chat history and learned preferences. This action cannot be undone.
-                      Your financial data (transactions, goals) will NOT be affected.
+                    <p className="text-xs text-red-700 mb-3">
+                      <strong> DANGER ZONE:</strong> Delete ALL your data including transactions, goals, 
+                      learning progress, challenges, and AI memory. This gives you a completely fresh start. 
+                      Your account will remain active but all data will be permanently deleted.
                     </p>
                     
-                    {!showDeleteConfirm ? (
+                    {!showClearAllConfirm ? (
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowDeleteConfirm(true)}
-                        className="border-orange-300 text-orange-700 hover:bg-orange-100"
+                        onClick={() => setShowClearAllConfirm(true)}
+                        className="border-red-300 text-red-700 hover:bg-red-100"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Clear AI Data
+                        Clear All My Data
                       </Button>
                     ) : (
-                      <div className="flex gap-2">
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={handleClearData}
-                          disabled={deleting}
-                        >
-                          {deleting ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Clearing...
-                            </>
-                          ) : (
-                            'Confirm Delete'
-                          )}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setShowDeleteConfirm(false)}
-                          disabled={deleting}
-                        >
-                          Cancel
-                        </Button>
+                      <div className="space-y-3">
+                        <p className="text-xs font-semibold text-red-900">
+                          Are you absolutely sure? This will delete:
+                        </p>
+                        <ul className="text-xs text-red-700 space-y-1 ml-4 list-disc">
+                          <li>All transactions (income & expenses)</li>
+                          <li>All financial goals</li>
+                          <li>All AI chat history and memories</li>
+                          <li>Monthly bills and scheduled payments</li>
+                          <li>Learning progress and reflections</li>
+                          <li>Challenge participation</li>
+                          <li>Profile data (name, age, income)</li>
+                        </ul>
+                        <div className="flex gap-2 pt-2">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleClearAllData}
+                            disabled={clearingAll}
+                            className="bg-red-600 hover:bg-red-700"
+                          >
+                            {clearingAll ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Clearing Everything...
+                              </>
+                            ) : (
+                              'Yes, Delete Everything'
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowClearAllConfirm(false)}
+                            disabled={clearingAll}
+                          >
+                            Cancel
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
+import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { MonthlyBillsManager } from '@/components/MonthlyBillsManager'
 import { PageSpinner, Spinner } from '@/components/ui/spinner'
@@ -35,6 +36,14 @@ import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
 export default function TransactionsPage() {
+  return (
+    <AuthGuard>
+      <TransactionsContent />
+    </AuthGuard>
+  )
+}
+
+function TransactionsContent() {
   const { user } = useAuth()
   const [selectedPeriod, setSelectedPeriod] = useState('this-month')
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -584,40 +593,40 @@ export default function TransactionsPage() {
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="transactions" />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-2 md:px-4 py-3 md:py-8 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-3 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0 mb-2 md:mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Financial Overview</h1>
-              <p className="text-gray-600">Complete view of your income, expenses, and transactions</p>
+              <h1 className="text-base md:text-2xl lg:text-3xl font-bold text-gray-900">Financial Overview</h1>
+              <p className="text-[10px] md:text-sm lg:text-base text-gray-600">Complete view of your income, expenses, and transactions</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex space-x-1.5 md:space-x-3">
               <div className="relative" ref={exportDropdownRef}>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={() => setShowExportDropdown(!showExportDropdown)}
-                  className="flex items-center"
+                  className="flex items-center h-7 md:h-9 text-[9px] md:text-sm px-2 md:px-3"
                 >
-                  <Download className="w-4 h-4 mr-2" />
+                  <Download className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Export
-                  <ChevronDown className="w-3 h-3 ml-1" />
+                  <ChevronDown className="w-2.5 h-2.5 md:w-3 md:h-3 ml-0.5 md:ml-1" />
                 </Button>
                 
                 {showExportDropdown && (
-                  <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
+                  <div className="absolute top-full left-0 mt-1 w-48 md:w-56 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-50">
                     <button
                       onClick={() => {
                         exportToCSV()
                         setShowExportDropdown(false)
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                      className="w-full text-left px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-sm hover:bg-gray-50 flex items-center"
                     >
-                      <FileSpreadsheet className="w-4 h-4 mr-3 text-green-600" />
+                      <FileSpreadsheet className="w-3 h-3 md:w-4 md:h-4 mr-2 md:mr-3 text-green-600" />
                       <div>
                         <div className="font-medium">Transactions CSV</div>
-                        <div className="text-xs text-gray-500">Export transaction data only</div>
+                        <div className="text-[8px] md:text-xs text-gray-500">Export transaction data only</div>
                       </div>
                     </button>
                     <button
@@ -625,12 +634,12 @@ export default function TransactionsPage() {
                         exportDetailedCSV()
                         setShowExportDropdown(false)
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                      className="w-full text-left px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-sm hover:bg-gray-50 flex items-center"
                     >
-                      <FileText className="w-4 h-4 mr-3 text-blue-600" />
+                      <FileText className="w-3 h-3 md:w-4 md:h-4 mr-2 md:mr-3 text-blue-600" />
                       <div>
                         <div className="font-medium">Detailed Report CSV</div>
-                        <div className="text-xs text-gray-500">Include summary & transactions</div>
+                        <div className="text-[8px] md:text-xs text-gray-500">Include summary & transactions</div>
                       </div>
                     </button>
                     <div className="border-t border-gray-100 my-1"></div>
@@ -639,12 +648,12 @@ export default function TransactionsPage() {
                         exportPDF()
                         setShowExportDropdown(false)
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                      className="w-full text-left px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-sm hover:bg-gray-50 flex items-center"
                     >
-                      <FileText className="w-4 h-4 mr-3 text-red-600" />
+                      <FileText className="w-3 h-3 md:w-4 md:h-4 mr-2 md:mr-3 text-red-600" />
                       <div>
                         <div className="font-medium">Simple PDF Report</div>
-                        <div className="text-xs text-gray-500">Basic summary & transactions</div>
+                        <div className="text-[8px] md:text-xs text-gray-500">Basic summary & transactions</div>
                       </div>
                     </button>
                     <button
@@ -652,12 +661,12 @@ export default function TransactionsPage() {
                         exportDetailedPDF()
                         setShowExportDropdown(false)
                       }}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 flex items-center"
+                      className="w-full text-left px-2 md:px-4 py-1.5 md:py-2 text-[10px] md:text-sm hover:bg-gray-50 flex items-center"
                     >
-                      <FileText className="w-4 h-4 mr-3 text-purple-600" />
+                      <FileText className="w-3 h-3 md:w-4 md:h-4 mr-2 md:mr-3 text-purple-600" />
                       <div>
                         <div className="font-medium">Detailed PDF Report</div>
-                        <div className="text-xs text-gray-500">Complete analysis with charts</div>
+                        <div className="text-[8px] md:text-xs text-gray-500">Complete analysis with charts</div>
                       </div>
                     </button>
                   </div>
@@ -666,21 +675,23 @@ export default function TransactionsPage() {
               <Button 
                 size="sm"
                 onClick={() => setShowAddTransactionModal(true)}
+                className="h-7 md:h-9 text-[9px] md:text-sm px-2 md:px-3"
               >
-                <PlusCircle className="w-4 h-4 mr-2" />
-                Add Transaction
+                <PlusCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                <span className="hidden xs:inline">Add Transaction</span>
+                <span className="xs:hidden">Add</span>
               </Button>
             </div>
           </div>
         </div>
 
         {/* Period Filter */}
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
+        <Card className="mb-3 md:mb-6">
+          <CardContent className="pt-3 md:pt-6 p-2 md:p-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
               <div className="flex-1">
-                <label className="text-sm font-medium text-gray-700 mb-2 block">
-                  <Calendar className="w-4 h-4 inline mr-2" />
+                <label className="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2 block">
+                  <Calendar className="w-3 h-3 md:w-4 md:h-4 inline mr-1 md:mr-2" />
                   Time Period
                 </label>
                 <Select
@@ -696,7 +707,7 @@ export default function TransactionsPage() {
                     }
                   }}
                 >
-                  <SelectTrigger className="w-full md:w-64">
+                  <SelectTrigger className="w-full md:w-64 h-8 md:h-10 text-[10px] md:text-sm">
                     <SelectValue placeholder="Select time period" />
                   </SelectTrigger>
                   <SelectContent>
@@ -713,23 +724,23 @@ export default function TransactionsPage() {
               </div>
               
               {showDatePicker && (
-                <div className="flex flex-col md:flex-row gap-3 md:items-end flex-1">
+                <div className="flex flex-col md:flex-row gap-2 md:gap-3 md:items-end flex-1">
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">Start Date</label>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2 block">Start Date</label>
                     <input
                       type="date"
                       value={customStartDate}
                       onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-1.5 md:p-2 text-[10px] md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-sm font-medium text-gray-700 mb-2 block">End Date</label>
+                    <label className="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2 block">End Date</label>
                     <input
                       type="date"
                       value={customEndDate}
                       onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full p-1.5 md:p-2 text-[10px] md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                     />
                   </div>
                   <Button
@@ -740,7 +751,7 @@ export default function TransactionsPage() {
                         alert('Please select both start and end dates')
                       }
                     }}
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-600 hover:bg-purple-700 h-7 md:h-10 text-[10px] md:text-sm"
                   >
                     Apply
                   </Button>
@@ -748,13 +759,13 @@ export default function TransactionsPage() {
               )}
               
               {selectedPeriod === 'custom' && !showDatePicker && customStartDate && customEndDate && (
-                <div className="flex items-center gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 text-[10px] md:text-sm text-gray-600">
                   <span className="font-medium">Range: {getPeriodLabel()}</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowDatePicker(true)}
-                    className="text-purple-600 hover:text-purple-700"
+                    className="text-purple-600 hover:text-purple-700 h-6 md:h-8 text-[9px] md:text-xs"
                   >
                     Edit
                   </Button>
@@ -765,88 +776,88 @@ export default function TransactionsPage() {
         </Card>
 
         {/* Financial Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-8">
           <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
-            <CardContent className="pt-6">
+            <CardContent className="pt-2 md:pt-6 p-2 md:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-green-600">₱{summary.totalIncome.toLocaleString()}</p>
-                  <p className="text-sm text-green-700 font-medium">Income</p>
-                  <p className="text-xs text-green-600">{getPeriodLabel()}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs md:text-xl lg:text-2xl font-bold text-green-600 truncate">₱{summary.totalIncome.toLocaleString()}</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-green-700 font-medium truncate">Income</p>
+                  <p className="text-[7px] md:text-[10px] lg:text-xs text-green-600 truncate">{getPeriodLabel()}</p>
                 </div>
-                <ArrowUpRight className="w-8 h-8 text-green-500" />
+                <ArrowUpRight className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8 text-green-500 flex-shrink-0 ml-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
-            <CardContent className="pt-6">
+            <CardContent className="pt-2 md:pt-6 p-2 md:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-red-600">₱{summary.totalExpenses.toLocaleString()}</p>
-                  <p className="text-sm text-red-700 font-medium">Expenses</p>
-                  <p className="text-xs text-red-600">{getPeriodLabel()}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs md:text-xl lg:text-2xl font-bold text-red-600 truncate">₱{summary.totalExpenses.toLocaleString()}</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-red-700 font-medium truncate">Expenses</p>
+                  <p className="text-[7px] md:text-[10px] lg:text-xs text-red-600 truncate">{getPeriodLabel()}</p>
                 </div>
-                <ArrowDownRight className="w-8 h-8 text-red-500" />
+                <ArrowDownRight className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8 text-red-500 flex-shrink-0 ml-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-            <CardContent className="pt-6">
+            <CardContent className="pt-2 md:pt-6 p-2 md:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-blue-600">₱{summary.netCashflow.toLocaleString()}</p>
-                  <p className="text-sm text-blue-700 font-medium">Net Saved</p>
-                  <p className="text-xs text-blue-600">{getPeriodLabel()}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs md:text-xl lg:text-2xl font-bold text-blue-600 truncate">₱{summary.netCashflow.toLocaleString()}</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-blue-700 font-medium truncate">Money Left</p>
+                  <p className="text-[7px] md:text-[10px] lg:text-xs text-blue-600 truncate">{getPeriodLabel()}</p>
                 </div>
-                <TrendingUp className="w-8 h-8 text-blue-500" />
+                <TrendingUp className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8 text-blue-500 flex-shrink-0 ml-1" />
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
-            <CardContent className="pt-6">
+            <CardContent className="pt-2 md:pt-6 p-2 md:p-6">
               <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-2xl font-bold text-purple-600">₱{summary.totalSaved.toLocaleString()}</p>
-                  <p className="text-sm text-purple-700 font-medium">Total Saved</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs md:text-xl lg:text-2xl font-bold text-purple-600 truncate">₱{summary.totalSaved.toLocaleString()}</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-purple-700 font-medium truncate">Total Saved</p>
                 </div>
-                <PiggyBank className="w-8 h-8 text-purple-500" />
+                <PiggyBank className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8 text-purple-500 flex-shrink-0 ml-1" />
               </div>
             </CardContent>
           </Card>
         </div>
 
         {/* Scheduled Payments Management */}
-        <div className="mb-8">
+        <div className="mb-3 md:mb-8">
           <MonthlyBillsManager />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8 mb-8">
+        <div className="grid lg:grid-cols-3 gap-3 md:gap-8 mb-3 md:mb-8">
           {/* Expense Categories */}
           <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <PieChart className="w-5 h-5 mr-2 text-blue-500" />
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-6">
+              <CardTitle className="flex items-center text-sm md:text-base lg:text-lg">
+                <PieChart className="w-3.5 h-3.5 md:w-5 md:h-5 mr-1.5 md:mr-2 text-blue-500" />
                 Expense Categories
               </CardTitle>
-              <CardDescription>This month's spending breakdown</CardDescription>
+              <CardDescription className="text-[10px] md:text-sm">This month's spending breakdown</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
+            <CardContent className="p-3 md:p-6 pt-0">
+              <div className="space-y-2 md:space-y-4">
                 {categories.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 ${category.color} rounded-full`}></div>
-                      <div>
-                        <p className="text-sm font-medium">{category.name}</p>
-                        <p className="text-xs text-gray-600">{category.transactions} transactions</p>
+                  <div key={index} className="flex items-center justify-between p-1.5 md:p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                      <div className={`w-2.5 h-2.5 md:w-4 md:h-4 ${category.color} rounded-full flex-shrink-0`}></div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] md:text-sm font-medium truncate">{category.name}</p>
+                        <p className="text-[8px] md:text-xs text-gray-600 truncate">{category.transactions} transactions</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-medium">₱{category.amount.toLocaleString()}</p>
-                      <p className="text-xs text-gray-600">{category.percentage}%</p>
+                    <div className="text-right flex-shrink-0 ml-2">
+                      <p className="text-[10px] md:text-sm font-medium">₱{category.amount.toLocaleString()}</p>
+                      <p className="text-[8px] md:text-xs text-gray-600">{category.percentage}%</p>
                     </div>
                   </div>
                 ))}
@@ -856,21 +867,21 @@ export default function TransactionsPage() {
 
           {/* Recent Transactions */}
           <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
+            <CardHeader className="p-3 md:p-6 pb-2 md:pb-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
                 <div>
-                  <CardTitle className="flex items-center">
-                    <Receipt className="w-5 h-5 mr-2 text-green-500" />
+                  <CardTitle className="flex items-center text-sm md:text-base lg:text-lg">
+                    <Receipt className="w-3.5 h-3.5 md:w-5 md:h-5 mr-1.5 md:mr-2 text-green-500" />
                     Recent Transactions
                   </CardTitle>
-                  <CardDescription>{filteredTransactions.length} transactions found</CardDescription>
+                  <CardDescription className="text-[10px] md:text-sm">{filteredTransactions.length} transactions found</CardDescription>
                 </div>
                 <div className="flex space-x-2">
                   <Select
                     value={selectedCategory}
                     onValueChange={(value) => setSelectedCategory(value)}
                   >
-                    <SelectTrigger className="w-40 text-sm">
+                    <SelectTrigger className="w-32 md:w-40 text-[10px] md:text-sm h-7 md:h-10">
                       <SelectValue placeholder="All Categories" />
                     </SelectTrigger>
                     <SelectContent>
@@ -885,49 +896,49 @@ export default function TransactionsPage() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 md:p-6 pt-0">
               {loading ? (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-4 md:py-8 text-gray-500">
                   <Spinner size="lg" color="primary" className="mx-auto" />
-                  <p className="mt-2 text-sm">Loading transactions...</p>
+                  <p className="mt-2 text-[10px] md:text-sm">Loading transactions...</p>
                 </div>
               ) : formattedTransactions.length === 0 ? (
-                <div className="text-center py-8">
-                  <Receipt className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500 mb-4">No transactions found</p>
+                <div className="text-center py-4 md:py-8">
+                  <Receipt className="w-8 h-8 md:w-12 md:h-12 mx-auto text-gray-300 mb-2 md:mb-3" />
+                  <p className="text-[10px] md:text-sm text-gray-500 mb-2 md:mb-4">No transactions found</p>
                   <Button 
-                    className="bg-purple-600 hover:bg-purple-700"
+                    className="bg-purple-600 hover:bg-purple-700 h-7 md:h-10 text-[10px] md:text-sm"
                     onClick={() => setShowAddTransactionModal(true)}
                   >
-                    <PlusCircle className="w-4 h-4 mr-2" />
+                    <PlusCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                     Add Your First Transaction
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-1.5 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto">
                   {formattedTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center`}>
+                    <div key={transaction.id} className="flex items-center justify-between p-1.5 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                      <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                        <div className={`w-6 h-6 md:w-10 md:h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
                           {transaction.type === 'income' ? (
-                            <ArrowUpRight className="w-5 h-5 text-green-600" />
+                            <ArrowUpRight className="w-3 h-3 md:w-5 md:h-5 text-green-600" />
                           ) : (
-                            <ArrowDownRight className="w-5 h-5 text-red-600" />
+                            <ArrowDownRight className="w-3 h-3 md:w-5 md:h-5 text-red-600" />
                           )}
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{transaction.description}</p>
-                          <p className="text-xs text-gray-600 capitalize">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[10px] md:text-sm font-medium truncate">{transaction.description}</p>
+                          <p className="text-[8px] md:text-xs text-gray-600 capitalize truncate">
                             {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0 ml-2">
+                        <span className={`text-[10px] md:text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                           {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
                         </span>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="w-4 h-4" />
+                        <Button variant="ghost" size="sm" className="h-6 w-6 md:h-8 md:w-8 p-0">
+                          <Eye className="w-3 h-3 md:w-4 md:h-4" />
                         </Button>
                       </div>
                     </div>
@@ -940,45 +951,45 @@ export default function TransactionsPage() {
 
         {/* Monthly Breakdown */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-purple-500" />
+          <CardHeader className="p-3 md:p-6 pb-2 md:pb-6">
+            <CardTitle className="flex items-center text-sm md:text-base lg:text-lg">
+              <Calendar className="w-3.5 h-3.5 md:w-5 md:h-5 mr-1.5 md:mr-2 text-purple-500" />
               Monthly Financial Breakdown
             </CardTitle>
-            <CardDescription>Detailed analysis of your financial activity</CardDescription>
+            <CardDescription className="text-[10px] md:text-sm">Detailed analysis of your financial activity</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0">
             {loading ? (
-              <div className="text-center py-8">
+              <div className="text-center py-4 md:py-8">
                 <Spinner size="lg" color="primary" className="mx-auto" />
-                <p className="mt-2 text-sm text-gray-500">Loading breakdown...</p>
+                <p className="mt-2 text-[10px] md:text-sm text-gray-500">Loading breakdown...</p>
               </div>
             ) : transactions.length === 0 ? (
-              <div className="text-center py-8">
-                <Calendar className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                <p className="text-gray-500">No transaction data available</p>
+              <div className="text-center py-4 md:py-8">
+                <Calendar className="w-8 h-8 md:w-12 md:h-12 mx-auto text-gray-300 mb-2 md:mb-3" />
+                <p className="text-[10px] md:text-sm text-gray-500">No transaction data available</p>
               </div>
             ) : (
-              <div className="grid md:grid-cols-2 gap-8">
+              <div className="grid md:grid-cols-2 gap-3 md:gap-8">
                 {/* Income Sources */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-green-600">
+                  <h3 className="text-xs md:text-base lg:text-lg font-semibold mb-2 md:mb-4 text-green-600">
                     Income Sources ({transactions.filter(t => t.transaction_type === 'income').length})
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-1.5 md:space-y-3">
                     {transactions.filter(t => t.transaction_type === 'income').length === 0 ? (
-                      <p className="text-sm text-gray-500 p-3">No income recorded yet</p>
+                      <p className="text-[10px] md:text-sm text-gray-500 p-2 md:p-3">No income recorded yet</p>
                     ) : (
                       transactions
                         .filter(t => t.transaction_type === 'income')
                         .slice(0, 5) // Show top 5
                         .map((tx, index) => (
-                          <div key={tx.id} className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                            <div className="flex items-center space-x-3">
-                              <div className={`w-3 h-3 rounded-full`} style={{ backgroundColor: `hsl(${120 - index * 10}, 70%, ${50 - index * 5}%)` }}></div>
-                              <span className="text-sm font-medium capitalize">{tx.merchant}</span>
+                          <div key={tx.id} className="flex items-center justify-between p-1.5 md:p-3 bg-green-50 rounded-lg">
+                            <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                              <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0`} style={{ backgroundColor: `hsl(${120 - index * 10}, 70%, ${50 - index * 5}%)` }}></div>
+                              <span className="text-[10px] md:text-sm font-medium capitalize truncate">{tx.merchant}</span>
                             </div>
-                            <span className="text-sm font-semibold text-green-600">₱{Number(tx.amount).toLocaleString()}</span>
+                            <span className="text-[10px] md:text-sm font-semibold text-green-600 flex-shrink-0 ml-2">₱{Number(tx.amount).toLocaleString()}</span>
                           </div>
                         ))
                     )}
@@ -987,22 +998,22 @@ export default function TransactionsPage() {
 
                 {/* Top Expenses */}
                 <div>
-                  <h3 className="text-lg font-semibold mb-4 text-red-600">
+                  <h3 className="text-xs md:text-base lg:text-lg font-semibold mb-2 md:mb-4 text-red-600">
                     Top Expenses (by category)
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-1.5 md:space-y-3">
                     {categories.length === 0 ? (
-                      <p className="text-sm text-gray-500 p-3">No expenses recorded yet</p>
+                      <p className="text-[10px] md:text-sm text-gray-500 p-2 md:p-3">No expenses recorded yet</p>
                     ) : (
                       categories.slice(0, 5).map((cat, index) => (
-                        <div key={cat.name} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                          <div className="flex items-center space-x-3">
-                            <div className={`w-3 h-3 rounded-full ${cat.color.replace('bg-', 'bg-')}`}></div>
-                            <span className="text-sm font-medium capitalize">{cat.name}</span>
+                        <div key={cat.name} className="flex items-center justify-between p-1.5 md:p-3 bg-red-50 rounded-lg">
+                          <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                            <div className={`w-2 h-2 md:w-3 md:h-3 rounded-full flex-shrink-0 ${cat.color.replace('bg-', 'bg-')}`}></div>
+                            <span className="text-[10px] md:text-sm font-medium capitalize truncate">{cat.name}</span>
                           </div>
-                          <div className="text-right">
-                            <span className="text-sm font-semibold text-red-600">₱{cat.amount.toLocaleString()}</span>
-                            <p className="text-xs text-gray-500">{cat.transactions} txns</p>
+                          <div className="text-right flex-shrink-0 ml-2">
+                            <span className="text-[10px] md:text-sm font-semibold text-red-600">₱{cat.amount.toLocaleString()}</span>
+                            <p className="text-[8px] md:text-xs text-gray-500">{cat.transactions} txns</p>
                           </div>
                         </div>
                       ))
@@ -1013,29 +1024,29 @@ export default function TransactionsPage() {
             )}
 
             {/* Summary Stats */}
-            <div className="mt-8 pt-6 border-t">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="mt-3 md:mt-8 pt-3 md:pt-6 border-t">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{summary.transactionCount}</p>
-                  <p className="text-sm text-gray-600">Total Transactions</p>
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-gray-900">{summary.transactionCount}</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-gray-600">Total Transactions</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-green-600">
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-green-600">
                     {((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)}%
                   </p>
-                  <p className="text-sm text-gray-600">Savings Rate</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-gray-600">Savings Rate</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-blue-600">
                     ₱{Math.round(summary.totalExpenses / 30).toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600">Daily Avg Spending</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-gray-600">Daily Avg Spending</p>
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-purple-600">
+                  <p className="text-sm md:text-xl lg:text-2xl font-bold text-purple-600">
                     ₱{Math.round(summary.totalIncome / 30).toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600">Daily Avg Income</p>
+                  <p className="text-[9px] md:text-xs lg:text-sm text-gray-600">Daily Avg Income</p>
                 </div>
               </div>
             </div>

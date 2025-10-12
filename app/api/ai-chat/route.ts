@@ -11,7 +11,7 @@ const aiAgents = new Map<string, PlounixAIAgent>()
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, sessionId, recentMessages } = await request.json()
+    const { message, sessionId, recentMessages, language } = await request.json()
 
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
 
     console.log('📨 Received message for session:', sessionId)
     console.log('💬 Recent messages count:', recentMessages?.length || 0)
+    console.log('🌐 Language preference:', language || 'taglish (default)')
 
     // Get authenticated user from Authorization header (token-based auth for API routes)
     let authenticatedUser = null
@@ -107,7 +108,7 @@ export async function POST(request: NextRequest) {
 
     // Get AI response with user context
     // Pass recent messages for immediate session context
-    const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser, recentMessages)
+    const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser, recentMessages, language)
 
     // Save to memory if user is authenticated
     // Use user.id for database storage, sessionId for chat session grouping

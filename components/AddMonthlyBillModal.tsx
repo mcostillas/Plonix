@@ -97,15 +97,15 @@ export function AddMonthlyBillModal({ children, onPaymentAdded, onShowMessage }:
         )}
       </DialogTrigger>
       
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Add Monthly Bill</DialogTitle>
+      <DialogContent className="sm:max-w-md p-3 md:p-6">
+        <DialogHeader className="space-y-1 md:space-y-1.5">
+          <DialogTitle className="text-base md:text-lg">Add Monthly Bill</DialogTitle>
         </DialogHeader>
         
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-2 md:space-y-4">
           {/* Bill Name */}
-          <div className="space-y-2">
-            <Label htmlFor="name">Bill Name *</Label>
+          <div className="space-y-1 md:space-y-2">
+            <Label htmlFor="name" className="text-[10px] md:text-sm">Bill Name *</Label>
             <Input
               id="name"
               placeholder="e.g., Dorm Rent, Internet, Netflix"
@@ -113,13 +113,14 @@ export function AddMonthlyBillModal({ children, onPaymentAdded, onShowMessage }:
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               disabled={loading}
+              className="h-8 md:h-10 text-xs md:text-base"
             />
           </div>
 
           {/* Amount and Due Day */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="amount">Amount (₱) *</Label>
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
+            <div className="space-y-1 md:space-y-2">
+              <Label htmlFor="amount" className="text-[10px] md:text-sm">Amount (₱) *</Label>
               <Input
                 id="amount"
                 type="number"
@@ -130,11 +131,12 @@ export function AddMonthlyBillModal({ children, onPaymentAdded, onShowMessage }:
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 required
                 disabled={loading}
+                className="h-8 md:h-10 text-xs md:text-base"
               />
             </div>
             
-            <div className="space-y-2">
-              <Label htmlFor="due_day">Due Day *</Label>
+            <div className="space-y-1 md:space-y-2">
+              <Label htmlFor="due_day" className="text-[10px] md:text-sm">Due Day *</Label>
               <Select 
                 value={formData.due_day} 
                 onValueChange={(value) => setFormData({ ...formData, due_day: value })}

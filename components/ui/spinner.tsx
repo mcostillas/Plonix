@@ -38,14 +38,11 @@ export function Spinner({ className, size = "md", color = "current" }: SpinnerPr
   )
 }
 
-// Page-level loading component for full page loading states
-export function PageSpinner({ message = "Loading..." }: { message?: string }) {
+// Page-level loading component - just shows spinner, no text
+export function PageSpinner({ message }: { message?: string }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="text-center">
-        <Spinner size="xl" color="primary" className="mx-auto mb-4" />
-        <p className="text-gray-600">{message}</p>
-      </div>
+      <Spinner size="xl" color="primary" />
     </div>
   )
 }

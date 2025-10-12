@@ -169,39 +169,40 @@ function LearningContent() {
     return <PageLoader message="Loading learning modules..." />
   }
 
+  // TODO: Dark mode under works
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="learning" />
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8 max-w-7xl">
         {/* Enhanced Progress Bar Section */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-8">
           <Card className="bg-gradient-to-r from-primary/5 to-blue-600/5 border border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-primary/10 p-2 rounded-full">
-                    <Trophy className="w-5 h-5 text-primary" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex items-center justify-between mb-3 md:mb-4">
+                <div className="flex items-center space-x-2 md:space-x-3">
+                  <div className="bg-primary/10 p-1.5 md:p-2 rounded-full">
+                    <Trophy className="w-4 h-4 md:w-5 md:h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-800">Learning Progress</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="text-sm md:text-lg font-semibold text-gray-800">Learning Progress</h3>
+                    <p className="text-xs md:text-sm text-gray-600">
                       {completedModules.length} of {coreTopics.length + essentialModules.length} modules completed
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-bold text-primary">
+                  <div className="text-lg md:text-2xl font-bold text-primary">
                     {Math.round((completedModules.length / (coreTopics.length + essentialModules.length)) * 100)}%
                   </div>
-                  <p className="text-sm text-gray-500">Complete</p>
+                  <p className="text-xs md:text-sm text-gray-500">Complete</p>
                 </div>
               </div>
               
-              <div className="space-y-3">
-                <div className="w-full bg-gray-200 rounded-full h-4 relative overflow-hidden">
+              <div className="space-y-2 md:space-y-3">
+                <div className="w-full bg-gray-200 rounded-full h-3 md:h-4 relative overflow-hidden">
                   <div 
-                    className="bg-gradient-to-r from-primary to-blue-600 h-4 rounded-full transition-all duration-500 relative" 
+                    className="bg-gradient-to-r from-primary to-blue-600 h-3 md:h-4 rounded-full transition-all duration-500 relative" 
                     style={{ 
                       width: `${Math.max(2, (completedModules.length / (coreTopics.length + essentialModules.length)) * 100)}%` 
                     }}
@@ -212,29 +213,29 @@ function LearningContent() {
                 
                 {/* Achievement badges */}
                 {completedModules.length > 0 && (
-                  <div className="flex items-center space-x-2 mt-4 pt-4 border-t border-gray-200">
-                    <span className="text-sm font-medium text-gray-700">Achievements:</span>
+                  <div className="flex items-center space-x-1.5 md:space-x-2 mt-2 md:mt-4 pt-2 md:pt-4 border-t border-gray-200 flex-wrap gap-1">
+                    <span className="text-xs md:text-sm font-medium text-gray-700">Achievements:</span>
                     {completedModules.length >= 1 && (
-                      <div className="flex items-center bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-                        <Award className="w-3 h-3 mr-1" />
+                      <div className="flex items-center bg-green-100 text-green-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs">
+                        <Award className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                         First Step
                       </div>
                     )}
                     {completedModules.length >= 3 && (
-                      <div className="flex items-center bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">
-                        <Award className="w-3 h-3 mr-1" />
+                      <div className="flex items-center bg-blue-100 text-blue-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs">
+                        <Award className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                         Core Learner
                       </div>
                     )}
                     {completedModules.length >= 5 && (
-                      <div className="flex items-center bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs">
-                        <Trophy className="w-3 h-3 mr-1" />
+                      <div className="flex items-center bg-purple-100 text-purple-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs">
+                        <Trophy className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                         Advanced
                       </div>
                     )}
                     {completedModules.length === (coreTopics.length + essentialModules.length) && (
-                      <div className="flex items-center bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs">
-                        <Trophy className="w-3 h-3 mr-1" />
+                      <div className="flex items-center bg-yellow-100 text-yellow-800 px-1.5 md:px-2 py-0.5 md:py-1 rounded-full text-[10px] md:text-xs">
+                        <Trophy className="w-2.5 h-2.5 md:w-3 md:h-3 mr-0.5 md:mr-1" />
                         Master
                       </div>
                     )}
@@ -243,12 +244,12 @@ function LearningContent() {
                 
                 {/* Debug reset button - only show in development */}
                 {completedModules.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200">
                     <Button 
                       variant="outline" 
                       size="sm" 
                       onClick={resetProgress}
-                      className="text-xs"
+                      className="text-[10px] md:text-xs h-7 md:h-8"
                     >
                       Reset Progress
                     </Button>
@@ -260,24 +261,24 @@ function LearningContent() {
         </div>
 
         {/* Financial Literacy Introduction */}
-        <div className="mb-12">
+        <div className="mb-6 md:mb-12">
           <Card className="bg-white border shadow-sm">
-            <CardHeader className="text-center pb-6">
-              <div className="w-16 h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="w-8 h-8 text-white" />
+            <CardHeader className="text-center pb-3 md:pb-6 pt-4 md:pt-6">
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-primary rounded-full flex items-center justify-center mx-auto mb-2 md:mb-4">
+                <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-white" />
               </div>
               
-              <CardTitle className="text-2xl font-bold mb-3 text-gray-900">
+              <CardTitle className="text-lg md:text-2xl font-bold mb-2 md:mb-3 text-gray-900 px-2">
                 Your Financial Journey Starts Here
               </CardTitle>
               
-              <CardDescription className="text-base leading-relaxed max-w-2xl mx-auto text-gray-600">
+              <CardDescription className="text-xs md:text-base leading-relaxed max-w-2xl mx-auto text-gray-600 px-2">
                 Financial literacy is your superpower for building wealth and achieving your dreams. Learn to manage money like a pro, make smart investments, and secure your financial future with skills designed specifically for Filipino youth.
               </CardDescription>
             </CardHeader>
             
-            <CardContent className="text-center pb-6">
-              <p className="text-primary font-medium">
+            <CardContent className="text-center pb-4 md:pb-6">
+              <p className="text-primary font-medium text-xs md:text-base">
                 Start with Budgeting to unlock the next modules!
               </p>
             </CardContent>
@@ -285,25 +286,26 @@ function LearningContent() {
         </div>
 
         {/* AI Assistant Highlight */}
-        <div className="mb-8">
+        <div className="mb-4 md:mb-8">
           <Card className="bg-gradient-to-r from-primary to-blue-600 text-white">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="bg-white/20 p-3 rounded-full">
-                    <Globe className="w-8 h-8" />
+            <CardContent className="p-3 md:p-6">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 md:space-x-4">
+                  <div className="bg-white/20 p-2 md:p-3 rounded-full">
+                    <Globe className="w-5 h-5 md:w-8 md:h-8" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-bold mb-1">Need Help Learning? Ask Fili!</h3>
-                    <p className="text-blue-100">
+                    <h3 className="text-sm md:text-xl font-bold mb-0.5 md:mb-1">Need Help Learning? Ask Fili!</h3>
+                    <p className="text-blue-100 text-xs md:text-base hidden sm:block">
                       Get explanations, search for current financial info, and personalized advice!
                     </p>
                   </div>
                 </div>
                 <Link href="/ai-assistant">
-                  <Button variant="secondary">
-                    <Globe className="w-4 h-4 mr-2" />
-                    Chat Now
+                  <Button variant="secondary" className="h-8 md:h-10 text-xs md:text-sm px-2 md:px-4">
+                    <Globe className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Chat Now</span>
+                    <span className="sm:hidden">Chat</span>
                   </Button>
                 </Link>
               </div>
@@ -312,13 +314,13 @@ function LearningContent() {
         </div>
 
         {/* Core Learning Modules */}
-        <div className="mb-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Core Financial Skills</h2>
-            <p className="text-gray-600">Master these three essential topics first - they're the foundation of financial success</p>
+        <div className="mb-4 md:mb-8">
+          <div className="mb-3 md:mb-6">
+            <h2 className="text-lg md:text-2xl font-bold text-gray-900 mb-1 md:mb-2">Core Financial Skills</h2>
+            <p className="text-gray-600 text-xs md:text-base">Master these three essential topics first - they're the foundation of financial success</p>
           </div>
           
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-6">
             {coreTopics.map((topic) => {
               const IconComponent = topic.icon
               const isAccessible = isModuleAccessible(topic.id, 'core')
@@ -364,28 +366,28 @@ function LearningContent() {
                       ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
                       : `${colorClasses.border} hover:shadow-lg`
                 }`}>
-                  <CardHeader className="flex-shrink-0">
-                    <div className="flex items-center space-x-3">
+                  <CardHeader className="flex-shrink-0 p-3 md:p-6">
+                    <div className="flex items-center space-x-2 md:space-x-3">
                       <div className="relative">
-                        <IconComponent className={`w-8 h-8 ${
+                        <IconComponent className={`w-6 h-6 md:w-8 md:h-8 ${
                           !isAccessible ? 'text-gray-400' : isCompleted ? 'text-green-600' : colorClasses.icon
                         }`} />
                         {!isAccessible && (
-                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
-                            <Lock className="w-3 h-3 text-white" />
+                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-0.5 md:p-1">
+                            <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                           </div>
                         )}
                         {isCompleted && (
-                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                            <CheckCircle className="w-3 h-3 text-white" />
+                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 md:p-1">
+                            <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                           </div>
                         )}
                       </div>
                       <div>
-                        <CardTitle className={`text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
+                        <CardTitle className={`text-base md:text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
                           {topic.title}
                         </CardTitle>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        <span className={`text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full ${
                           !isAccessible 
                             ? 'bg-gray-200 text-gray-500' 
                             : isCompleted 
@@ -397,8 +399,8 @@ function LearningContent() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-grow flex flex-col">
-                    <CardDescription className={`text-sm leading-relaxed mb-4 flex-grow ${
+                  <CardContent className="flex-grow flex flex-col p-3 md:p-6 pt-0 md:pt-0">
+                    <CardDescription className={`text-xs md:text-sm leading-relaxed mb-3 md:mb-4 flex-grow ${
                       !isAccessible ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       {!isAccessible 
@@ -411,22 +413,16 @@ function LearningContent() {
                       {isAccessible ? (
                         <Link href={`/learning/${topic.id}`}>
                           <Button 
-                            className="w-full" 
-                            onClick={() => {
-                              if (!isCompleted) {
-                                markModuleCompleted(topic.id)
-                                // Add confetti or celebration effect here if desired
-                              }
-                            }}
+                            className="w-full h-8 md:h-10 text-xs md:text-sm"
                           >
-                            <BookOpen className="w-4 h-4 mr-2" />
+                            <BookOpen className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                             {isCompleted ? 'Review Module' : 'Start Learning'}
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            <ArrowRight className="w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2" />
                           </Button>
                         </Link>
                       ) : (
-                        <Button disabled className="w-full">
-                          <Lock className="w-4 h-4 mr-2" />
+                        <Button disabled className="w-full h-8 md:h-10 text-xs md:text-sm">
+                          <Lock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                           Module Locked
                         </Button>
                       )}
@@ -439,21 +435,21 @@ function LearningContent() {
         </div>
 
         {/* Essential Financial Topics */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-4 text-gray-900">Essential Financial Modules</h2>
-            <p className="text-lg text-gray-600">
+        <div className="mb-6 md:mb-12">
+          <div className="text-center mb-4 md:mb-8">
+            <h2 className="text-lg md:text-3xl font-bold mb-2 md:mb-4 text-gray-900">Essential Financial Modules</h2>
+            <p className="text-xs md:text-lg text-gray-600 px-2">
               Master these crucial topics through our Interactive LAR (Learning, Application, Reflection) system.
             </p>
-            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <Lock className="w-4 h-4 inline mr-1" />
+            <div className="mt-2 md:mt-4 p-2 md:p-3 bg-blue-50 rounded-lg mx-2 md:mx-0">
+              <p className="text-xs md:text-sm text-blue-800">
+                <Lock className="w-3 h-3 md:w-4 md:h-4 inline mr-1" />
                 Unlock by completing any 2 core modules above
               </p>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
             {essentialModules.map((module) => {
               const IconComponent = module.icon
               const isAccessible = isModuleAccessible(module.id, 'essential')
@@ -517,10 +513,10 @@ function LearningContent() {
                       ? 'border-l-green-500 bg-green-50/50 hover:shadow-lg' 
                       : `${colorClasses.border} hover:shadow-lg`
                 }`}>
-                  <CardHeader className="flex-shrink-0">
-                    <div className="flex items-center space-x-3">
+                  <CardHeader className="flex-shrink-0 p-3 md:p-6">
+                    <div className="flex items-center space-x-2 md:space-x-3">
                       <div className="relative">
-                        <IconComponent className={`w-8 h-8 ${
+                        <IconComponent className={`w-6 h-6 md:w-8 md:h-8 ${
                           !isAccessible 
                             ? 'text-gray-400' 
                             : isCompleted 
@@ -528,21 +524,21 @@ function LearningContent() {
                               : colorClasses.icon
                         }`} />
                         {!isAccessible && (
-                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-1">
-                            <Lock className="w-3 h-3 text-white" />
+                          <div className="absolute -top-1 -right-1 bg-gray-400 rounded-full p-0.5 md:p-1">
+                            <Lock className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                           </div>
                         )}
                         {isCompleted && (
-                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
-                            <CheckCircle className="w-3 h-3 text-white" />
+                          <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-0.5 md:p-1">
+                            <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
                           </div>
                         )}
                       </div>
                       <div>
-                        <CardTitle className={`text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
+                        <CardTitle className={`text-base md:text-xl ${!isAccessible ? 'text-gray-500' : 'text-gray-900'}`}>
                           {module.title}
                         </CardTitle>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        <span className={`text-[10px] md:text-xs font-medium px-1.5 md:px-2 py-0.5 md:py-1 rounded-full ${
                           !isAccessible 
                             ? 'bg-gray-200 text-gray-500' 
                             : isCompleted 
@@ -554,8 +550,8 @@ function LearningContent() {
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="flex-grow flex flex-col">
-                    <CardDescription className={`text-sm leading-relaxed mb-4 flex-grow ${
+                  <CardContent className="flex-grow flex flex-col p-3 md:p-6 pt-0 md:pt-0">
+                    <CardDescription className={`text-xs md:text-sm leading-relaxed mb-3 md:mb-4 flex-grow ${
                       !isAccessible ? 'text-gray-400' : 'text-gray-600'
                     }`}>
                       {!isAccessible 
@@ -565,10 +561,10 @@ function LearningContent() {
                     </CardDescription>
 
                     {isAccessible && (
-                      <div className="space-y-2 mb-4">
+                      <div className="space-y-1.5 md:space-y-2 mb-3 md:mb-4">
                         {module.features.map((feature, idx) => (
-                          <div key={idx} className="flex items-center text-xs">
-                            <CheckCircle className="w-3 h-3 text-gray-500 mr-2" />
+                          <div key={idx} className="flex items-center text-[10px] md:text-xs">
+                            <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-gray-500 mr-1.5 md:mr-2 flex-shrink-0" />
                             <span>{feature}</span>
                           </div>
                         ))}
@@ -579,22 +575,18 @@ function LearningContent() {
                       {isAccessible ? (
                         <Link href={`/learning/${module.id}`}>
                           <Button 
-                            className="w-full" 
-                            onClick={() => {
-                              if (!isCompleted) {
-                                markModuleCompleted(module.id)
-                              }
-                            }}
+                            className="w-full h-8 md:h-10 text-xs md:text-sm"
                           >
-                            <BookOpen className="w-4 h-4 mr-2" />
+                            <BookOpen className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                             {isCompleted ? 'Review Module' : 'Start Module'}
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            <ArrowRight className="w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2" />
                           </Button>
                         </Link>
                       ) : (
-                        <Button disabled className="w-full">
-                          <Lock className="w-4 h-4 mr-2" />
-                          Complete 2 Core Modules First
+                        <Button disabled className="w-full h-8 md:h-10 text-[10px] md:text-sm px-2 md:px-4">
+                          <Lock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                          <span className="hidden sm:inline">Complete 2 Core Modules First</span>
+                          <span className="sm:hidden">Locked</span>
                         </Button>
                       )}
                     </div>

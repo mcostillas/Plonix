@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3, CheckCircle, Lock, Edit3 } from 'lucide-react'
 import { useAuth } from '@/lib/auth-hooks'
 import { toast } from 'sonner'
 
@@ -812,7 +812,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
   if (!currentTopic) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <Card className="max-w-md text-center">
           <CardContent className="pt-6">
             <h2 className="text-xl font-bold mb-2">Module Not Found</h2>
@@ -890,6 +890,42 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
   }
 
+  const completeModule = () => {
+    if (canProceedToNext()) {
+      // Save module completion to localStorage
+      const savedProgress = localStorage.getItem('plounix-learning-progress')
+      let completedModules: string[] = []
+      
+      if (savedProgress) {
+        try {
+          completedModules = JSON.parse(savedProgress)
+        } catch (error) {
+          console.error('Failed to load learning progress:', error)
+        }
+      }
+      
+      // Add current module to completed list if not already there
+      if (!completedModules.includes(topicId)) {
+        completedModules.push(topicId)
+        localStorage.setItem('plounix-learning-progress', JSON.stringify(completedModules))
+      }
+      
+      // Mark module as completed (you can add database save here if needed)
+      toast.success('Module completed!', {
+        description: 'Great job! You\'ve completed this learning module.'
+      })
+      
+      // Navigate back to learning page
+      setTimeout(() => {
+        window.location.href = '/learning'
+      }, 1000) // Small delay to show the success toast
+    } else {
+      toast.error('Please complete all reflections', {
+        description: 'You need to answer at least 2 reflection questions to complete the module.'
+      })
+    }
+  }
+
   const getStepIcon = (type: string) => {
     switch (type) {
       case 'learn': return <BookOpen className="w-5 h-5 text-blue-600" />
@@ -929,62 +965,63 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
   }
 
+  // TODO: Dark mode under works
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar currentPage="learning" />
       
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-2 md:px-4 py-4 md:py-8 max-w-4xl">
         {/* Header */}
-        <div className="flex items-center space-x-4 mb-6">
+        <div className="flex items-center space-x-2 md:space-x-4 mb-4 md:mb-6">
           <Link href="/learning">
-            <Button variant="ghost" size="icon">
-              <ArrowLeft className="w-4 h-4" />
+            <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10">
+              <ArrowLeft className="w-3 h-3 md:w-4 md:h-4" />
             </Button>
           </Link>
-          <IconComponent className="w-8 h-8 text-primary" />
+          <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">{currentTopic.title}</h1>
-            <p className="text-gray-600">{currentTopic.description}</p>
+            <h1 className="text-base md:text-2xl font-bold">{currentTopic.title}</h1>
+            <p className="text-gray-600 text-xs md:text-base hidden sm:block">{currentTopic.description}</p>
           </div>
         </div>
 
         {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex justify-between text-sm text-gray-600 mb-2">
+        <div className="mb-4 md:mb-8">
+          <div className="flex justify-between text-xs md:text-sm text-gray-600 mb-1.5 md:mb-2">
             <span>Step {currentStep + 1} of {currentTopic.steps.length}</span>
             <span>{Math.round(progress)}% Complete</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-3">
+          <div className="w-full bg-gray-200 rounded-full h-2 md:h-3">
             <div 
-              className="bg-primary h-3 rounded-full transition-all duration-300" 
+              className="bg-primary h-2 md:h-3 rounded-full transition-all duration-300" 
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
 
         {/* Step Content */}
-        <Card className="mb-6">
-          <CardHeader>
-            <div className="flex items-center space-x-3">
+        <Card className="mb-4 md:mb-6">
+          <CardHeader className="p-3 md:p-6">
+            <div className="flex items-center space-x-2 md:space-x-3">
               {getStepIcon(currentStepData.type)}
-              <CardTitle>{currentStepData.title}</CardTitle>
+              <CardTitle className="text-sm md:text-xl">{currentStepData.title}</CardTitle>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-3 md:p-6 pt-0 md:pt-0">
             {/* Learn Phase */}
             {currentStepData.type === 'learn' && (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                  <p className="text-gray-700 leading-relaxed whitespace-pre-line text-xs md:text-base">
                     {currentStepData.content.text}
                   </p>
                 </div>
 
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-blue-800 mb-3">Key Takeaways:</h4>
-                  <ul className="space-y-2">
+                <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
+                  <h4 className="font-semibold text-blue-800 mb-2 md:mb-3 text-xs md:text-base">Key Takeaways:</h4>
+                  <ul className="space-y-1.5 md:space-y-2">
                     {currentStepData.content.keyPoints?.map((point, index) => (
-                      <li key={index} className="text-blue-700 text-sm flex items-start space-x-2">
+                      <li key={index} className="text-blue-700 text-xs md:text-sm flex items-start space-x-2">
                         <span className="text-blue-500 mt-1 font-bold">•</span>
                         <span>{point}</span>
                       </li>
@@ -992,12 +1029,12 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                   </ul>
                 </div>
 
-                <div className="border-t pt-4">
-                  <h4 className="font-semibold mb-3">Sources:</h4>
+                <div className="border-t pt-3 md:pt-4">
+                  <h4 className="font-semibold mb-2 md:mb-3 text-xs md:text-base">Sources:</h4>
                   {currentStepData.content.sources?.map((source, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span className="text-sm">{source.title}</span>
-                      <Button variant="outline" size="sm" onClick={() => window.open(source.url, '_blank')}>
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded mb-2">
+                      <span className="text-xs md:text-sm">{source.title}</span>
+                      <Button variant="outline" size="sm" className="h-7 md:h-8 text-xs" onClick={() => window.open(source.url, '_blank')}>
                         <ExternalLink className="w-3 h-3 mr-1" />
                         Visit
                       </Button>
@@ -1007,16 +1044,16 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
                 {/* Confirmation button for Learn phase */}
                 {!stepCompleted[currentStep] && (
-                  <div className="border-t pt-4 mt-6">
-                    <Button onClick={markStepAsComplete} className="w-full">
+                  <div className="border-t pt-3 md:pt-4 mt-4 md:mt-6">
+                    <Button onClick={markStepAsComplete} className="w-full h-9 md:h-10 text-xs md:text-sm">
                       ✓ I've Read and Understood This Content
                     </Button>
                   </div>
                 )}
 
                 {stepCompleted[currentStep] && (
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-200 text-center">
-                    <p className="text-green-700 font-medium">✓ Great! You can now proceed to the next step.</p>
+                  <div className="bg-green-50 p-3 md:p-4 rounded-lg border border-green-200 text-center">
+                    <p className="text-green-700 font-medium text-xs md:text-base">✓ Great! You can now proceed to the next step.</p>
                   </div>
                 )}
               </div>
@@ -1024,35 +1061,35 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
             {/* Apply Phase */}
             {currentStepData.type === 'apply' && (
-              <div className="space-y-6">
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-green-800 mb-3">Scenario:</h4>
-                  <p className="text-green-700">{(currentStepData.content as any).scenario}</p>
+              <div className="space-y-4 md:space-y-6">
+                <div className="bg-green-50 p-3 md:p-4 rounded-lg">
+                  <h4 className="font-semibold text-green-800 mb-2 md:mb-3 text-xs md:text-base">Scenario:</h4>
+                  <p className="text-green-700 text-xs md:text-base">{(currentStepData.content as any).scenario}</p>
                 </div>
 
                 <div>
-                  <h4 className="font-semibold mb-4">{(currentStepData.content as any).task}</h4>
+                  <h4 className="font-semibold mb-3 md:mb-4 text-xs md:text-base">{(currentStepData.content as any).task}</h4>
                   
                   {/* Calculator Activity */}
                   {(currentStepData as any).activityType === 'calculator' && (
-                    <div className="space-y-4">
-                      <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                        <p className="text-sm text-blue-800">
+                    <div className="space-y-3 md:space-y-4">
+                      <div className="bg-blue-50 p-3 md:p-4 rounded-lg mb-3 md:mb-4">
+                        <p className="text-xs md:text-sm text-blue-800">
                           <strong>Monthly Income:</strong> ₱{((currentStepData.content as any).monthlyIncome || 0).toLocaleString()}
                         </p>
                       </div>
                       
                       {((currentStepData.content as any).fields || []).map((field: any, index: number) => (
-                        <div key={field.id} className="bg-white p-4 border rounded-lg">
-                          <label className="block text-sm font-medium mb-2">
+                        <div key={field.id} className="bg-white p-3 md:p-4 border rounded-lg">
+                          <label className="block text-xs md:text-sm font-medium mb-2">
                             {field.label}
-                            <span className="text-gray-500 text-xs ml-2">({field.hint})</span>
+                            <span className="text-gray-500 text-[10px] md:text-xs ml-2">({field.hint})</span>
                           </label>
                           <div className="flex items-center space-x-2">
-                            <span className="text-lg font-bold">₱</span>
+                            <span className="text-base md:text-lg font-bold">₱</span>
                             <input
                               type="number"
-                              className="flex-1 p-3 border rounded-lg text-lg"
+                              className="flex-1 p-2 md:p-3 border rounded-lg text-sm md:text-lg"
                               placeholder="0"
                               value={calculatorInputs[field.id] || ''}
                               onChange={(e) => setCalculatorInputs({
@@ -1061,7 +1098,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                               })}
                             />
                             {showResult && (
-                              <span className="text-2xl">
+                              <span className="text-xl md:text-2xl">
                                 {parseInt(calculatorInputs[field.id] || '0') === field.expected ? '✅' : '❌'}
                               </span>
                             )}
@@ -1073,19 +1110,19 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                         <Button 
                           onClick={() => setShowResult(true)} 
                           disabled={!((currentStepData.content as any).fields || []).every((f: any) => calculatorInputs[f.id])}
-                          className="w-full"
+                          className="w-full h-9 md:h-10 text-xs md:text-sm"
                         >
                           Check My Calculations
                         </Button>
                       )}
 
                       {showResult && (
-                        <div className={`p-4 rounded-lg border ${
+                        <div className={`p-3 md:p-4 rounded-lg border ${
                           canProceedToNext()
                             ? 'bg-green-50 border-green-200' 
                             : 'bg-orange-50 border-orange-200'
                         }`}>
-                          <h4 className={`font-semibold mb-3 ${
+                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base ${
                             canProceedToNext()
                               ? 'text-green-800' 
                               : 'text-orange-800'
@@ -1097,20 +1134,20 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                           
                           {canProceedToNext() && (
                             <>
-                              <p className="text-sm mb-3">{(currentStepData.content as any).explanation}</p>
-                              <p className="text-green-700 font-medium mt-2">
+                              <p className="text-xs md:text-sm mb-2 md:mb-3">{(currentStepData.content as any).explanation}</p>
+                              <p className="text-green-700 font-medium mt-2 text-xs md:text-base">
                                 ✓ You can now proceed to the next step!
                               </p>
                             </>
                           )}
                           
                           {!canProceedToNext() && (
-                            <div className="mt-4">
-                              <p className="text-sm font-medium text-orange-700 mb-3">
+                            <div className="mt-3 md:mt-4">
+                              <p className="text-xs md:text-sm font-medium text-orange-700 mb-2 md:mb-3">
                                 Check your answers and try again:
                               </p>
                               {((currentStepData.content as any).fields || []).map((field: any) => (
-                                <div key={field.id} className="text-sm mb-2">
+                                <div key={field.id} className="text-xs md:text-sm mb-2">
                                   {parseInt(calculatorInputs[field.id] || '0') === field.expected ? (
                                     <span className="text-green-700">✓ {field.label}: Correct</span>
                                   ) : (
@@ -1121,7 +1158,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                               <Button 
                                 onClick={() => setShowResult(false)} 
                                 variant="outline"
-                                className="w-full mt-3"
+                                className="w-full mt-2 md:mt-3 h-8 md:h-10 text-xs md:text-sm"
                               >
                                 Try Again
                               </Button>
@@ -1134,9 +1171,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
                   {/* MCQ Activity (default) */}
                   {(!(currentStepData as any).activityType || (currentStepData as any).activityType === 'mcq') && (
-                    <div className="space-y-3">
+                    <div className="space-y-2 md:space-y-3">
                       {((currentStepData.content as any).options || []).map((option: string, index: number) => (
-                        <label key={index} className="flex items-start space-x-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <label key={index} className="flex items-start space-x-2 md:space-x-3 p-3 md:p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
                           <input
                             type="radio"
                             name="answer"
@@ -1145,23 +1182,23 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             onChange={(e) => setSelectedAnswer(e.target.value)}
                             className="mt-1"
                           />
-                          <span className="text-sm">{option}</span>
+                          <span className="text-xs md:text-sm">{option}</span>
                         </label>
                       ))}
 
                       {!showResult && (
-                        <Button onClick={() => setShowResult(true)} disabled={!selectedAnswer} className="w-full">
+                        <Button onClick={() => setShowResult(true)} disabled={!selectedAnswer} className="w-full h-9 md:h-10 text-xs md:text-sm">
                           Submit Answer
                         </Button>
                       )}
 
                       {showResult && (
-                        <div className={`p-4 rounded-lg border ${
+                        <div className={`p-3 md:p-4 rounded-lg border ${
                           selectedAnswer === (currentStepData.content as any).correctAnswer 
                             ? 'bg-green-50 border-green-200' 
                             : 'bg-orange-50 border-orange-200'
                         }`}>
-                          <h4 className={`font-semibold mb-3 ${
+                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base ${
                             selectedAnswer === (currentStepData.content as any).correctAnswer 
                               ? 'text-green-800' 
                               : 'text-orange-800'
@@ -1170,11 +1207,11 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                               ? '🎉 Correct! Well done!' 
                               : '❌ Not quite. Let\'s learn from this:'}
                           </h4>
-                          <p className="text-sm mb-3">{(currentStepData.content as any).explanation}</p>
+                          <p className="text-xs md:text-sm mb-2 md:mb-3">{(currentStepData.content as any).explanation}</p>
                           
                           {selectedAnswer !== (currentStepData.content as any).correctAnswer && (
-                            <div className="mt-4">
-                              <p className="text-sm font-medium text-orange-700 mb-2">
+                            <div className="mt-3 md:mt-4">
+                              <p className="text-xs md:text-sm font-medium text-orange-700 mb-2">
                                 Please try again to proceed to the next step.
                               </p>
                               <Button 
@@ -1183,7 +1220,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                                   setSelectedAnswer('')
                                 }} 
                                 variant="outline"
-                                className="w-full"
+                                className="w-full h-8 md:h-10 text-xs md:text-sm"
                               >
                                 Try Again
                               </Button>
@@ -1191,7 +1228,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                           )}
                           
                           {selectedAnswer === (currentStepData.content as any).correctAnswer && (
-                            <p className="text-green-700 font-medium mt-2">
+                            <p className="text-green-700 font-medium mt-2 text-xs md:text-base">
                               ✓ You can now proceed to the next step!
                             </p>
                           )}
@@ -1205,15 +1242,15 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
             {/* Reflect Phase */}
             {currentStepData.type === 'reflect' && (
-              <div className="space-y-6">
+              <div className="space-y-4 md:space-y-6">
                 <div>
-                  <h4 className="font-semibold mb-4">Reflection Questions:</h4>
-                  <div className="space-y-4">
+                  <h4 className="font-semibold mb-3 md:mb-4 text-xs md:text-base">Reflection Questions:</h4>
+                  <div className="space-y-3 md:space-y-4">
                     {currentStepData.content.questions?.map((question, index) => (
                       <div key={index} className="space-y-2">
-                        <label className="text-sm font-medium text-purple-700">{question}</label>
+                        <label className="text-xs md:text-sm font-medium text-purple-700">{question}</label>
                         <textarea
-                          className="w-full p-3 border rounded-lg resize-none"
+                          className="w-full p-2 md:p-3 border rounded-lg resize-none text-xs md:text-sm"
                           rows={3}
                           placeholder="Share your thoughts..."
                           value={reflectionInputs[index] || ''}
@@ -1238,19 +1275,22 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                           }}
                         />
                         {reflectionInputs[index] && reflectionInputs[index].trim().length >= 20 && (
-                          <p className="text-xs text-green-600">✓ Your reflection has been saved and will help the AI understand you better</p>
+                          <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            Your reflection has been saved and will help the AI understand you better
+                          </p>
                         )}
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="bg-purple-50 p-4 rounded-lg">
-                  <h4 className="font-semibold text-purple-800 mb-3">Action Items:</h4>
-                  <ul className="space-y-2">
+                <div className="bg-purple-50 p-3 md:p-4 rounded-lg">
+                  <h4 className="font-semibold text-purple-800 mb-2 md:mb-3 text-xs md:text-base">Action Items:</h4>
+                  <ul className="space-y-1.5 md:space-y-2">
                     {currentStepData.content.actionItems?.map((item, index) => (
-                      <li key={index} className="text-purple-700 text-sm flex items-start space-x-2">
-                        <span className="text-purple-500 mt-1 font-bold">✓</span>
+                      <li key={index} className="text-purple-700 text-xs md:text-sm flex items-start space-x-2">
+                        <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-purple-500 mt-0.5 flex-shrink-0" />
                         <span>{item}</span>
                       </li>
                     ))}
@@ -1258,21 +1298,29 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                 </div>
 
                 {/* Reflection completion indicator */}
-                <div className={`p-4 rounded-lg border ${
+                <div className={`p-3 md:p-4 rounded-lg border ${
                   canProceedToNext() 
                     ? 'bg-green-50 border-green-200' 
                     : 'bg-blue-50 border-blue-200'
                 }`}>
-                  <p className={`text-sm font-medium ${
+                  <p className={`text-xs md:text-sm font-medium flex items-center gap-2 ${
                     canProceedToNext() ? 'text-green-700' : 'text-blue-700'
                   }`}>
-                    {canProceedToNext() 
-                      ? '✓ Great reflections! You can now proceed to the next step.'
-                      : `📝 Please answer at least 2 questions with thoughtful responses (minimum 20 characters each) to continue.`
-                    }
+                    {canProceedToNext() ? (
+                      <>
+                        <CheckCircle className="w-3 h-3 md:w-4 md:h-4" />
+                        Great reflections! You can now proceed to the next step.
+                      </>
+                    ) : (
+                      <>
+                        <Edit3 className="w-3 h-3 md:w-4 md:h-4" />
+                        <span className="hidden sm:inline">Please answer at least 2 questions with thoughtful responses (minimum 20 characters each) to continue.</span>
+                        <span className="sm:hidden">Answer at least 2 questions (20+ characters) to continue.</span>
+                      </>
+                    )}
                   </p>
                   {!canProceedToNext() && (
-                    <p className="text-xs text-blue-600 mt-2">
+                    <p className="text-[10px] md:text-xs text-blue-600 mt-2">
                       Completed: {reflectionInputs.filter(input => input && input.trim().length > 20).length} / 
                       {Math.min(2, currentStepData.content.questions?.length || 0)} required
                     </p>
@@ -1284,7 +1332,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
         </Card>
 
         {/* Navigation */}
-        <div className="flex justify-between">
+        <div className="flex justify-between gap-2">
           <Button 
             variant="outline" 
             disabled={currentStep === 0}
@@ -1293,40 +1341,66 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
               setSelectedAnswer('')
               setShowResult(false)
             }}
+            className="h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Previous
+            <ArrowLeft className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+            <span className="hidden sm:inline">Previous</span>
+            <span className="sm:hidden">Prev</span>
           </Button>
 
           {isLastStep ? (
-            <Link href="/learning">
-              <Button disabled={!canProceedToNext()}>
-                {canProceedToNext() ? '🎉 Complete Module' : '🔒 Complete This Step First'}
+            <div className="flex flex-col items-end">
+              <Button 
+                onClick={completeModule}
+                disabled={!canProceedToNext()}
+                className="h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
+              >
+                {canProceedToNext() ? (
+                  <>
+                    <CheckCircle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Complete Module</span>
+                    <span className="sm:hidden">Complete</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Complete This Step First</span>
+                    <span className="sm:hidden">Locked</span>
+                  </>
+                )}
               </Button>
-            </Link>
+              {!canProceedToNext() && (
+                <p className="text-[10px] md:text-xs text-gray-500 mt-1 text-right max-w-[150px] md:max-w-none">
+                  {currentStepData.type === 'reflect' && 'Answer at least 2 reflection questions to complete'}
+                </p>
+              )}
+            </div>
           ) : (
             <div className="flex flex-col items-end">
               <Button 
                 onClick={nextStep}
                 disabled={!canProceedToNext()}
+                className="h-8 md:h-10 text-xs md:text-sm px-2 md:px-4"
               >
                 {canProceedToNext() ? (
                   <>
-                    Next Step
-                    <ArrowRight className="w-4 h-4 ml-2" />
+                    <span className="hidden sm:inline">Next Step</span>
+                    <span className="sm:hidden">Next</span>
+                    <ArrowRight className="w-3 h-3 md:w-4 md:h-4 ml-1 md:ml-2" />
                   </>
                 ) : (
                   <>
-                    <span className="mr-2">🔒</span>
-                    Complete This Step First
+                    <Lock className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                    <span className="hidden sm:inline">Complete This Step First</span>
+                    <span className="sm:hidden">Locked</span>
                   </>
                 )}
               </Button>
               {!canProceedToNext() && (
-                <p className="text-xs text-gray-500 mt-1">
-                  {currentStepData.type === 'learn' && 'Read and confirm understanding'}
-                  {currentStepData.type === 'apply' && 'Answer the question correctly'}
-                  {currentStepData.type === 'reflect' && 'Fill in at least 2 reflections'}
+                <p className="text-[10px] md:text-xs text-gray-500 mt-1 text-right max-w-[150px] md:max-w-none">
+                  {currentStepData.type === 'learn' && 'Read and confirm'}
+                  {currentStepData.type === 'apply' && 'Answer correctly'}
+                  {currentStepData.type === 'reflect' && 'Fill 2+ reflections'}
                 </p>
               )}
             </div>

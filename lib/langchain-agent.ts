@@ -1165,14 +1165,24 @@ IMPORTANT RULES:
     })
   }
 
-  async chat(userId: string, message: string, userContext?: any, recentMessages: any[] = []): Promise<string> {
+  async chat(userId: string, message: string, userContext?: any, recentMessages: any[] = [], language: string = 'taglish'): Promise<string> {
     // Use direct OpenAI function calling instead of LangChain agent (which has tool execution issues)
     try {
       // Detect if this is a new user (no previous messages)
       const isNewUser = !recentMessages || recentMessages.length === 0
       
+      // Language instruction mapping
+      const languageInstructions = {
+        'taglish': 'Speak in Taglish (Filipino + English mix naturally)',
+        'en': 'Speak in English only',
+        'tl': 'Magsalita sa Tagalog lamang (Speak in Tagalog only)'
+      }
+      const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions['taglish']
+      
       // CRITICAL: Minimal system prompt to ensure tools are called properly
       const systemPrompt = `You are Fili - a Filipino financial assistant helping users track money, set goals, and build financial literacy.
+
+**LANGUAGE SETTING: ${languageInstruction}**
 
 **YOUR USER ID FOR TOOLS: ${userContext?.id || userId}**
 

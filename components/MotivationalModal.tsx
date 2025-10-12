@@ -83,26 +83,26 @@ export function MotivationalModal({ userId, daysSinceLastVisit, onClose }: Motiv
         {/* Close button */}
         <button
           onClick={handleMaybeLater}
-          className="absolute top-4 right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors z-10"
+          className="absolute top-2 md:top-4 right-2 md:right-4 p-1 rounded-lg hover:bg-gray-100 transition-colors z-10"
         >
-          <X className="w-4 h-4 text-gray-500" />
+          <X className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
         </button>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-3 md:p-6">
           {/* Icon */}
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-indigo-50 rounded-full">
-              <BookOpen className="w-8 h-8 text-indigo-600" />
+          <div className="flex justify-center mb-3 md:mb-4">
+            <div className="p-2 md:p-4 bg-indigo-50 rounded-full">
+              <BookOpen className="w-6 h-6 md:w-8 md:h-8 text-indigo-600" />
             </div>
           </div>
 
           {/* Title & Message */}
           <div className="text-center">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-sm md:text-lg font-semibold text-gray-900 mb-1 md:mb-2">
               Ready to learn something new?
             </h3>
-            <p className="text-sm text-gray-600 mb-6">
+            <p className="text-[10px] md:text-sm text-gray-600 mb-3 md:mb-6">
               You haven't visited the Learning Hub in {daysSinceLastVisit} days. 
               Your financial knowledge is important!
             </p>

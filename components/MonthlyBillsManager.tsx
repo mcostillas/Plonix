@@ -189,14 +189,14 @@ export function MonthlyBillsManager() {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="p-3 md:p-6 pb-2 md:pb-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 md:gap-0">
           <div>
-            <CardTitle className="flex items-center">
-              <Calendar className="w-5 h-5 mr-2 text-indigo-600" />
+            <CardTitle className="flex items-center text-sm md:text-base lg:text-lg">
+              <Calendar className="w-3.5 h-3.5 md:w-5 md:h-5 mr-1.5 md:mr-2 text-indigo-600" />
               Monthly Bills
             </CardTitle>
-            <p className="text-sm text-gray-600 mt-1">
+            <p className="text-[10px] md:text-sm text-gray-600 mt-0.5 md:mt-1">
               Total Monthly: <span className="font-semibold text-green-600">₱{totalMonthly.toLocaleString()}</span>
             </p>
           </div>
@@ -206,20 +206,20 @@ export function MonthlyBillsManager() {
               toast.success(message)
             }}
           >
-            <Button className="bg-indigo-600 hover:bg-indigo-700">
-              <Plus className="w-4 h-4 mr-2" />
+            <Button className="bg-indigo-600 hover:bg-indigo-700 h-7 md:h-10 text-[10px] md:text-sm px-2 md:px-4">
+              <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
               Add Bill
             </Button>
           </AddMonthlyBillModal>
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-3 md:p-6 pt-0">
         {bills.length === 0 ? (
-          <div className="text-center py-8">
-            <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No monthly bills yet</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="text-center py-4 md:py-8">
+            <Calendar className="w-8 h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2 md:mb-4" />
+            <h3 className="text-xs md:text-base lg:text-lg font-medium text-gray-900 mb-1 md:mb-2">No monthly bills yet</h3>
+            <p className="text-[10px] md:text-sm text-gray-600 mb-2 md:mb-4 px-2">
               Add your recurring expenses like rent, utilities, and subscriptions. They'll be automatically deducted from your available money at the start of each month.
             </p>
             <AddMonthlyBillModal 
@@ -228,14 +228,14 @@ export function MonthlyBillsManager() {
                 toast.success(message)
               }}
             >
-              <Button variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
+              <Button variant="outline" className="h-7 md:h-10 text-[10px] md:text-sm">
+                <Plus className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                 Add Your First Bill
               </Button>
             </AddMonthlyBillModal>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2 md:space-y-4">
             {bills.map((bill) => {
               const IconComponent = getCategoryIcon(bill.category)
               const colors = getCategoryColors(bill.category)
@@ -243,40 +243,40 @@ export function MonthlyBillsManager() {
               return (
                 <div
                   key={bill.id}
-                  className={`p-4 border rounded-lg transition-all ${
+                  className={`p-2 md:p-4 border rounded-lg transition-all ${
                     bill.is_active 
                       ? 'bg-white border-gray-200 hover:border-indigo-200 hover:shadow-sm' 
                       : 'bg-gray-50 border-gray-200 opacity-60'
                   }`}
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center space-x-2 md:space-x-4 flex-1 min-w-0">
                       {/* Category Icon */}
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${colors}`}>
-                        <IconComponent className="w-5 h-5" />
+                      <div className={`w-7 h-7 md:w-10 md:h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${colors}`}>
+                        <IconComponent className="w-3.5 h-3.5 md:w-5 md:h-5" />
                       </div>
 
                       {/* Bill Info */}
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-gray-900">{bill.name}</h4>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-1.5 md:space-x-2">
+                          <h4 className="font-medium text-gray-900 text-[11px] md:text-sm lg:text-base truncate">{bill.name}</h4>
                           {!bill.is_active && (
-                            <Badge variant="outline" className="text-xs text-gray-500">
+                            <Badge variant="outline" className="text-[8px] md:text-xs text-gray-500 px-1 py-0">
                               Inactive
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center mt-1 text-sm text-gray-600">
-                          <span>Due on day {bill.due_day}</span>
+                        <div className="flex items-center mt-0.5 md:mt-1 text-[9px] md:text-xs lg:text-sm text-gray-600">
+                          <span className="truncate">Due • on day {bill.due_day}</span>
                           {bill.description && (
-                            <span className="ml-2 text-gray-500">• {bill.description}</span>
+                            <span className="ml-1 md:ml-2 text-gray-500 truncate hidden sm:inline">• {bill.description}</span>
                           )}
                         </div>
                       </div>
 
                       {/* Amount */}
-                      <div className="text-right">
-                        <div className={`text-lg font-semibold ${
+                      <div className="text-right flex-shrink-0">
+                        <div className={`text-xs md:text-base lg:text-lg font-semibold ${
                           bill.is_active ? 'text-gray-900' : 'text-gray-500'
                         }`}>
                           ₱{Number(bill.amount).toLocaleString()}
@@ -285,26 +285,26 @@ export function MonthlyBillsManager() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center space-x-1 ml-4">
+                    <div className="flex items-center space-x-0.5 md:space-x-1 flex-shrink-0">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleBillStatus(bill.id, bill.is_active)}
-                        className="text-gray-600 hover:text-indigo-600"
+                        className="text-gray-600 hover:text-indigo-600 h-6 w-6 md:h-8 md:w-8 p-0"
                       >
                         {bill.is_active ? (
-                          <ToggleRight className="w-5 h-5" />
+                          <ToggleRight className="w-4 h-4 md:w-5 md:h-5" />
                         ) : (
-                          <ToggleLeft className="w-5 h-5" />
+                          <ToggleLeft className="w-4 h-4 md:w-5 md:h-5" />
                         )}
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => deleteBill(bill.id, bill.name)}
-                        className="text-gray-600 hover:text-red-600"
+                        className="text-gray-600 hover:text-red-600 h-6 w-6 md:h-8 md:w-8 p-0"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                       </Button>
                     </div>
                   </div>
@@ -313,12 +313,12 @@ export function MonthlyBillsManager() {
             })}
 
             {/* Summary */}
-            <div className="pt-4 border-t">
+            <div className="pt-2 md:pt-4 border-t">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">
+                <span className="text-[10px] md:text-sm text-gray-600">
                   {bills.filter(b => b.is_active).length} active bill{bills.filter(b => b.is_active).length !== 1 ? 's' : ''}
                 </span>
-                <span className="text-sm font-semibold text-indigo-600">
+                <span className="text-[10px] md:text-sm font-semibold text-indigo-600">
                   ₱{totalMonthly.toLocaleString()}/month
                 </span>
               </div>

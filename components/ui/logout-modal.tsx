@@ -23,11 +23,11 @@ export function LogoutModal({ isOpen, onClose, onConfirm, isLoading = false }: L
       />
       
       {/* Modal */}
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-6">
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 md:p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-sm w-full p-3 md:p-6">
           {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
+          <div className="flex items-center justify-between mb-3 md:mb-4">
+            <h2 className="text-base md:text-xl font-semibold text-gray-900">
               Log Out
             </h2>
             <button
@@ -35,29 +35,29 @@ export function LogoutModal({ isOpen, onClose, onConfirm, isLoading = false }: L
               disabled={isLoading}
               className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 md:w-5 md:h-5" />
             </button>
           </div>
 
           {/* Content */}
-          <p className="text-gray-600 mb-6">
+          <p className="text-xs md:text-base text-gray-600 mb-4 md:mb-6">
             Are you sure you want to log out?
           </p>
 
           {/* Actions */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3">
             <Button
               variant="outline"
               onClick={onClose}
               disabled={isLoading}
-              className="flex-1"
+              className="flex-1 h-8 md:h-10 text-[10px] md:text-sm"
             >
               Cancel
             </Button>
             <Button
               onClick={onConfirm}
               disabled={isLoading}
-              className="flex-1 bg-red-600 hover:bg-red-700"
+              className="flex-1 h-8 md:h-10 text-[10px] md:text-sm bg-red-600 hover:bg-red-700"
             >
               {isLoading ? 'Logging out...' : 'Log Out'}
             </Button>

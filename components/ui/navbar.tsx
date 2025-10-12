@@ -151,8 +151,8 @@ export function Navbar({ currentPage }: NavbarProps) {
       title: 'Finance',
       icon: TrendingUp,
       items: [
-        { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' },
-        { name: 'Pricing', href: '/pricing', icon: CreditCard, description: 'Subscription plans' }
+        { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' }
+        // { name: 'Pricing', href: '/pricing', icon: CreditCard, description: 'Subscription plans' }
       ]
     }
   ]
@@ -203,7 +203,7 @@ export function Navbar({ currentPage }: NavbarProps) {
   // Don't render user info until mounted to avoid hydration issues
   if (!mounted) {
     return (
-      <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
+      <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-50 shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
@@ -212,11 +212,11 @@ export function Navbar({ currentPage }: NavbarProps) {
                   size="md" 
                   className="text-primary"
                 />
-                <span className="text-xl font-bold text-gray-900">Plounix</span>
+                <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Plounix</span>
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="w-20 h-8 bg-gray-200 animate-pulse rounded"></div>
+              <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 animate-pulse rounded"></div>
             </div>
           </div>
         </div>
@@ -225,7 +225,7 @@ export function Navbar({ currentPage }: NavbarProps) {
   }
 
   return (
-    <nav className="bg-white border-b sticky top-0 z-50 shadow-sm">
+    <nav className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -235,7 +235,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                 size="md" 
                 className="text-primary"
               />
-              <span className="text-xl font-bold text-gray-900">Plounix</span>
+              <span className="text-xl font-bold text-gray-900 dark:text-gray-100">Plounix</span>
             </Link>
           </div>
 
@@ -275,17 +275,17 @@ export function Navbar({ currentPage }: NavbarProps) {
                 {/* Dropdown menu */}
                 {openDropdown === section.title && (
                   <div 
-                    className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 rounded-lg shadow-lg py-2 z-50"
+                    className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg py-2 z-50"
                     onMouseLeave={() => setOpenDropdown(null)}
                   >
                     {section.items.map((item) => (
                       <Link key={item.name} href={item.href} onClick={() => setOpenDropdown(null)}>
-                        <div className="flex items-start space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start space-x-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                           <item.icon className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                            <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{item.name}</div>
                             {item.description && (
-                              <div className="text-xs text-gray-500 mt-0.5">{item.description}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{item.description}</div>
                             )}
                           </div>
                         </div>
@@ -369,7 +369,7 @@ export function Navbar({ currentPage }: NavbarProps) {
                       )
                     }
                   })()}
-                  <span className="text-sm text-gray-600 hidden xl:block hover:text-primary font-medium cursor-pointer">
+                  <span className="text-sm text-gray-600 dark:text-gray-300 hidden xl:block hover:text-primary dark:hover:text-primary font-medium cursor-pointer">
                     Hi, {user.name || user.email.split('@')[0]}!
                   </span>
                 </Link>
@@ -393,140 +393,180 @@ export function Navbar({ currentPage }: NavbarProps) {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden border-t bg-white py-4 space-y-2">
-            {/* Main nav items */}
-            {mainNavItems.map((item) => (
-              <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                <Button 
-                  variant={currentPage === item.name.toLowerCase() ? "default" : "ghost"}
-                  size="sm"
-                  className="w-full justify-start space-x-3"
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
-                </Button>
-              </Link>
-            ))}
-
-            {/* Dropdown sections - Mobile */}
-            {dropdownSections.map((section) => (
-              <div key={section.title} className="space-y-1">
-                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center space-x-2">
-                  <section.icon className="w-3 h-3" />
-                  <span>{section.title}</span>
+          <>
+            {/* Backdrop */}
+            <div 
+              className="lg:hidden fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+              onClick={() => setIsMobileMenuOpen(false)}
+            />
+            
+            {/* Side Drawer */}
+            <div className={`lg:hidden fixed top-0 right-0 h-full w-64 max-w-[75vw] bg-white dark:bg-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+              isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+            }`}>
+              {/* Drawer Header */}
+              <div className="sticky top-0 bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-2.5 flex items-center justify-between z-10">
+                <div className="flex items-center space-x-1.5">
+                  <PlounixLogo size="sm" className="text-primary" />
+                  <span className="text-sm font-bold text-gray-900 dark:text-gray-100">Menu</span>
                 </div>
-                {section.items.map((item) => (
-                  <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                    <Button 
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start pl-8 space-x-3"
-                    >
-                      <item.icon className="w-4 h-4" />
-                      <span>{item.name}</span>
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-            ))}
-
-            {/* Quick actions */}
-            {quickActions.map((item) => (
-              <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
-                <Button 
-                  variant={currentPage === item.name.toLowerCase() ? "default" : "ghost"}
+                <Button
+                  variant="ghost"
                   size="sm"
-                  className="w-full justify-start space-x-3"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full h-7 w-7"
                 >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.name}</span>
+                  <X className="w-4 h-4" />
                 </Button>
-              </Link>
-            ))}
+              </div>
 
-            {/* User actions - Mobile */}
-            <div className="border-t pt-4 mt-4 space-y-2">
-              {user ? (
-                <>
-                  {/* Notification Bell - Mobile */}
-                  <div className="flex justify-center mb-2">
-                    <NotificationBell />
-                  </div>
-                  {/* Add Transaction Button - Mobile */}
-                  <Button
-                    onClick={() => {
-                      setIsMobileMenuOpen(false)
-                      setShowAddTransactionModal(true)
-                    }}
-                    size="sm"
-                    className="w-full justify-start space-x-3 bg-green-600 hover:bg-green-700"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Transaction</span>
-                  </Button>
-                  {/* Profile Picture & Name - Clickable to profile */}
-                  <Link 
-                    href="/profile" 
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="px-4 py-3 flex items-center gap-3 hover:bg-gray-50 transition-colors rounded-lg mx-2"
-                  >
-                    {(() => {
-                      const avatarData = getAvatarGradient(profilePicture)
-                      
-                      if (avatarData) {
-                        // Show colorful gradient avatar
-                        const IconComponent = avatarData.icon
-                        return (
-                          <div className={`w-12 h-12 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-2 border-gray-200`}>
-                            <IconComponent className="w-6 h-6 text-white" strokeWidth={1.5} />
-                          </div>
-                        )
-                      } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
-                        // Show uploaded image (legacy support)
-                        return (
-                          <img
-                            src={profilePicture}
-                            alt="Profile"
-                            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                          />
-                        )
-                      } else {
-                        // Show default avatar
-                        return (
-                          <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200">
-                            <User className="w-6 h-6 text-white" />
-                          </div>
-                        )
-                      }
-                    })()}
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user.name || user.email.split('@')[0]}
-                      </p>
-                      <p className="text-xs text-gray-500">{user.email}</p>
-                      <p className="text-xs text-primary mt-0.5">View Profile →</p>
+              <div className="p-2.5 space-y-4">
+                {/* User Profile Section */}
+                {user && (
+                  <div className="pb-3 border-b dark:border-gray-700">
+                    <Link 
+                      href="/profile" 
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-2 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg"
+                    >
+                      {(() => {
+                        const avatarData = getAvatarGradient(profilePicture)
+                        
+                        if (avatarData) {
+                          const IconComponent = avatarData.icon
+                          return (
+                            <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarData.gradient} flex items-center justify-center border-2 border-gray-200 shadow-md`}>
+                              <IconComponent className="w-5 h-5 text-white" strokeWidth={1.5} />
+                            </div>
+                          )
+                        } else if (profilePicture && !profilePicture.startsWith('avatar-')) {
+                          return (
+                            <img
+                              src={profilePicture}
+                              alt="Profile"
+                              className="w-10 h-10 rounded-full object-cover border-2 border-gray-200 shadow-md"
+                            />
+                          )
+                        } else {
+                          return (
+                            <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center border-2 border-gray-200 shadow-md">
+                              <User className="w-5 h-5 text-white" />
+                            </div>
+                          )
+                        }
+                      })()}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
+                          {user.name || user.email.split('@')[0]}
+                        </p>
+                        <p className="text-[10px] text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
+                        <p className="text-[10px] text-primary mt-0.5 font-medium">View Profile →</p>
+                      </div>
+                    </Link>
+                    
+                    {/* Quick Actions */}
+                    <div className="mt-2 flex gap-1.5">
+                      <Button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false)
+                          setShowAddTransactionModal(true)
+                        }}
+                        size="sm"
+                        className="flex-1 bg-green-600 hover:bg-green-700 h-8 text-[10px] px-2"
+                      >
+                        <Plus className="w-3 h-3 mr-0.5" />
+                        Add
+                      </Button>
+                      <div className="flex items-center">
+                        <NotificationBell />
+                      </div>
                     </div>
-                  </Link>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    onClick={() => {
-                      setIsMobileMenuOpen(false)
-                      logoutModal.open()
-                    }}
-                    className="w-full justify-start space-x-3 text-red-600 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <LogOut className="w-4 h-4" />
-                    <span>Log Out</span>
-                  </Button>
-                </>
-              ) : (
-                <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button variant="default" size="sm" className="w-full">Log In</Button>
-                </Link>
-              )}
+                  </div>
+                )}
+
+                {/* Main Navigation */}
+                <div className="space-y-0.5">
+                  <h3 className="px-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                    Main Menu
+                  </h3>
+                  {mainNavItems.map((item) => (
+                    <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                      <div className={`flex items-center space-x-2 px-2 py-2 rounded-lg transition-colors ${
+                        currentPage === item.name.toLowerCase() 
+                          ? 'bg-primary text-white' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}>
+                        <item.icon className="w-4 h-4 flex-shrink-0" />
+                        <span className="text-xs font-medium">{item.name}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Dropdown Sections */}
+                {dropdownSections.map((section) => (
+                  <div key={section.title} className="space-y-0.5">
+                    <h3 className="px-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <section.icon className="w-3 h-3" />
+                      {section.title}
+                    </h3>
+                    {section.items.map((item) => (
+                      <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                        <div className="flex items-center space-x-2 px-2 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                          <item.icon className="w-4 h-4 flex-shrink-0 text-primary" />
+                          <span className="text-xs font-medium">{item.name}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+
+                {/* Quick Actions */}
+                <div className="space-y-0.5">
+                  <h3 className="px-2 text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+                    More
+                  </h3>
+                  {quickActions.map((item) => (
+                    <Link key={item.name} href={item.href} onClick={() => setIsMobileMenuOpen(false)}>
+                      <div className="flex items-center space-x-2 px-2 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                        <item.icon className="w-4 h-4 flex-shrink-0 text-primary" />
+                        <span className="text-xs font-medium">{item.name}</span>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+
+                {/* Logout Button */}
+                {user && (
+                  <div className="pt-3 border-t dark:border-gray-700">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false)
+                        logoutModal.open()
+                      }}
+                      className="w-full justify-start space-x-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 h-9 text-xs px-2"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span className="font-medium">Log Out</span>
+                    </Button>
+                  </div>
+                )}
+
+                {/* Login Button for non-authenticated users */}
+                {!user && (
+                  <div className="pt-3">
+                    <Link href="/auth/login" onClick={() => setIsMobileMenuOpen(false)}>
+                      <Button variant="default" size="sm" className="w-full text-xs h-9">
+                        Log In
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 

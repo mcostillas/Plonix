@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { PageHeader } from '@/components/ui/page-header'
+import { AuthGuard } from '@/components/AuthGuard'
 import { 
   Calculator, 
   TrendingUp, 
@@ -71,6 +72,14 @@ const categories = [
 ]
 
 export default function DigitalToolsPage() {
+  return (
+    <AuthGuard>
+      <DigitalToolsContent />
+    </AuthGuard>
+  )
+}
+
+function DigitalToolsContent() {
   const [selectedCategory, setSelectedCategory] = useState('all')
 
   const filteredTools = selectedCategory === 'all' 
