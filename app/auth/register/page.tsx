@@ -136,13 +136,37 @@ export default function RegisterPage() {
           return
         }
         
+        // Send welcome email to new user
+        try {
+          const emailResponse = await fetch('/api/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'welcome',
+              to: formData.email,
+              userName: fullName
+            })
+          })
+          
+          const emailResult = await emailResponse.json()
+          if (emailResult.success) {
+            console.log('✅ Welcome email sent successfully')
+          } else {
+            console.error('⚠️ Failed to send welcome email:', emailResult.error)
+            // Don't block registration if email fails
+          }
+        } catch (emailError) {
+          console.error('⚠️ Error sending welcome email:', emailError)
+          // Don't block registration if email fails
+        }
+        
         // Clear saved form data on successful registration
         sessionStorage.removeItem('registerFormData')
         
         // Check if email confirmation is required
         if (result.session) {
           // User is logged in, go to onboarding immediately
-          setMessage('Account created successfully! Redirecting to setup...')
+          setMessage('Account created successfully! Check your email for a welcome message. Redirecting to setup...')
           setTimeout(() => {
             router.push('/onboarding')
           }, 1000)

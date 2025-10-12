@@ -10,6 +10,8 @@ import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
+import { EditTransactionModal } from '@/components/EditTransactionModal'
+import { DeleteTransactionModal } from '@/components/DeleteTransactionModal'
 import { MonthlyBillsManager } from '@/components/MonthlyBillsManager'
 import { PageSpinner, Spinner } from '@/components/ui/spinner'
 import { 
@@ -28,6 +30,7 @@ import {
   Download,
   Eye,
   Edit3,
+  Trash2,
   ChevronDown,
   FileText,
   FileSpreadsheet
@@ -54,6 +57,9 @@ function TransactionsContent() {
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
+  const [showEditTransactionModal, setShowEditTransactionModal] = useState(false)
+  const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(false)
+  const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const exportDropdownRef = useRef<HTMLDivElement>(null)
 
@@ -916,33 +922,56 @@ function TransactionsContent() {
                 </div>
               ) : (
                 <div className="space-y-1.5 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto">
-                  {formattedTransactions.map((transaction) => (
-                    <div key={transaction.id} className="flex items-center justify-between p-1.5 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
-                        <div className={`w-6 h-6 md:w-10 md:h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
-                          {transaction.type === 'income' ? (
-                            <ArrowUpRight className="w-3 h-3 md:w-5 md:h-5 text-green-600" />
-                          ) : (
-                            <ArrowDownRight className="w-3 h-3 md:w-5 md:h-5 text-red-600" />
-                          )}
+                  {formattedTransactions.map((transaction, idx) => {
+                    // Find the original transaction object
+                    const originalTransaction = filteredTransactions[idx]
+                    return (
+                      <div key={transaction.id} className="flex items-center justify-between p-1.5 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
+                          <div className={`w-6 h-6 md:w-10 md:h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
+                            {transaction.type === 'income' ? (
+                              <ArrowUpRight className="w-3 h-3 md:w-5 md:h-5 text-green-600" />
+                            ) : (
+                              <ArrowDownRight className="w-3 h-3 md:w-5 md:h-5 text-red-600" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[10px] md:text-sm font-medium truncate">{transaction.description}</p>
+                            <p className="text-[8px] md:text-xs text-gray-600 capitalize truncate">
+                              {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[10px] md:text-sm font-medium truncate">{transaction.description}</p>
-                          <p className="text-[8px] md:text-xs text-gray-600 capitalize truncate">
-                            {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
-                          </p>
+                        <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0 ml-2">
+                          <span className={`text-[10px] md:text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                            {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
+                          </span>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 md:h-8 md:w-8 p-0 hover:bg-blue-50"
+                            onClick={() => {
+                              setSelectedTransaction(originalTransaction)
+                              setShowEditTransactionModal(true)
+                            }}
+                          >
+                            <Edit3 className="w-3 h-3 md:w-4 md:h-4 text-blue-600" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-6 w-6 md:h-8 md:w-8 p-0 hover:bg-red-50"
+                            onClick={() => {
+                              setSelectedTransaction(originalTransaction)
+                              setShowDeleteTransactionModal(true)
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3 md:w-4 md:h-4 text-red-600" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0 ml-2">
-                        <span className={`text-[10px] md:text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                          {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
-                        </span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 md:h-8 md:w-8 p-0">
-                          <Eye className="w-3 h-3 md:w-4 md:h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1062,6 +1091,34 @@ function TransactionsContent() {
           // Refresh transactions when a new one is added
           setRefreshTrigger(prev => prev + 1)
         }}
+      />
+
+      {/* Edit Transaction Modal */}
+      <EditTransactionModal
+        isOpen={showEditTransactionModal}
+        onClose={() => {
+          setShowEditTransactionModal(false)
+          setSelectedTransaction(null)
+        }}
+        onSuccess={() => {
+          // Refresh transactions when one is updated
+          setRefreshTrigger(prev => prev + 1)
+        }}
+        transaction={selectedTransaction}
+      />
+
+      {/* Delete Transaction Modal */}
+      <DeleteTransactionModal
+        isOpen={showDeleteTransactionModal}
+        onClose={() => {
+          setShowDeleteTransactionModal(false)
+          setSelectedTransaction(null)
+        }}
+        onSuccess={() => {
+          // Refresh transactions when one is deleted
+          setRefreshTrigger(prev => prev + 1)
+        }}
+        transaction={selectedTransaction}
       />
     </div>
   )

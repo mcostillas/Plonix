@@ -475,7 +475,7 @@ function AIAssistantContent() {
   //   console.log('🎨 Current theme:', theme)
   // }, [theme])
 
-  // Refresh profile picture and restore chat session when page becomes visible (user returns from another tab)
+  // Refresh profile picture and restore chat session when page becomes visible (user returns from another tab or page)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user?.id) {
@@ -487,6 +487,8 @@ function AIAssistantContent() {
         // Restore chat session from sessionStorage
         const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
         console.log('🔍 Checking for persisted session:', persistedSessionId)
+        console.log('🔍 Current session:', currentChatId)
+        console.log('🔍 Chats in memory:', chats.length, 'sessions')
         
         if (persistedSessionId && persistedSessionId !== currentChatId) {
           console.log('🔄 Restoring chat session:', persistedSessionId)
@@ -500,9 +502,80 @@ function AIAssistantContent() {
             setCurrentChatId(persistedChat.id)
             setMessages(persistedChat.messages)
           } else {
-            // Chat not in memory, reload from database
-            console.log('📥 Chat not in memory, reloading from database')
-            loadChatHistory(user.id)
+            // CRITICAL FIX: Chat not in memory
+            // Don't call loadChatHistory() because it will wipe out in-memory sessions!
+            // Instead, check if this is a session that exists in database but not loaded
+            console.log('⚠️ Chat not in memory - checking database without wiping current chats')
+            
+            // Fetch only this specific session from database
+            supabase
+              .from('chat_history')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('session_id', persistedSessionId)
+              .order('created_at', { ascending: true })
+              .then(({ data: messages, error }) => {
+                if (error) {
+                  console.error('❌ Error fetching session:', error)
+                  // Session doesn't exist in database, it must be a new session
+                  // Keep current chats as-is
+                  return
+                }
+                
+                if (messages && messages.length > 0) {
+                  // Session exists in database, add it to chats
+                  console.log('📥 Session found in database with', messages.length, 'messages')
+                  
+                  const chatMessages = messages.map((msg: any, index: number) => ({
+                    id: index + 1,
+                    type: msg.message_type === 'human' ? 'user' : 'bot',
+                    content: msg.content,
+                    timestamp: new Date(msg.created_at)
+                  }))
+                  
+                  const firstUserMessage = chatMessages.find((m: any) => m.type === 'user')
+                  const chatTitle = firstUserMessage 
+                    ? generateChatTitle(firstUserMessage.content)
+                    : 'Conversation'
+                  
+                  const lastMessageTimestamp = messages.length > 0 
+                    ? new Date((messages[messages.length - 1] as any).created_at)
+                    : new Date()
+                  
+                  const restoredChat = {
+                    id: persistedSessionId,
+                    title: chatTitle,
+                    lastMessage: chatMessages[chatMessages.length - 1]?.content || '',
+                    timestamp: lastMessageTimestamp,
+                    messages: [
+                      {
+                        id: 0,
+                        type: 'bot',
+                        content: 'Kumusta! I\'m Fili, your AI-powered financial kuya/ate assistant! I can help you with budgeting, savings plans, investment advice, and all things related to money management for Filipino youth. Ask me anything about your financial goals!',
+                        timestamp: new Date()
+                      },
+                      ...chatMessages
+                    ]
+                  }
+                  
+                  // Add this chat to the list if it's not already there
+                  const chatExists = chats.some(c => c.id === persistedSessionId)
+                  if (!chatExists) {
+                    console.log('➕ Adding database session to chats list')
+                    setChats([restoredChat, ...chats])
+                  } else {
+                    console.log('♻️ Updating existing chat with database data')
+                    setChats(chats.map(c => c.id === persistedSessionId ? restoredChat : c))
+                  }
+                  
+                  setCurrentChatId(persistedSessionId)
+                  setMessages(restoredChat.messages)
+                } else {
+                  // No messages in database - this is a new session that hasn't been saved yet
+                  // It should already be in the chats array, just switch to it
+                  console.log('🆕 Empty session - keeping current chats as-is')
+                }
+              })
           }
         }
       }
@@ -1133,6 +1206,14 @@ function AIAssistantContent() {
       }
       const finalMessages = [...updatedMessages, errorMessage]
       setMessages(finalMessages)
+      
+      // Update chat messages even on error to persist the user's message
+      const updatedChats = chats.map(chat => 
+        chat.id === currentChatId 
+          ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
+          : chat
+      )
+      setChats(updatedChats)
     }
     // Input already cleared at the start of function
   }
