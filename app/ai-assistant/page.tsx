@@ -98,6 +98,9 @@ function AIAssistantContent() {
   // Initialize with empty string - will be set by loadChatHistory or getOrCreateSessionId
   const [currentChatId, setCurrentChatId] = useState('')
   
+  // Track if we're currently restoring a session to prevent race conditions
+  const [isRestoringSession, setIsRestoringSession] = useState(false)
+  
   const [inputMessage, setInputMessage] = useState('')
   // TODO: Re-enable with image API
   // const [uploadedReceipt, setUploadedReceipt] = useState<File | null>(null)
@@ -478,20 +481,21 @@ function AIAssistantContent() {
   // Refresh profile picture and restore chat session when page becomes visible (user returns from another tab or page)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && user?.id) {
-        console.log('👁️ Page visible again')
+      if (!document.hidden && user?.id && !isRestoringSession) {
+        console.log('👁️ Page visible again - checking session restoration')
         
         // Refresh profile picture
         fetchProfilePicture(user.id)
         
         // Restore chat session from sessionStorage
         const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
-        console.log('🔍 Checking for persisted session:', persistedSessionId)
-        console.log('🔍 Current session:', currentChatId)
-        console.log('🔍 Chats in memory:', chats.length, 'sessions')
+        console.log('🔍 Persisted session from storage:', persistedSessionId)
+        console.log('🔍 Current active session:', currentChatId)
+        console.log('🔍 Chats loaded in memory:', chats.length)
         
         if (persistedSessionId && persistedSessionId !== currentChatId) {
-          console.log('🔄 Restoring chat session:', persistedSessionId)
+          console.log('🔄 Session mismatch detected - restoring:', persistedSessionId)
+          setIsRestoringSession(true)
           
           // Find the chat in the current chats array
           const persistedChat = chats.find(c => c.id === persistedSessionId)
@@ -575,15 +579,21 @@ function AIAssistantContent() {
                   // It should already be in the chats array, just switch to it
                   console.log('🆕 Empty session - keeping current chats as-is')
                 }
+                
+                // Reset restoration flag
+                setIsRestoringSession(false)
               })
           }
+        } else {
+          console.log('✅ Session already active or no mismatch')
+          setIsRestoringSession(false)
         }
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user?.id, currentChatId, chats])
+  }, [user?.id, currentChatId, chats, isRestoringSession])
 
   // Sync currentChatId to sessionStorage whenever it changes
   useEffect(() => {
@@ -592,6 +602,32 @@ function AIAssistantContent() {
       sessionStorage.setItem('plounix_current_chat_session', currentChatId)
     }
   }, [currentChatId])
+
+  // Additional safety check: Restore session after chats are loaded
+  useEffect(() => {
+    if (!isChatHistoryLoading && chats.length > 0 && !currentChatId) {
+      const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
+      console.log('🔍 Post-load session check - persisted:', persistedSessionId, 'current:', currentChatId)
+      
+      if (persistedSessionId) {
+        const persistedChat = chats.find(c => c.id === persistedSessionId)
+        if (persistedChat) {
+          console.log('✅ Restoring session post-load:', persistedSessionId)
+          setCurrentChatId(persistedSessionId)
+          setMessages(persistedChat.messages)
+        } else if (chats.length > 0) {
+          console.log('⚠️ Persisted session not found, using most recent')
+          setCurrentChatId(chats[0].id)
+          setMessages(chats[0].messages)
+        }
+      } else if (chats.length > 0 && !currentChatId) {
+        console.log('📌 No persisted session, setting to most recent')
+        setCurrentChatId(chats[0].id)
+        setMessages(chats[0].messages)
+        sessionStorage.setItem('plounix_current_chat_session', chats[0].id)
+      }
+    }
+  }, [isChatHistoryLoading, chats, currentChatId])
 
   // Auto-scroll to latest message
   useEffect(() => {
@@ -656,9 +692,13 @@ function AIAssistantContent() {
       ]
     }
     setChats([newChat, ...chats])
-    setCurrentChatId(newChat.id)
+    setCurrentChatId(sessionId)
     setMessages(newChat.messages)
+    
+    // CRITICAL: Immediately persist the new session ID to sessionStorage
+    sessionStorage.setItem('plounix_current_chat_session', sessionId)
     console.log('✨ Created new chat with session ID:', sessionId)
+    console.log('💾 Persisted to sessionStorage')
   }
 
   // Switch to different chat
@@ -667,6 +707,10 @@ function AIAssistantContent() {
     if (chat) {
       setCurrentChatId(chatId)
       setMessages(chat.messages)
+      // CRITICAL: Persist the switched session ID
+      sessionStorage.setItem('plounix_current_chat_session', chatId)
+      console.log('🔄 Switched to chat:', chatId)
+      console.log('💾 Updated sessionStorage')
     }
   }
 
