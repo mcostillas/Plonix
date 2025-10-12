@@ -475,18 +475,42 @@ function AIAssistantContent() {
   //   console.log('🎨 Current theme:', theme)
   // }, [theme])
 
-  // Refresh profile picture when page becomes visible (user returns from profile page)
+  // Refresh profile picture and restore chat session when page becomes visible (user returns from another tab)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user?.id) {
-        console.log('👁️ Page visible, refreshing profile picture')
+        console.log('👁️ Page visible again')
+        
+        // Refresh profile picture
         fetchProfilePicture(user.id)
+        
+        // Restore chat session from sessionStorage
+        const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
+        console.log('🔍 Checking for persisted session:', persistedSessionId)
+        
+        if (persistedSessionId && persistedSessionId !== currentChatId) {
+          console.log('🔄 Restoring chat session:', persistedSessionId)
+          
+          // Find the chat in the current chats array
+          const persistedChat = chats.find(c => c.id === persistedSessionId)
+          
+          if (persistedChat) {
+            // Chat exists in memory, restore it
+            console.log('✅ Chat found in memory, restoring')
+            setCurrentChatId(persistedChat.id)
+            setMessages(persistedChat.messages)
+          } else {
+            // Chat not in memory, reload from database
+            console.log('📥 Chat not in memory, reloading from database')
+            loadChatHistory(user.id)
+          }
+        }
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user?.id])
+  }, [user?.id, currentChatId, chats])
 
   // Sync currentChatId to sessionStorage whenever it changes
   useEffect(() => {
