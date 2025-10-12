@@ -1084,6 +1084,83 @@ Response: "Got it! When is your internet bill usually due each month? (day 1-31)
 User: "Every 15th"
 Response: "✓ Set up monthly internet bill of ₱1,500 due on day 15 (Utilities category). You'll get reminders before it's due!"
 
+**When to use list_transactions:**
+User wants to see their transaction history or details:
+- "Show me my transactions"
+- "List my expenses"
+- "What did I buy this month?"
+- "Show my spending history"
+- "What are my recent transactions?"
+- "List all my income"
+- "Show transactions for food category"
+
+**List Transactions Flow:**
+1. Acknowledge the request
+2. Call list_transactions tool with optional filters (category, date range)
+3. Present transactions in readable format with:
+   - Transaction type (income/expense)
+   - Amount
+   - Description/merchant
+   - Category
+   - Date
+4. Include summary (total income, expenses, balance)
+5. Offer insights or observations
+
+Example:
+User: "Show me my transactions"
+Response: "Here are your recent transactions:
+
+📥 **Income (₱25,000)**
+- ₱25,000 - Salary from Company - Jun 1, 2025
+
+📤 **Expenses (₱8,500)**
+- ₱2,000 - Jollibee - Food & Dining - Jun 15
+- ₱1,500 - Grab - Transportation - Jun 14
+- ₱5,000 - Bills Payment - Utilities - Jun 10
+
+**Summary:**
+Total Income: ₱25,000
+Total Expenses: ₱8,500
+Net Balance: ₱16,500
+
+Your food spending (₱2,000) is within budget! Would you like tips on reducing transportation costs?"
+
+**When to use update_transaction:**
+User wants to edit or fix an existing transaction:
+- "Edit my transaction"
+- "Change the amount to 500"
+- "Update my last expense"
+- "Fix the category for my Jollibee purchase"
+- "Modify the date of my transaction"
+- "Change the payment method"
+
+**Update Transaction Flow:**
+1. **First**, call list_transactions to show recent transactions
+2. **Ask** user which transaction to edit (by referencing amount, date, or description)
+3. **Ask** what they want to change
+4. Call update_transaction tool with transactionId and updated fields
+5. Confirm the change with before/after comparison
+
+Example:
+User: "Edit my transaction"
+Response: "Sure! Let me show your recent transactions first:
+
+1. ₱500 - Jollibee - Food & Dining - Jun 15
+2. ₱150 - Grab - Transportation - Jun 14
+3. ₱200 - 7-Eleven - Shopping - Jun 13
+
+Which transaction would you like to edit? (You can say '1', 'the Jollibee one', or 'the 500 pesos expense')"
+
+User: "The Jollibee one"
+Response: "What would you like to change? (amount, category, date, description, payment method)"
+
+User: "Change amount to 450"
+Response: "✓ Updated! 
+Before: ₱500 - Jollibee - Food & Dining
+After: ₱450 - Jollibee - Food & Dining
+
+Your food category total is now ₱1,950 this month."
+
 Examples:
 
 User: "I want a 10000 goal"
@@ -1403,6 +1480,44 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 isActive: { type: "boolean", description: "Whether the bill is active (default: true)" }
               },
               required: ["name", "amount", "category", "dueDay"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "list_transactions",
+            description: "**USE THIS TOOL** when user asks to see their transactions, wants a list of their spending/income, or asks about transaction details. Keywords: 'show my transactions', 'list my expenses', 'what did I buy', 'show my spending', 'list my income', 'what transactions do I have'. Returns detailed list of user's transactions with amounts, categories, dates, and descriptions. Optional filters: category, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD), limit (default: 50).",
+            parameters: {
+              type: "object",
+              properties: {
+                category: { type: "string", description: "Filter by category (optional): food, transportation, bills, shopping, entertainment, health, education, etc." },
+                startDate: { type: "string", description: "Start date filter in YYYY-MM-DD format (optional)" },
+                endDate: { type: "string", description: "End date filter in YYYY-MM-DD format (optional)" },
+                limit: { type: "number", description: "Maximum number of transactions to return (default: 50)" }
+              },
+              required: []
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "update_transaction",
+            description: "**USE THIS TOOL** when user wants to edit or modify an existing transaction. Keywords: 'edit my transaction', 'update my expense', 'change the amount', 'modify my transaction', 'fix the category', 'update the date'. User must specify which transaction to edit (by amount, date, or description) and what to change. All fields are optional - only provide the fields to update.",
+            parameters: {
+              type: "object",
+              properties: {
+                transactionId: { type: "string", description: "The ID of the transaction to update (REQUIRED - ask user which transaction)" },
+                amount: { type: "number", description: "New amount in Philippine pesos (optional)" },
+                category: { type: "string", description: "New category (optional)" },
+                merchant: { type: "string", description: "New description/merchant name (optional)" },
+                date: { type: "string", description: "New date in YYYY-MM-DD format (optional)" },
+                paymentMethod: { type: "string", description: "New payment method (optional)" },
+                notes: { type: "string", description: "New notes (optional)" },
+                transactionType: { type: "string", description: "New type: income or expense (optional)" }
+              },
+              required: ["transactionId"]
             }
           }
         }
@@ -1860,6 +1975,135 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
               functionResult = JSON.stringify({
                 success: false,
                 error: "Failed to add monthly bill. Please try again later."
+              })
+            }
+            break
+
+          case "list_transactions":
+            console.log('📋 Listing transactions with args:', functionArgs)
+            try {
+              // Use service role to bypass RLS
+              const { createClient } = await import('@supabase/supabase-js')
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).trim()
+              )
+              
+              const queryUserId = userContext?.id || userId
+              const { category, startDate, endDate, limit = 50 } = functionArgs
+              
+              // Build query
+              let query = supabase
+                .from('transactions')
+                .select('*')
+                .eq('user_id', queryUserId)
+                .order('date', { ascending: false })
+                .limit(limit)
+              
+              // Apply filters
+              if (category && category !== 'all') {
+                query = query.eq('category', category)
+              }
+              if (startDate) {
+                query = query.gte('date', startDate)
+              }
+              if (endDate) {
+                query = query.lte('date', endDate)
+              }
+              
+              const { data: transactions, error } = await query
+              
+              if (error) {
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: 'Failed to fetch transactions'
+                })
+              } else {
+                // Calculate summary
+                const totalIncome = transactions?.filter((t: any) => t.transaction_type === 'income').reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0
+                const totalExpenses = transactions?.filter((t: any) => t.transaction_type === 'expense').reduce((sum: number, t: any) => sum + (t.amount || 0), 0) || 0
+                
+                // Format transactions for AI to present
+                const formattedTransactions = transactions?.map((t: any) => ({
+                  id: t.id,
+                  type: t.transaction_type,
+                  amount: t.amount,
+                  merchant: t.merchant,
+                  category: t.category,
+                  date: t.date,
+                  paymentMethod: t.payment_method,
+                  notes: t.notes
+                }))
+                
+                functionResult = JSON.stringify({
+                  success: true,
+                  transactions: formattedTransactions,
+                  summary: {
+                    totalIncome,
+                    totalExpenses,
+                    netIncome: totalIncome - totalExpenses,
+                    count: transactions?.length || 0
+                  },
+                  message: `Found ${transactions?.length || 0} transactions. Total income: ₱${totalIncome.toLocaleString()}, Total expenses: ₱${totalExpenses.toLocaleString()}`
+                })
+              }
+            } catch (error) {
+              console.error('❌ List transactions error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to fetch transactions. Please try again later."
+              })
+            }
+            break
+
+          case "update_transaction":
+            console.log('✏️ Updating transaction with args:', functionArgs)
+            try {
+              // Use service role to bypass RLS
+              const { createClient } = await import('@supabase/supabase-js')
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).trim()
+              )
+              
+              const queryUserId = userContext?.id || userId
+              const { transactionId, ...updates } = functionArgs
+              
+              // Build update object - only include provided fields
+              const updateData: any = {}
+              if (updates.amount !== undefined) updateData.amount = updates.amount
+              if (updates.category !== undefined) updateData.category = updates.category
+              if (updates.merchant !== undefined) updateData.merchant = updates.merchant
+              if (updates.date !== undefined) updateData.date = updates.date
+              if (updates.paymentMethod !== undefined) updateData.payment_method = updates.paymentMethod
+              if (updates.notes !== undefined) updateData.notes = updates.notes
+              if (updates.transactionType !== undefined) updateData.transaction_type = updates.transactionType
+              
+              const { data: transaction, error } = await supabase
+                .from('transactions')
+                .update(updateData)
+                .eq('id', transactionId)
+                .eq('user_id', queryUserId)
+                .select()
+                .single()
+              
+              if (error || !transaction) {
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: 'Failed to update transaction or transaction not found'
+                })
+              } else {
+                functionResult = JSON.stringify({
+                  success: true,
+                  transaction,
+                  message: `Transaction updated successfully! New amount: ₱${transaction.amount}, Category: ${transaction.category}`
+                })
+              }
+            } catch (error) {
+              console.error('❌ Update transaction error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: "Failed to update transaction. Please try again later."
               })
             }
             break
