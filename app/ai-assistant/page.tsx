@@ -489,27 +489,37 @@ function AIAssistantContent() {
         
         // Restore chat session from sessionStorage
         const persistedSessionId = sessionStorage.getItem('plounix_current_chat_session')
-        console.log('🔍 Persisted session from storage:', persistedSessionId)
+        console.log('�️ === VISIBILITY CHANGE DEBUG ===')
+        console.log('�🔍 Persisted session from storage:', persistedSessionId)
         console.log('🔍 Current active session:', currentChatId)
         console.log('🔍 Chats loaded in memory:', chats.length)
+        console.log('🔍 Are they equal?', persistedSessionId === currentChatId)
+        
+        // If the persisted session is already the current one, do nothing!
+        if (persistedSessionId === currentChatId) {
+          console.log('✅ Session already active, no restoration needed')
+          return
+        }
         
         if (persistedSessionId && persistedSessionId !== currentChatId) {
           console.log('🔄 Session mismatch detected - restoring:', persistedSessionId)
+          console.log('📊 Current chats in memory:', chats.map(c => ({ id: c.id, title: c.title, msgCount: c.messages?.length || 0 })))
           setIsRestoringSession(true)
           
           // Find the chat in the current chats array
           const persistedChat = chats.find(c => c.id === persistedSessionId)
           
           if (persistedChat) {
-            // Chat exists in memory, restore it
-            console.log('✅ Chat found in memory, restoring')
+            // Chat exists in memory, restore it IMMEDIATELY without database fetch
+            console.log('✅ Chat found in memory with', persistedChat.messages?.length, 'messages - restoring directly')
             setCurrentChatId(persistedChat.id)
             setMessages(persistedChat.messages)
+            setIsRestoringSession(false) // Reset flag immediately
           } else {
             // CRITICAL FIX: Chat not in memory
             // Don't call loadChatHistory() because it will wipe out in-memory sessions!
             // Instead, check if this is a session that exists in database but not loaded
-            console.log('⚠️ Chat not in memory - checking database without wiping current chats')
+            console.log('⚠️ Chat NOT found in memory - checking database (this should be rare!)')
             
             // Fetch only this specific session from database
             supabase
@@ -1230,33 +1240,34 @@ function AIAssistantContent() {
         const finalMessages = [...updatedMessages, aiMessage]
         setMessages(finalMessages)
         
-        // Update chat messages - CRITICAL: Check if chat exists first
-        const currentChatExists = chats.some(chat => chat.id === currentChatId)
-        let updatedChats
-        
-        if (currentChatExists) {
-          // Chat exists in array, update it
-          updatedChats = chats.map(chat => 
-            chat.id === currentChatId 
-              ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
-              : chat
-          )
-        } else {
-          // Chat doesn't exist in array yet (new session), add it
-          console.log('🆕 Adding new chat to chats array:', currentChatId)
-          const chatTitle = generateChatTitle(messageToSend)
-          updatedChats = [
-            {
-              id: currentChatId,
-              title: chatTitle,
-              messages: finalMessages,
-              lastMessage: messageToSend,
-              timestamp: new Date()
-            },
-            ...chats
-          ]
-        }
-        setChats(updatedChats)
+        // Update chat messages - CRITICAL: Use callback form to get latest state
+        setChats(prevChats => {
+          const currentChatExists = prevChats.some(chat => chat.id === currentChatId)
+          
+          if (currentChatExists) {
+            // Chat exists in array, update it
+            console.log('✏️ Updating existing chat:', currentChatId)
+            return prevChats.map(chat => 
+              chat.id === currentChatId 
+                ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
+                : chat
+            )
+          } else {
+            // Chat doesn't exist in array yet (new session), add it
+            console.log('🆕 Adding new chat to chats array:', currentChatId)
+            const chatTitle = generateChatTitle(messageToSend)
+            return [
+              {
+                id: currentChatId,
+                title: chatTitle,
+                messages: finalMessages,
+                lastMessage: messageToSend,
+                timestamp: new Date()
+              },
+              ...prevChats
+            ]
+          }
+        })
       } else {
         throw new Error(data.error || 'AI request failed')
       }
@@ -1271,33 +1282,34 @@ function AIAssistantContent() {
       const finalMessages = [...updatedMessages, errorMessage]
       setMessages(finalMessages)
       
-      // Update chat messages even on error to persist the user's message - CRITICAL: Check if chat exists first
-      const currentChatExists = chats.some(chat => chat.id === currentChatId)
-      let updatedChats
-      
-      if (currentChatExists) {
-        // Chat exists in array, update it
-        updatedChats = chats.map(chat => 
-          chat.id === currentChatId 
-            ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
-            : chat
-        )
-      } else {
-        // Chat doesn't exist in array yet (new session), add it
-        console.log('🆕 Adding new chat to chats array (error case):', currentChatId)
-        const chatTitle = generateChatTitle(messageToSend)
-        updatedChats = [
-          {
-            id: currentChatId,
-            title: chatTitle,
-            messages: finalMessages,
-            lastMessage: messageToSend,
-            timestamp: new Date()
-          },
-          ...chats
-        ]
-      }
-      setChats(updatedChats)
+      // Update chat messages even on error - CRITICAL: Use callback form to get latest state
+      setChats(prevChats => {
+        const currentChatExists = prevChats.some(chat => chat.id === currentChatId)
+        
+        if (currentChatExists) {
+          // Chat exists in array, update it
+          console.log('✏️ Updating existing chat (error case):', currentChatId)
+          return prevChats.map(chat => 
+            chat.id === currentChatId 
+              ? { ...chat, messages: finalMessages, lastMessage: messageToSend, timestamp: new Date() }
+              : chat
+          )
+        } else {
+          // Chat doesn't exist in array yet (new session), add it
+          console.log('🆕 Adding new chat to chats array (error case):', currentChatId)
+          const chatTitle = generateChatTitle(messageToSend)
+          return [
+            {
+              id: currentChatId,
+              title: chatTitle,
+              messages: finalMessages,
+              lastMessage: messageToSend,
+              timestamp: new Date()
+            },
+            ...prevChats
+          ]
+        }
+      })
     }
     // Input already cleared at the start of function
   }
