@@ -92,8 +92,8 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
         .eq('user_id', user.id)
         .maybeSingle()
 
-      if (data && !error && data.preferences) {
-        const prefs = data.preferences as any
+      if (data && !error && (data as any).preferences) {
+        const prefs = (data as any).preferences
         setPreferences({
           data_sharing: prefs.data_sharing ?? false,
           ai_learning: prefs.ai_learning ?? true,
@@ -119,21 +119,21 @@ export function PrivacySettingsModal({ open, onOpenChange }: PrivacySettingsModa
         .eq('user_id', user.id)
         .maybeSingle()
 
-      const currentPrefs = currentData?.preferences || {}
+      const currentPrefs = (currentData as any)?.preferences || {}
 
       // Update preferences
-      const { error } = await supabase
+      const { error } = await (supabase
         .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          preferences: {
-            ...currentPrefs,
-            data_sharing: preferences.data_sharing,
-            ai_learning: preferences.ai_learning,
-            analytics: preferences.analytics
-          },
-          updated_at: new Date().toISOString()
-        })
+        .upsert as any)({
+        user_id: user.id,
+        preferences: {
+          ...currentPrefs,
+          data_sharing: preferences.data_sharing,
+          ai_learning: preferences.ai_learning,
+          analytics: preferences.analytics
+        },
+        updated_at: new Date().toISOString()
+      })
 
       if (error) {
         console.error('Save error:', error)
