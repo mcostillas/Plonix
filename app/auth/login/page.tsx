@@ -48,6 +48,32 @@ function LoginForm() {
     setError('')
 
     try {
+      // First, check if this is an admin login attempt
+      const adminCheckResponse = await fetch('/api/admin/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      })
+
+      const adminCheck = await adminCheckResponse.json()
+
+      if (adminCheck.isAdmin) {
+        // Admin login successful - redirect to admin dashboard
+        if (rememberMe) {
+          localStorage.setItem('plounix_saved_email', email)
+          localStorage.setItem('plounix_remember_me', 'true')
+        } else {
+          localStorage.removeItem('plounix_saved_email')
+          localStorage.removeItem('plounix_saved_password')
+          localStorage.removeItem('plounix_remember_me')
+        }
+        
+        console.log('✅ Admin login successful, redirecting to /admin')
+        router.push('/admin')
+        return
+      }
+
+      // Not admin, proceed with normal user login
       const result = await auth.signIn(email, password)
       
       if (result.success) {
