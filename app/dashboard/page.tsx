@@ -288,6 +288,12 @@ function DashboardContent() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
 
+      // Determine check-in value based on challenge title
+      let checkInValue = 100 // Default for ₱100 Daily Challenge
+      
+      // Future: Could fetch from challenge requirements if needed
+      // For now, ₱100 Daily Challenge is the main one being used
+
       const response = await fetch(`/api/challenges/${challengeId}/progress`, {
         method: 'POST',
         headers: {
@@ -296,7 +302,8 @@ function DashboardContent() {
         },
         body: JSON.stringify({
           completed: true,
-          checkin_date: new Date().toISOString().split('T')[0]
+          checkin_date: new Date().toISOString().split('T')[0],
+          value: checkInValue // Add the check-in value
         })
       })
 
@@ -868,6 +875,9 @@ function DashboardContent() {
                                 <p className="text-xs md:text-sm font-medium">{tx.merchant}</p>
                                 <p className="text-[10px] md:text-xs text-gray-600 capitalize">
                                   {tx.category} • {formattedDate}
+                                  {tx.payment_method && (
+                                    <> • {tx.payment_method}</>
+                                  )}
                                 </p>
                               </div>
                             </div>
