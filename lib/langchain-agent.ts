@@ -428,6 +428,17 @@ export class PlounixAIAgent {
               console.error('❌ Error fetching challenges:', challengesError)
             }
 
+            // Fetch user profile data (CRITICAL: Get monthly_income!)
+            const { data: userProfile, error: profileError } = await supabase
+              .from('user_profiles')
+              .select('name, age, monthly_income, email')
+              .eq('user_id', queryData.userId)
+              .single()
+
+            if (profileError) {
+              console.error('❌ Error fetching user profile:', profileError)
+            }
+
             // Fetch monthly bills (scheduled payments)
             const { data: monthlyBills, error: billsError } = await supabase
               .from('scheduled_payments')
@@ -571,6 +582,12 @@ export class PlounixAIAgent {
 
             return JSON.stringify({
               success: true,
+              userProfile: {
+                name: userProfile?.name || 'User',
+                age: userProfile?.age,
+                monthlyIncome: userProfile?.monthly_income || 0,
+                email: userProfile?.email
+              },
               financial: {
                 totalIncome,
                 totalExpenses,
@@ -608,7 +625,7 @@ export class PlounixAIAgent {
                 upcoming: upcomingBills,
                 allBills: allActiveBills
               },
-              message: `Complete Summary - Financial: Income ₱${totalIncome.toLocaleString()}, Expenses ₱${totalExpenses.toLocaleString()}, Balance ₱${balance.toLocaleString()} | Monthly Bills: ${activeBills.length} bills totaling ₱${totalMonthlyObligation.toLocaleString()}/month | Goals: ${completedGoals}/${totalGoals} completed (₱${totalSavedTowardsGoals.toLocaleString()} saved) | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
+              message: `Complete Summary - User: ${userProfile?.name || 'User'} | Monthly Income: ₱${(userProfile?.monthly_income || 0).toLocaleString()}/month | Monthly Bills: ${activeBills.length} bills totaling ₱${totalMonthlyObligation.toLocaleString()}/month | Net Monthly: ₱${((userProfile?.monthly_income || 0) - totalMonthlyObligation).toLocaleString()} | Financial: Transactions Income ₱${totalIncome.toLocaleString()}, Expenses ₱${totalExpenses.toLocaleString()}, Balance ₱${balance.toLocaleString()} | Goals: ${completedGoals}/${totalGoals} completed (₱${totalSavedTowardsGoals.toLocaleString()} saved) | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
             })
           } catch (error) {
             console.error('❌ Financial summary error:', error)
@@ -759,6 +776,7 @@ Respond with: "I'm here to help with financial literacy, but I can't provide [to
 
 PERSONALITY:
 - Speak in Taglish (Filipino + English mix) when appropriate
+- **CRITICAL: NEVER switch languages mid-conversation - maintain language consistency throughout**
 - Caring but firm about financial discipline
 - Reference Filipino culture: 13th month pay, paluwagan, GCash, ipon
 - Be encouraging about saving goals
@@ -825,6 +843,30 @@ After creation, respond:
 "Perfect! I've created your '[Title]' goal of ₱[amount]! You can track it in your Goals page. Here's your action plan..."
 
 **IMPORTANT: NEVER show function calls in your responses. Tools execute automatically in the background. Just respond with the result.**
+
+**🚨 CRITICAL DATA ACCURACY RULES:**
+
+1. **NEVER CONFUSE USER DATA:**
+   - User's monthly_income = Their stated monthly salary (from userProfile.monthlyIncome)
+   - Goal amount = target_amount for a specific goal (from goals array)
+   - Monthly bills = scheduled_payments totaling monthlyBills.totalMonthlyAmount
+   - NEVER say user's monthly income is a goal amount!
+
+2. **MONTHLY BILLS COUNTING:**
+   - Count ALL bills in monthlyBills.allBills array
+   - Total bills = monthlyBills.total (NOT just counting one!)
+   - List all bills by name when asked
+
+3. **NO LINK HALLUCINATION:**
+   - ONLY provide links from suggest_learning_resources tool results
+   - NEVER make up YouTube URLs or website links
+   - If you don't have a real link, say "Use the Learning section to find resources" instead
+   - Format links as: **[Title](actual-url)** ONLY if from tool result
+
+4. **DATA VERIFICATION:**
+   - Always use get_financial_summary when asked about user data
+   - Use the actual numbers from the tool result
+   - Don't make assumptions about amounts or counts
 
 TRANSACTION TRACKING FRAMEWORK:
 
@@ -1216,11 +1258,38 @@ IMPORTANT RULES:
 1. PRIORITIZE saving and budgeting advice before purchase recommendations
 2. When given user context with a name, use it naturally (not every message)
 3. Keep responses SHORT but educational
-4. Match user's language preference (if they speak English, respond in English)
+4. MAINTAIN LANGUAGE CONSISTENCY - Never switch languages mid-conversation
 5. If conversation history is provided, use it ONLY when directly relevant to the current question
 6. Treat each message as independent unless the user explicitly references previous discussion
 7. USE WEB SEARCH TOOLS - Don't say you can't search, you have the tools to do it!
-8. ALWAYS ask about budget/savings capacity before recommending purchases`],
+8. ALWAYS ask about budget/savings capacity before recommending purchases
+
+🚨 CRITICAL ANTI-HALLUCINATION RULES (VIOLATION = FAILURE):
+
+1. **NEVER FABRICATE LINKS:** 
+   - ONLY provide URLs that come from tool results
+   - If suggest_learning_resources wasn't called, say "I can help you find resources in the Learning section"
+   - NEVER say "search on YouTube" - always call suggest_learning_resources first
+
+2. **NEVER GUESS USER DATA:**
+   - If user asks about their income/expenses/goals, ALWAYS call get_financial_summary first
+   - NEVER assume amounts or counts - use actual tool data
+   - If you don't have the data, ask them to add it, don't make it up
+
+3. **NEVER CONFUSE DATA TYPES:**
+   - monthly_income (from userProfile) ≠ goal target_amount (from goals)
+   - Count ALL items in arrays (bills, transactions, etc.)
+   - Use exact field names from tool responses
+
+4. **NEVER CREATE FAKE EXAMPLES:**
+   - Don't say "like Product X" if you haven't searched for Product X
+   - Don't mention specific prices without calling get_current_prices
+   - Don't cite "recent news" without calling search_financial_news
+
+5. **VERIFY BEFORE CLAIMING:**
+   - If you're not sure, say "Let me check..." and call the appropriate tool
+   - Better to call a tool twice than to hallucinate once
+   - Tool results are ALWAYS more reliable than your training data`],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -1259,7 +1328,9 @@ IMPORTANT RULES:
       // CRITICAL: Minimal system prompt to ensure tools are called properly
       const systemPrompt = `You are Fili - a Filipino financial assistant helping users track money, set goals, and build financial literacy.
 
-**LANGUAGE SETTING: ${languageInstruction}**
+**🌐 LANGUAGE CONSISTENCY RULE (CRITICAL):**
+**${languageInstruction}**
+**NEVER switch languages mid-conversation! Maintain the same language throughout the entire conversation, regardless of what language the user uses in their messages.**
 
 **YOUR USER ID FOR TOOLS: ${userContext?.id || userId}**
 
@@ -2159,15 +2230,133 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           throw new Error('No response from OpenAI')
         }
         
-        return finalData.choices[0]?.message?.content || "I'm having trouble generating a response."
+        const aiResponse = finalData.choices[0]?.message?.content || "I'm having trouble generating a response."
+        
+        // 🛡️ ANTI-HALLUCINATION VALIDATION
+        return this.validateResponse(aiResponse, toolResponses)
       } else {
         // No function call, use the regular response
-        return assistantMessage?.content || "I'm having trouble generating a response."
+        const aiResponse = assistantMessage?.content || "I'm having trouble generating a response."
+        
+        // 🛡️ ANTI-HALLUCINATION VALIDATION
+        return this.validateResponse(aiResponse, [])
       }
     } catch (error) {
       console.error('❌ Agent error:', error)
       return "I encountered an error processing your request. Please try again."
     }
+  }
+
+  /**
+   * 🛡️ ANTI-HALLUCINATION VALIDATOR
+   * Validates AI responses to prevent hallucinations before sending to user
+   */
+  private validateResponse(response: string, toolResults: any[]): string {
+    console.log('🛡️ Validating response for hallucinations...')
+    
+    let validatedResponse = response
+    let warnings: string[] = []
+    
+    // 1. CHECK FOR FAKE YOUTUBE LINKS
+    const youtubePattern = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s\)]+/gi
+    const youtubeLinks = response.match(youtubePattern)
+    
+    if (youtubeLinks && youtubeLinks.length > 0) {
+      console.log('🔍 Found YouTube links:', youtubeLinks)
+      
+      // Check if learning resources tool was called
+      const learningToolCalled = toolResults.some(tr => {
+        try {
+          const content = JSON.parse(tr.content)
+          return content.foundSkills || content.recommendedSkills
+        } catch {
+          return false
+        }
+      })
+      
+      if (!learningToolCalled) {
+        console.warn('⚠️ HALLUCINATION DETECTED: YouTube links without tool call!')
+        warnings.push('YouTube links detected without learning resources tool')
+        
+        // Remove the fake links
+        validatedResponse = validatedResponse.replace(youtubePattern, '[Learning resources available in the Learning section]')
+      }
+    }
+    
+    // 2. CHECK FOR SUSPICIOUS NUMBER PATTERNS
+    // Flag if response contains numbers that might be confused data
+    const hasLargeNumbers = /₱\s*\d{5,}/g.test(response)
+    if (hasLargeNumbers) {
+      console.log('🔍 Large numbers detected, checking if financial summary was called...')
+      
+      const financialToolCalled = toolResults.some(tr => {
+        try {
+          const content = JSON.parse(tr.content)
+          return content.financial || content.userProfile || content.goals
+        } catch {
+          return false
+        }
+      })
+      
+      if (!financialToolCalled && (response.includes('monthly income') || response.includes('goal') || response.includes('saved'))) {
+        console.warn('⚠️ POTENTIAL DATA CONFUSION: Numbers mentioned without data fetch!')
+        warnings.push('Financial data mentioned without get_financial_summary call')
+      }
+    }
+    
+    // 3. CHECK FOR GENERIC "SEARCH YOUTUBE" SUGGESTIONS
+    const searchSuggestions = [
+      /search (?:for|on) youtube/gi,
+      /look (?:for|on) youtube/gi,
+      /find (?:on|in) youtube/gi,
+      /check youtube for/gi,
+      /youtube search/gi
+    ]
+    
+    searchSuggestions.forEach(pattern => {
+      // Reset regex lastIndex to avoid issues with /g flag
+      pattern.lastIndex = 0
+      if (pattern.test(validatedResponse)) {
+        console.warn('⚠️ LAZY RESPONSE DETECTED: Suggesting to search YouTube instead of providing links')
+        warnings.push('Generic YouTube search suggestion detected')
+        
+        // Reset again before replace
+        pattern.lastIndex = 0
+        validatedResponse = validatedResponse.replace(pattern, 'let me find specific resources for you in our Learning section')
+      }
+    })
+    
+    // 4. CHECK FOR FABRICATED PLATFORM LINKS
+    const suspiciousPatterns = [
+      /https?:\/\/(?:www\.)?example\.com/gi,
+      /https?:\/\/(?:www\.)?placeholder\.com/gi,
+      /\[link\]/gi,
+      /\[url\]/gi
+    ]
+    
+    suspiciousPatterns.forEach(pattern => {
+      // Reset regex lastIndex to avoid issues with /g flag
+      pattern.lastIndex = 0
+      if (pattern.test(validatedResponse)) {
+        console.warn('⚠️ PLACEHOLDER LINK DETECTED: Fake/example URLs found')
+        warnings.push('Placeholder links detected')
+        
+        // Reset again before replace
+        pattern.lastIndex = 0
+        validatedResponse = validatedResponse.replace(pattern, '[Available in the platform]')
+      }
+    })
+    
+    // 5. LOG VALIDATION RESULTS
+    if (warnings.length > 0) {
+      console.error('🚨 VALIDATION WARNINGS:', warnings)
+      console.error('📝 Original response:', response.substring(0, 200) + '...')
+      console.error('✅ Validated response:', validatedResponse.substring(0, 200) + '...')
+    } else {
+      console.log('✅ Response validation passed - no hallucinations detected')
+    }
+    
+    return validatedResponse
   }
 
   private generateWorkSuggestions(input: string): any {

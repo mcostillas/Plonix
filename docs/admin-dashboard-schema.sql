@@ -51,14 +51,17 @@ CREATE INDEX IF NOT EXISTS idx_bug_reports_created_at ON bug_reports(created_at 
 -- RLS: Users can view their own reports, admins access via API
 ALTER TABLE bug_reports ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own bug reports" ON bug_reports;
 CREATE POLICY "Users can view own bug reports"
   ON bug_reports FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can create bug reports" ON bug_reports;
 CREATE POLICY "Users can create bug reports"
   ON bug_reports FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own bug reports" ON bug_reports;
 CREATE POLICY "Users can update own bug reports"
   ON bug_reports FOR UPDATE
   USING (auth.uid() = user_id)
@@ -143,10 +146,12 @@ CREATE INDEX IF NOT EXISTS idx_user_notifications_is_read ON user_notifications(
 -- RLS: Users can only see their own notifications
 ALTER TABLE user_notifications ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own notifications" ON user_notifications;
 CREATE POLICY "Users can view own notifications"
   ON user_notifications FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update own notifications" ON user_notifications;
 CREATE POLICY "Users can update own notifications"
   ON user_notifications FOR UPDATE
   USING (auth.uid() = user_id)
