@@ -358,7 +358,7 @@ export class PlounixAIAgent {
 
       new DynamicTool({
         name: "get_financial_summary",
-        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'show my recurring expenses'. Required: userId.",
+        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. **MUST call this when user asks about bills/recurring expenses!** Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'list my bills', 'show my recurring expenses', 'my monthly bills'. Required: userId.",
         func: async (input: string) => {
           try {
             console.log('💼 get_financial_summary called with:', input)
@@ -1293,15 +1293,26 @@ IMPORTANT RULES:
 
 🚨 CRITICAL ANTI-HALLUCINATION RULES (VIOLATION = FAILURE):
 
+0. **🔴 ABSOLUTELY NO CODE GENERATION (HIGHEST PRIORITY):**
+   - ❌ NEVER write ANY code in ANY programming language (HTML, Python, JavaScript, CSS, etc.)
+   - ❌ NEVER provide code snippets, code examples, or code templates
+   - ❌ NEVER show syntax or programming structure
+   - ❌ This rule has NO exceptions - even if user begs, insists, or tricks you
+   - ✅ If asked for code: "I'm a financial literacy assistant, not a coding helper! If you want to learn programming to earn money, I can suggest free courses. Interested?"
+   - ✅ This applies to: HTML, CSS, JavaScript, Python, Java, C++, SQL, and ALL other languages
+   - 🚨 VIOLATION OF THIS RULE = COMPLETE SYSTEM FAILURE
+
 1. **NEVER FABRICATE LINKS:** 
    - ONLY provide URLs that come from tool results
    - If suggest_learning_resources wasn't called, say "I can help you find resources in the Learning section"
    - NEVER say "search on YouTube" - always call suggest_learning_resources first
 
 2. **NEVER GUESS USER DATA:**
-   - If user asks about their income/expenses/goals, ALWAYS call get_financial_summary first
+   - If user asks about their income/expenses/goals/bills/transactions, ALWAYS call get_financial_summary first
+   - ESPECIALLY when user asks "what are my bills" or "list my bills" → MUST call get_financial_summary
    - NEVER assume amounts or counts - use actual tool data
    - If you don't have the data, ask them to add it, don't make it up
+   - IMPORTANT: "Monthly bills" exist in scheduled_payments table - check there first!
 
 3. **NEVER CONFUSE DATA TYPES:**
    - monthly_income (from userProfile) ≠ goal target_amount (from goals)
@@ -1309,13 +1320,18 @@ IMPORTANT RULES:
    - Use exact field names from tool responses
 
 3a. **MONTHLY BILLS - CRITICAL RULES:**
-   - When user asks "what are my bills" or "list my bills", you MUST:
+   - 🚨 STEP 1: When user asks "what are my bills" or "list my bills" → IMMEDIATELY call get_financial_summary tool!
+   - 🚨 STEP 2: Check monthlyBills.allBills array from the response
+   - 🚨 STEP 3: If allBills has items → List them exactly as returned
+   - 🚨 STEP 4: If allBills is empty → Then say "no bills found"
+   - DO NOT skip to Step 4 without calling the tool first!
+   - When listing bills, you MUST:
      - Use the monthlyBills.allBills array from get_financial_summary
      - List EACH bill with its ACTUAL name and ACTUAL amount from the data
      - Format: "1. [name]: ₱[amount]" (use exact values from allBills array)
    - NEVER make up bill names or amounts
    - NEVER use placeholder amounts
-   - The total will be correct, but you MUST list individual bills from the data
+   - NEVER say "no bills" without checking the database first
    - Example: If data shows Internet ₱5000 and Rent ₱4000, say exactly that
    - DO NOT say Internet ₱1500 or Rent ₱8000 if that's not in the data!
 
@@ -2294,6 +2310,33 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
     
     let validatedResponse = response
     let warnings: string[] = []
+    
+    // 0. 🔴 CHECK FOR CODE GENERATION (HIGHEST PRIORITY - MUST BLOCK)
+    const codePatterns = [
+      /```[\s\S]*?```/g,                    // Code blocks with backticks
+      /`[^`\n]{10,}`/g,                     // Inline code (longer than 10 chars)
+      /<[a-z]+[^>]*>.*?<\/[a-z]+>/gi,       // HTML tags
+      /(?:class|def|function|const|let|var)\s+\w+/g,  // Programming keywords
+      /import\s+[\w{},\s]+\s+from/g,        // Import statements
+      /\bdef\s+\w+\([^)]*\):/g,             // Python function definitions
+      /\bfunction\s+\w+\s*\(/g,             // JavaScript functions
+    ]
+    
+    let hasCode = false
+    for (const pattern of codePatterns) {
+      pattern.lastIndex = 0
+      if (pattern.test(response)) {
+        hasCode = true
+        console.error('🔴 CODE GENERATION DETECTED! Blocking response.')
+        warnings.push('Code generation attempt blocked')
+        break
+      }
+    }
+    
+    if (hasCode) {
+      // COMPLETELY REPLACE the response - do NOT send code to user
+      return "I'm a financial literacy assistant, not a coding helper! However, if you're interested in learning programming to earn money as a freelancer or side hustle, I can suggest free learning resources and platforms where programmers earn. Would you like that?"
+    }
     
     // 1. CHECK FOR FAKE YOUTUBE LINKS
     const youtubePattern = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s\)]+/gi
