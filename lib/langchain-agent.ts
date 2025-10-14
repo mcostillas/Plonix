@@ -1512,7 +1512,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           type: "function",
           function: {
             name: "get_financial_summary",
-            description: "**CRITICAL TOOL - USE WHEN USER ASKS ABOUT THEIR FINANCIAL DATA** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, active challenges, and monthly bills. **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords that MUST trigger this tool: 'what is my', 'how much is my', 'check my', 'show my', 'what's my total', 'my current', 'look at my', 'see my'. Required: userId.",
+            description: "**CRITICAL TOOL - USE WHEN USER ASKS ABOUT THEIR FINANCIAL DATA** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, active challenges, and monthly bills. **MUST call this when user asks about bills/recurring expenses!** **ALWAYS call this when user mentions the word 'bills' in ANY context!** **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords that MUST trigger this tool: 'what is my', 'how much is my', 'check my', 'show my', 'what's my total', 'my current', 'look at my', 'see my', 'what are my monthly bills', 'list my bills', 'list my active bills', 'show my bills', 'my active monthly bills', 'show my recurring expenses', 'my monthly bills', 'my subscriptions', 'my bills'. Required: userId.",
             parameters: {
               type: "object",
               properties: {
