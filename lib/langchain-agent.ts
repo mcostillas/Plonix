@@ -358,7 +358,7 @@ export class PlounixAIAgent {
 
       new DynamicTool({
         name: "get_financial_summary",
-        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. **MUST call this when user asks about bills/recurring expenses!** Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'list my bills', 'show my recurring expenses', 'my monthly bills'. Required: userId.",
+        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. **MUST call this when user asks about bills/recurring expenses!** **ALWAYS call this when user mentions the word 'bills' in ANY context!** Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'list my bills', 'list my active bills', 'show my bills', 'my active monthly bills', 'show my recurring expenses', 'my monthly bills', 'my subscriptions'. Required: userId.",
         func: async (input: string) => {
           try {
             console.log('💼 get_financial_summary called with:', input)
@@ -1309,7 +1309,9 @@ IMPORTANT RULES:
 
 2. **NEVER GUESS USER DATA:**
    - If user asks about their income/expenses/goals/bills/transactions, ALWAYS call get_financial_summary first
-   - ESPECIALLY when user asks "what are my bills" or "list my bills" → MUST call get_financial_summary
+   - ESPECIALLY when user mentions "bills" in ANY form → MUST call get_financial_summary
+   - Bill keywords that trigger tool call: "bills", "monthly bills", "active bills", "recurring payments", "subscriptions"
+   - Example triggers: "what are my bills", "list my bills", "show my bills", "my active bills", "monthly payments"
    - NEVER assume amounts or counts - use actual tool data
    - If you don't have the data, ask them to add it, don't make it up
    - IMPORTANT: "Monthly bills" exist in scheduled_payments table - check there first!
@@ -1320,11 +1322,14 @@ IMPORTANT RULES:
    - Use exact field names from tool responses
 
 3a. **MONTHLY BILLS - CRITICAL RULES:**
-   - 🚨 STEP 1: When user asks "what are my bills" or "list my bills" → IMMEDIATELY call get_financial_summary tool!
+   - 🚨 STEP 1: When user mentions ANY of these words → IMMEDIATELY call get_financial_summary tool!
+     - Keywords: "bills", "monthly bills", "active bills", "recurring", "subscriptions", "payments"
+     - Phrases: "what are my bills", "list my bills", "show my bills", "my active bills"
    - 🚨 STEP 2: Check monthlyBills.allBills array from the response
    - 🚨 STEP 3: If allBills has items → List them exactly as returned
    - 🚨 STEP 4: If allBills is empty → Then say "no bills found"
    - DO NOT skip to Step 4 without calling the tool first!
+   - DO NOT confuse "list bills" with "code generation" - they are completely different!
    - When listing bills, you MUST:
      - Use the monthlyBills.allBills array from get_financial_summary
      - List EACH bill with its ACTUAL name and ACTUAL amount from the data
