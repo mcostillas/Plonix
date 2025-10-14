@@ -67,7 +67,7 @@ function DashboardContent() {
   // Total modules count (should match learning page)
   const totalModules = 7 // 3 core + 4 essential modules
 
-  // Check if user needs to see the interactive tour
+  // Check if user needs to see the interactive tour (only once per user, ever)
   useEffect(() => {
     if (!user?.id || tourChecked) return
     
@@ -82,37 +82,51 @@ function DashboardContent() {
           .eq('user_id', user!.id)
           .single()
         
-        if (!error && data && (data as any).tour_completed) {
-          console.log('✅ Tour already completed (from database)')
-          setTourChecked(true)
-          return
+        if (!error && data) {
+          const tourCompleted = (data as any).tour_completed
+          console.log('🔍 Database tour status:', tourCompleted)
+          
+          // If tour is explicitly marked as completed, never show it again
+          if (tourCompleted === true) {
+            console.log('✅ Tour already completed (from database)')
+            setShowTour(false)
+            setTourChecked(true)
+            // Also sync to localStorage for faster future checks
+            localStorage.setItem('plounix_tour_shown', 'true')
+            return
+          }
         }
         
-        // Fallback to localStorage for existing users
+        // Fallback to localStorage (for existing users before database field was added)
         const tourShown = localStorage.getItem('plounix_tour_shown')
         
         if (tourShown === 'true') {
-          console.log('✅ Tour already shown (from localStorage)')
-          // Update database to sync
-          ;(supabase as any)
+          console.log('✅ Tour already shown (from localStorage, syncing to database...)')
+          // Update database to sync for cross-device support
+          await (supabase as any)
             .from('user_profiles')
             .update({ tour_completed: true })
             .eq('user_id', user!.id)
+          setShowTour(false)
           setTourChecked(true)
           return
         }
         
-        // Show tour for new users (only once per session)
-        console.log('🚀 New user detected, showing interactive tour')
+        // Show tour for new users (only once, ever)
+        console.log('🚀 New user detected, showing interactive tour (ONCE ONLY)')
         setIsNewUser(true)
         setShowTour(true)
         setTourChecked(true)
       } catch (error) {
-        console.error('Error checking tour status:', error)
-        // Fallback to localStorage only
+        console.error('❌ Error checking tour status:', error)
+        // Fallback to localStorage only if database fails
         const tourShown = localStorage.getItem('plounix_tour_shown')
         if (tourShown !== 'true') {
+          console.log('⚠️ Database error, checking localStorage fallback')
           setShowTour(true)
+        } else {
+          console.log('✅ Tour already shown (localStorage fallback)')
+          setShowTour(false)
         }
         setTourChecked(true)
       }
