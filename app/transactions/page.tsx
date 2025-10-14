@@ -939,6 +939,9 @@ function TransactionsContent() {
                             <p className="text-[10px] md:text-sm font-medium truncate">{transaction.description}</p>
                             <p className="text-[8px] md:text-xs text-gray-600 capitalize truncate">
                               {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
+                              {originalTransaction.payment_method && (
+                                <> • {originalTransaction.payment_method}</>
+                              )}
                             </p>
                           </div>
                         </div>
