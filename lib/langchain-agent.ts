@@ -2499,40 +2499,49 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
     let validatedResponse = response
     let warnings: string[] = []
     
-    /* ============================================
-       CODE DETECTION DISABLED TEMPORARILY
-       ============================================
-       REASON: Too many false positives - was blocking normal responses
-       TODO: Re-enable with better detection logic
-       ============================================
+    // 0. 🔴 CHECK FOR CODE GENERATION (SMART DETECTION - ONLY BLOCK ACTUAL CODE)
+    // NEW APPROACH: Only block if response contains ACTUAL programming code, not just mentions
     
-    // 0. 🔴 CHECK FOR CODE GENERATION (HIGHEST PRIORITY - MUST BLOCK)
-    const codePatterns = [
-      /```[\s\S]*?```/g,                    // Code blocks with backticks
-      /`[^`\n]{10,}`/g,                     // Inline code (longer than 10 chars)
-      /<[a-z]+[^>]*>.*?<\/[a-z]+>/gi,       // HTML tags
-      /(?:class|def|function|const|let|var)\s+\w+/g,  // Programming keywords
-      /import\s+[\w{},\s]+\s+from/g,        // Import statements
-      /\bdef\s+\w+\([^)]*\):/g,             // Python function definitions
-      /\bfunction\s+\w+\s*\(/g,             // JavaScript functions
-    ]
+    // Check for code blocks (``` or multi-line code)
+    const hasCodeBlock = /```[\s\S]{20,}```/g.test(response)
     
-    let hasCode = false
-    for (const pattern of codePatterns) {
-      pattern.lastIndex = 0
-      if (pattern.test(response)) {
-        hasCode = true
-        console.error('🔴 CODE GENERATION DETECTED! Blocking response.')
-        warnings.push('Code generation attempt blocked')
-        break
-      }
+    // Check for MULTIPLE programming patterns (not just one keyword)
+    let programmingSignals = 0
+    
+    // Signal 1: Function definitions (def, function, const, etc.)
+    if (/\b(?:def|function|const|let|var|class)\s+\w+[\s\(]/g.test(response)) {
+      programmingSignals++
     }
     
-    if (hasCode) {
-      // COMPLETELY REPLACE the response - do NOT send code to user
-      return "I'm a financial literacy assistant, not a coding helper! However, if you're interested in learning programming to earn money as a freelancer or side hustle, I can suggest free learning resources and platforms where programmers earn. Would you like that?"
+    // Signal 2: Code syntax (return, if, while, for statements)
+    if (/\b(?:return|if|while|for|elif|else:)\s+/g.test(response)) {
+      programmingSignals++
     }
-    ============================================ */
+    
+    // Signal 3: Import/include statements
+    if (/\b(?:import|from|include|require)\s+[\w\.]+/g.test(response)) {
+      programmingSignals++
+    }
+    
+    // Signal 4: HTML/XML tags (multiple)
+    const htmlTags = response.match(/<[a-z]+[^>]*>/gi)
+    if (htmlTags && htmlTags.length >= 3) {
+      programmingSignals++
+    }
+    
+    // ONLY block if: Code block present OR multiple programming signals
+    const isActualCode = hasCodeBlock || programmingSignals >= 2
+    
+    if (isActualCode) {
+      console.error('🔴 CODE GENERATION DETECTED!')
+      console.error('  - Has code block:', hasCodeBlock)
+      console.error('  - Programming signals:', programmingSignals)
+      console.error('  - Blocking response and redirecting...')
+      warnings.push('Code generation blocked')
+      
+      // REPLACE with intelligent redirect
+      return "I'm a financial literacy assistant, not a coding helper! However, if you're interested in learning programming to earn money as a freelancer, I can help you:\n\n- Find free programming courses and tutorials\n- Discover freelancing platforms where programmers earn\n- Set up income goals for your coding career\n\nWould you like me to suggest learning resources for programming?"
+    }
     
     // 1. CHECK FOR FAKE YOUTUBE LINKS
     const youtubePattern = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s\)]+/gi
