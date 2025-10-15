@@ -1321,24 +1321,33 @@ IMPORTANT RULES:
    - Count ALL items in arrays (bills, transactions, etc.)
    - Use exact field names from tool responses
 
-3a. **MONTHLY BILLS - CRITICAL RULES:**
-   - 🚨 STEP 1: When user mentions ANY of these words → IMMEDIATELY call get_financial_summary tool!
-     - Keywords: "bills", "monthly bills", "active bills", "recurring", "subscriptions", "payments"
-     - Phrases: "what are my bills", "list my bills", "show my bills", "my active bills"
-   - 🚨 STEP 2: Check monthlyBills.allBills array from the response
-   - 🚨 STEP 3: If allBills has items → List them exactly as returned
-   - 🚨 STEP 4: If allBills is empty → Then say "no bills found"
-   - DO NOT skip to Step 4 without calling the tool first!
-   - DO NOT confuse "list bills" with "code generation" - they are completely different!
-   - When listing bills, you MUST:
-     - Use the monthlyBills.allBills array from get_financial_summary
-     - List EACH bill with its ACTUAL name and ACTUAL amount from the data
-     - Format: "1. [name]: ₱[amount]" (use exact values from allBills array)
-   - NEVER make up bill names or amounts
-   - NEVER use placeholder amounts
-   - NEVER say "no bills" without checking the database first
-   - Example: If data shows Internet ₱5000 and Rent ₱4000, say exactly that
-   - DO NOT say Internet ₱1500 or Rent ₱8000 if that's not in the data!
+3a. **MONTHLY BILLS - CRITICAL PARSING RULES:**
+   🚨 **STEP-BY-STEP PROCESS (FOLLOW EXACTLY):**
+   
+   **STEP 1:** When user asks about bills → CALL get_financial_summary tool
+   - Triggers: "bills", "monthly bills", "list my bills", "what are my bills", "active bills"
+   
+   **STEP 2:** Read tool response monthlyBills object which contains:
+   - monthlyBills.allBills = ARRAY of bill objects
+   - Each bill object has: name, amount, dueDay, category
+   - Example bill: name="Internet", amount=5000, dueDay=15
+   
+   **STEP 3:** Parse monthlyBills.allBills array ITEM BY ITEM:
+   - Loop through EACH item in allBills array
+   - For each item, read: item.name and item.amount
+   - Format each as: "1. [name from item]: ₱[amount from item]"
+   
+   **STEP 4:** List bills using EXACT values from each array item:
+   - ✅ CORRECT: Read Internet amount=5000 → Write "Internet: ₱5,000"
+   - ✅ CORRECT: Read Rent amount=4000 → Write "Rent: ₱4,000"
+   - ❌ WRONG: Saying "Internet: ₱1,500" when array shows amount=5000
+   - ❌ WRONG: Making up "Electricity: ₱649" when it's not in allBills array
+   
+   **CRITICAL WARNINGS:**
+   - totalMonthlyAmount = SUM of all bills (DO NOT use this for individual bills!)
+   - If you say "Internet: ₱X" then X MUST equal the amount field from Internet item in allBills
+   - If bill doesn't exist in allBills array, DON'T mention it
+   - ONLY list bills that exist in monthlyBills.allBills array with their ACTUAL amounts
 
 4. **NEVER CREATE FAKE EXAMPLES:**
    - Don't say "like Product X" if you haven't searched for Product X
