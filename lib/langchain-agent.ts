@@ -2396,7 +2396,81 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
       }
     }
     
-    // 2. CHECK FOR SUSPICIOUS NUMBER PATTERNS
+    // 2. 🚨 CHECK FOR BILL HALLUCINATIONS (CRITICAL!)
+    // If user asked about bills, verify AI listed ACTUAL bills from database
+    const billKeywords = /\b(?:bills?|monthly bills?|active bills?|recurring|subscriptions?|payments?)\b/i
+    const isBillQuery = billKeywords.test(response) || response.toLowerCase().includes('bill')
+    
+    if (isBillQuery) {
+      console.log('🚨 Bill query detected, validating bill amounts...')
+      
+      // Find get_financial_summary tool result
+      const financialSummary = toolResults.find(tr => {
+        try {
+          const content = JSON.parse(tr.content)
+          return content.monthlyBills && content.monthlyBills.allBills
+        } catch {
+          return false
+        }
+      })
+      
+      if (financialSummary) {
+        try {
+          const summaryData = JSON.parse(financialSummary.content)
+          const actualBills = summaryData.monthlyBills.allBills || []
+          const actualTotal = summaryData.monthlyBills.totalMonthlyAmount || 0
+          
+          console.log('📊 ACTUAL BILLS from database:', actualBills.map((b: any) => `${b.name}: ₱${b.amount}`).join(', '))
+          
+          // Extract bill names and amounts from AI response
+          const billPattern = /(?:•|\d+\.)\s*([A-Za-z\s]+)(?:Bill)?:\s*₱?([\d,]+)/gi
+          const mentionedBills: { name: string, amount: number }[] = []
+          let match
+          
+          while ((match = billPattern.exec(response)) !== null) {
+            mentionedBills.push({
+              name: match[1].trim().toLowerCase(),
+              amount: parseInt(match[2].replace(/,/g, ''))
+            })
+          }
+          
+          console.log('🤖 AI MENTIONED bills:', mentionedBills.map(b => `${b.name}: ₱${b.amount}`).join(', '))
+          
+          // Validate each mentioned bill
+          let hasHallucination = false
+          for (const mentioned of mentionedBills) {
+            const actualBill = actualBills.find((b: any) => 
+              b.name.toLowerCase().includes(mentioned.name) || mentioned.name.includes(b.name.toLowerCase())
+            )
+            
+            if (!actualBill) {
+              console.error(`🔴 HALLUCINATION DETECTED: AI mentioned "${mentioned.name}" which doesn't exist in database!`)
+              hasHallucination = true
+            } else if (Math.abs(actualBill.amount - mentioned.amount) > 10) {
+              console.error(`🔴 AMOUNT HALLUCINATION: AI said ${mentioned.name} = ₱${mentioned.amount}, but actual = ₱${actualBill.amount}`)
+              hasHallucination = true
+            }
+          }
+          
+          // If hallucination detected, force correct listing
+          if (hasHallucination || mentionedBills.length === 0) {
+            console.error('🔴 FORCING CORRECT BILL LISTING!')
+            warnings.push('Bill hallucination detected - forcing correct data')
+            
+            const correctListing = actualBills.map((b: any, idx: number) => 
+              `${idx + 1}. ${b.name}: ₱${b.amount.toLocaleString()}`
+            ).join('\n')
+            
+            validatedResponse = `Here are your current monthly bills:\n\n${correctListing}\n\nTotal Monthly Bills: ₱${actualTotal.toLocaleString()}\n\nIf you need more information about any specific bill, feel free to ask!`
+          }
+          
+        } catch (error) {
+          console.error('❌ Error validating bills:', error)
+        }
+      }
+    }
+    
+    // 3. CHECK FOR SUSPICIOUS NUMBER PATTERNS
     // Flag if response contains numbers that might be confused data
     const hasLargeNumbers = /₱\s*\d{5,}/g.test(response)
     if (hasLargeNumbers) {
