@@ -2131,6 +2131,26 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           case "create_financial_goal":
             console.log('🎯 Creating financial goal with args:', functionArgs)
             try {
+              // 🛡️ VALIDATE DEADLINE - Reject if in the past
+              if (functionArgs.deadline) {
+                const deadlineDate = new Date(functionArgs.deadline)
+                const today = new Date()
+                today.setHours(0, 0, 0, 0) // Reset time to start of day
+                
+                if (deadlineDate < today) {
+                  const deadlineStr = deadlineDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                  console.error('❌ DEADLINE IN PAST DETECTED:', functionArgs.deadline)
+                  console.error('   Deadline:', deadlineStr)
+                  console.error('   Today:', today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
+                  
+                  functionResult = JSON.stringify({
+                    success: false,
+                    error: `The deadline you calculated (${deadlineStr}) is in the PAST! Today is ${today.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}. Please recalculate the deadline to be in the FUTURE. For example, if user said "in 6 months" from October 2025, it should be April 2026, not 2024.`
+                  })
+                  break
+                }
+              }
+              
               // Add userId from userContext if available
               const goalData = {
                 ...functionArgs,
