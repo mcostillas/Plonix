@@ -104,9 +104,9 @@ export default function TopicLearningPage() {
           title: 'Reflect: Your Budget Action Plan',
           content: {
             questions: [
-              'Based on your current allowance/salary, how would you apply the 50-30-20 rule?',
-              'What spending habits would you need to change to fit this budget?',
-              'What financial goal would motivate you to stick to saving 20%?'
+              'Think about your last month\'s spending. What patterns do you notice, and what surprised you the most?',
+              'If you could save ₱5,000 every month for a year, what would that mean for your life and goals?',
+              'What\'s one spending habit you have that you\'re not proud of, and why do you think you do it?'
             ],
             actionItems: [
               'Download a budgeting app or create a simple expense tracker',
@@ -175,9 +175,9 @@ export default function TopicLearningPage() {
           title: 'Reflect: Your Savings Plan',
           content: {
             questions: [
-              'Which digital bank or wallet appeals most to you and why?',
-              'How would you split your savings between convenience and growth?',
-              'What savings milestone would you celebrate first?'
+              'What does financial security mean to you personally, and how would it change your daily life?',
+              'Imagine you had ₱50,000 saved up right now. How would that make you feel, and what would you do with it?',
+              'What\'s your biggest fear or worry about money, and how might saving regularly help address that?'
             ],
             actionItems: [
               'Open a GCash GSave account this week for convenience',
@@ -243,9 +243,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
           title: 'Reflect: Your Investment Future',
           content: {
             questions: [
-              'What long-term financial goal would motivate you to start investing?',
-              'How comfortable are you with the risk that your investment might lose value short-term?',
-              'What investment platform (BPI, BDO, COL) seems most suitable for your situation?'
+              'When you imagine yourself 10 years from now, what does financial freedom look like to you?',
+              'What would you do if your investment lost 20% of its value in one month? How would you feel and react?',
+              'If you could invest in anything right now (stocks, business, skills), what would excite you most and why?'
             ],
             actionItems: [
               'Visit one investment platform website to explore their offerings',
@@ -315,9 +315,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
           title: 'Reflect: Your Emergency Fund Strategy',
           content: {
             questions: [
-              'What emergency expenses are you most worried about in the next 2 years?',
-              'How would having an emergency fund change your financial confidence?',
-              'What monthly amount could you realistically save for emergencies?'
+              'Describe a time when you or your family faced an unexpected expense. How did it feel, and how was it handled?',
+              'If you woke up tomorrow with your ideal emergency fund already saved, what would change about how you live day-to-day?',
+              'What are you willing to give up or reduce right now to build financial security for future-you?'
             ],
             actionItems: [
               'Open a separate GCash GSave account labeled "Emergency Fund"',
