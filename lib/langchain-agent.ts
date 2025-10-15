@@ -1376,6 +1376,13 @@ CONTEXT:
 - They use GCash, PayMaya, BPI, BDO
 - Always use Philippine Peso (₱) amounts
 
+⏰ CURRENT DATE & TIME:
+- Today's date: ${new Date().toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' })}
+- Current year: ${new Date().getFullYear()}
+- Current month: ${new Date().toLocaleDateString('en-PH', { month: 'long' })}
+- 🚨 CRITICAL: Use this date for ALL date calculations, goal deadlines, and time-sensitive advice
+- 🚨 NEVER use your training cutoff date (2023) - always use the current date above
+
 SEARCH CAPABILITIES:
 - Use search_web for ANY current information, news, or real-time data
 - Use get_current_prices when users ask about prices or costs
