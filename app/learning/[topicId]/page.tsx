@@ -1054,7 +1054,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
             {/* Learn Phase */}
             {currentStepData.type === 'learn' && (
               <div className="space-y-4 md:space-y-6">
-                <div className="prose prose-sm md:prose-base max-w-none text-gray-700 leading-relaxed">
+                <div className="prose prose-sm md:prose-base max-w-none text-gray-700 leading-relaxed [&>p]:mb-4 [&>ul]:my-4 [&>ul]:space-y-2 [&>ul>li]:ml-5 [&>h3]:mt-6 [&>h3]:mb-3 [&>h3]:font-semibold [&>strong]:font-semibold [&>strong]:text-gray-900">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {currentStepData.content.text}
                   </ReactMarkdown>
