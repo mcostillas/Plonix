@@ -6,10 +6,12 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
-import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3, CheckCircle, Lock, Edit3 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3, CheckCircle, Lock, Edit3, AlertCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export default function TopicLearningPage() {
   const params = useParams()
@@ -1052,10 +1054,10 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
             {/* Learn Phase */}
             {currentStepData.type === 'learn' && (
               <div className="space-y-4 md:space-y-6">
-                <div className="prose max-w-none">
-                  <p className="text-gray-700 leading-relaxed whitespace-pre-line text-xs md:text-base">
+                <div className="prose prose-sm md:prose-base max-w-none text-gray-700 leading-relaxed">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {currentStepData.content.text}
-                  </p>
+                  </ReactMarkdown>
                 </div>
 
                 <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
@@ -1086,15 +1088,19 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                 {/* Confirmation button for Learn phase */}
                 {!stepCompleted[currentStep] && (
                   <div className="border-t pt-3 md:pt-4 mt-4 md:mt-6">
-                    <Button onClick={markStepAsComplete} className="w-full h-9 md:h-10 text-xs md:text-sm">
-                      ✓ I've Read and Understood This Content
+                    <Button onClick={markStepAsComplete} className="w-full h-9 md:h-10 text-xs md:text-sm flex items-center justify-center gap-2">
+                      <CheckCircle className="w-4 h-4" />
+                      I've Read and Understood This Content
                     </Button>
                   </div>
                 )}
 
                 {stepCompleted[currentStep] && (
                   <div className="bg-green-50 p-3 md:p-4 rounded-lg border border-green-200 text-center">
-                    <p className="text-green-700 font-medium text-xs md:text-base">✓ Great! You can now proceed to the next step.</p>
+                    <p className="text-green-700 font-medium text-xs md:text-base flex items-center justify-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" />
+                      Great! You can now proceed to the next step.
+                    </p>
                   </div>
                 )}
               </div>
@@ -1139,9 +1145,15 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                               })}
                             />
                             {showResult && (
-                              <span className="text-xl md:text-2xl">
-                                {parseInt(calculatorInputs[field.id] || '0') === field.expected ? '✅' : '❌'}
-                              </span>
+                              <div className="flex-shrink-0">
+                                {parseInt(calculatorInputs[field.id] || '0') === field.expected ? (
+                                  <CheckCircle className="w-5 h-5 md:w-6 md:h-6 text-green-500" />
+                                ) : (
+                                  <span className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-red-100 flex items-center justify-center">
+                                    <span className="text-red-600 font-bold text-sm md:text-base">✕</span>
+                                  </span>
+                                )}
+                              </div>
                             )}
                           </div>
                         </div>
@@ -1163,21 +1175,30 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             ? 'bg-green-50 border-green-200' 
                             : 'bg-orange-50 border-orange-200'
                         }`}>
-                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base ${
+                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base flex items-center gap-2 ${
                             canProceedToNext()
                               ? 'text-green-800' 
                               : 'text-orange-800'
                           }`}>
-                            {canProceedToNext()
-                              ? '🎉 Perfect! All calculations are correct!' 
-                              : '❌ Some calculations need adjustment'}
+                            {canProceedToNext() ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                                Perfect! All calculations are correct!
+                              </>
+                            ) : (
+                              <>
+                                <AlertCircle className="w-4 h-4 md:w-5 md:h-5 text-orange-600" />
+                                Some calculations need adjustment
+                              </>
+                            )}
                           </h4>
                           
                           {canProceedToNext() && (
                             <>
                               <p className="text-xs md:text-sm mb-2 md:mb-3">{(currentStepData.content as any).explanation}</p>
-                              <p className="text-green-700 font-medium mt-2 text-xs md:text-base">
-                                ✓ You can now proceed to the next step!
+                              <p className="text-green-700 font-medium mt-2 text-xs md:text-base flex items-center gap-1.5">
+                                <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                You can now proceed to the next step!
                               </p>
                             </>
                           )}
@@ -1188,11 +1209,17 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                                 Check your answers and try again:
                               </p>
                               {((currentStepData.content as any).fields || []).map((field: any) => (
-                                <div key={field.id} className="text-xs md:text-sm mb-2">
+                                <div key={field.id} className="text-xs md:text-sm mb-2 flex items-center gap-1.5">
                                   {parseInt(calculatorInputs[field.id] || '0') === field.expected ? (
-                                    <span className="text-green-700">✓ {field.label}: Correct</span>
+                                    <>
+                                      <CheckCircle className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
+                                      <span className="text-green-700">{field.label}: Correct</span>
+                                    </>
                                   ) : (
-                                    <span className="text-orange-700">✗ {field.label}: Review your calculation</span>
+                                    <>
+                                      <XCircle className="w-3.5 h-3.5 text-orange-600 flex-shrink-0" />
+                                      <span className="text-orange-700">{field.label}: Review your calculation</span>
+                                    </>
                                   )}
                                 </div>
                               ))}
@@ -1239,14 +1266,22 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             ? 'bg-green-50 border-green-200' 
                             : 'bg-orange-50 border-orange-200'
                         }`}>
-                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base ${
+                          <h4 className={`font-semibold mb-2 md:mb-3 text-xs md:text-base flex items-center gap-2 ${
                             selectedAnswer === (currentStepData.content as any).correctAnswer 
                               ? 'text-green-800' 
                               : 'text-orange-800'
                           }`}>
-                            {selectedAnswer === (currentStepData.content as any).correctAnswer 
-                              ? '🎉 Correct! Well done!' 
-                              : '❌ Not quite. Let\'s learn from this:'}
+                            {selectedAnswer === (currentStepData.content as any).correctAnswer ? (
+                              <>
+                                <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                                Correct! Well done!
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-4 h-4 md:w-5 md:h-5 text-orange-600" />
+                                Not quite. Let's learn from this:
+                              </>
+                            )}
                           </h4>
                           <p className="text-xs md:text-sm mb-2 md:mb-3">{(currentStepData.content as any).explanation}</p>
                           
@@ -1269,8 +1304,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                           )}
                           
                           {selectedAnswer === (currentStepData.content as any).correctAnswer && (
-                            <p className="text-green-700 font-medium mt-2 text-xs md:text-base">
-                              ✓ You can now proceed to the next step!
+                            <p className="text-green-700 font-medium mt-2 text-xs md:text-base flex items-center gap-1.5">
+                              <CheckCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                              You can now proceed to the next step!
                             </p>
                           )}
                         </div>
