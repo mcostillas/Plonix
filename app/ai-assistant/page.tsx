@@ -75,7 +75,7 @@ function AIAssistantContent() {
   const [profilePicture, setProfilePicture] = useState<string>('')
   // TODO: Dark mode under works - Theme toggle temporarily disabled
   // const { theme, setTheme } = useTheme()
-  const [language, setLanguage] = useState<'en' | 'tl' | 'taglish'>('taglish')
+  const [language, setLanguage] = useState<'en' | 'tl'>('en')
   
   // Get or create session ID - persist in sessionStorage so it survives page navigation
   const getOrCreateSessionId = () => {
@@ -418,7 +418,7 @@ function AIAssistantContent() {
   }
 
   // Save language preference
-  const saveLanguagePreference = async (newLanguage: 'en' | 'tl' | 'taglish') => {
+  const saveLanguagePreference = async (newLanguage: 'en' | 'tl') => {
     console.log('💾 saveLanguagePreference called with:', newLanguage)
     console.log('💾 Current user:', user)
     
@@ -1648,18 +1648,16 @@ function AIAssistantContent() {
                     onClick={async () => {
                       try {
                         console.log('🌐 Language button clicked, current language:', language)
-                        const languages: Array<'en' | 'tl' | 'taglish'> = ['taglish', 'en', 'tl']
-                        const currentIndex = languages.indexOf(language)
-                        const nextLanguage = languages[(currentIndex + 1) % languages.length]
+                        // Toggle between English and Tagalog only
+                        const nextLanguage = language === 'en' ? 'tl' : 'en'
                         console.log('🌐 Switching to language:', nextLanguage)
                         setLanguage(nextLanguage)
                         console.log('🌐 Calling saveLanguagePreference...')
                         await saveLanguagePreference(nextLanguage)
                         console.log('🌐 Language saved successfully!')
                         const languageNames = {
-                          'taglish': 'English (Taglish)',
                           'en': 'English',
-                          'tl': 'Tagalog'
+                          'tl': 'Filipino (Tagalog)'
                         }
                         toast.success(`Language changed to ${languageNames[nextLanguage]}`)
                       } catch (error) {
@@ -1676,7 +1674,7 @@ function AIAssistantContent() {
                       <div className="text-left">
                         <p className="font-medium text-gray-900 text-sm">Language</p>
                         <p className="text-xs text-gray-500">
-                          {language === 'taglish' ? 'English (Taglish)' : language === 'en' ? 'English' : 'Tagalog'}
+                          {language === 'en' ? 'English' : 'Filipino (Tagalog)'}
                         </p>
                       </div>
                     </div>

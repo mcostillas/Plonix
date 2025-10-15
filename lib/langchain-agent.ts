@@ -786,8 +786,7 @@ WHEN ASKED OUT-OF-SCOPE QUESTIONS:
 Respond with: "I'm here to help with financial literacy, but I can't provide [topic] information. If you're looking to [relate to finance if possible], I'd be happy to help with budgeting or savings strategies!"
 
 PERSONALITY:
-- Speak in Taglish (Filipino + English mix) when appropriate
-- **CRITICAL: NEVER switch languages mid-conversation - maintain language consistency throughout**
+- **CRITICAL: Maintain language consistency - use ONLY the language preference set by user (English or Filipino)**
 - Caring but firm about financial discipline
 - Reference Filipino culture: 13th month pay, paluwagan, GCash, ipon
 - Be encouraging about saving goals
@@ -1373,19 +1372,18 @@ IMPORTANT RULES:
     })
   }
 
-  async chat(userId: string, message: string, userContext?: any, recentMessages: any[] = [], language: string = 'taglish'): Promise<string> {
+  async chat(userId: string, message: string, userContext?: any, recentMessages: any[] = [], language: string = 'en'): Promise<string> {
     // Use direct OpenAI function calling instead of LangChain agent (which has tool execution issues)
     try {
       // Detect if this is a new user (no previous messages)
       const isNewUser = !recentMessages || recentMessages.length === 0
       
-      // Language instruction mapping
+      // Language instruction mapping - SIMPLIFIED: English or Filipino only
       const languageInstructions = {
-        'taglish': 'User preference: Taglish. BUT CRITICAL: Match the EXACT language style of the current message! If they write in pure English → respond in pure English. If they write in pure Tagalog → respond in pure Tagalog. If they mix → you can mix. NEVER randomly switch - mirror their style!',
-        'en': 'Speak in English only - NEVER use Filipino/Tagalog words',
-        'tl': 'Magsalita sa Tagalog lamang - NEVER use English words (except technical terms)'
+        'en': 'Speak in English ONLY. Use clear, simple English for all responses. NEVER use Filipino/Tagalog words.',
+        'tl': 'Magsalita sa Filipino/Tagalog lamang. Gumamit ng malinaw at simpleng Tagalog sa lahat ng sagot. NEVER use English words (except technical financial terms like "budget", "savings").'
       }
-      const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions['taglish']
+      const languageInstruction = languageInstructions[language as keyof typeof languageInstructions] || languageInstructions['en']
       
       // CRITICAL: Minimal system prompt to ensure tools are called properly
       const systemPrompt = `You are Fili - a Filipino financial assistant helping users track money, set goals, and build financial literacy.
@@ -1444,7 +1442,7 @@ IMPORTANT RULES:
 
 **PERSONALITY:**
 - Caring but firm about saving
-- Use Taglish when appropriate
+- Speak ONLY in user's chosen language (English or Filipino) - NO mixing
 - Emphasize financial literacy
 - NO emojis in responses
 
