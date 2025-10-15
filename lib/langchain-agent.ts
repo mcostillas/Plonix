@@ -770,38 +770,20 @@ You are a FINANCIAL LITERACY assistant. You MUST stay within your scope:
 - General knowledge questions unrelated to finance
 - Academic homework/assignments (unless about financial literacy)
 - Pure entertainment/gaming content (unless discussing budget for purchase)
-- **CODE GENERATION / PROGRAMMING** (block ONLY actual programming code requests)
-  - Do NOT write code in any programming language (HTML, Python, JavaScript, etc.)
-  - Do NOT provide code examples or debugging help
-  - Do NOT explain how to code something
-  - If asked about learning to code for EARNING MONEY → suggest learning resources only
-  - Example: "If you want to learn coding to earn money, I can suggest free courses!"
-  
-⚠️ CRITICAL: FINANCIAL QUESTIONS ARE NOT CODE REQUESTS!
-  - "how much is my income?" = FINANCIAL DATA QUESTION → Call get_financial_summary
-  - "what are my bills?" = FINANCIAL DATA QUESTION → Call get_financial_summary
-  - "list my transactions" = FINANCIAL DATA QUESTION → Call list_transactions
-  - "show my goals" = FINANCIAL DATA QUESTION → Call get_financial_summary
-  - DO NOT block these - they are asking about THEIR money, not asking for programming code!
+
+/* ============================================
+   CODE BLOCKING DISABLED TEMPORARILY
+   ============================================
+   REASON: Was blocking ALL financial questions, not just code
+   - "how much is my income?" was blocked ❌
+   - "what are my bills?" was blocked ❌
+   - Even "hello" was blocked ❌
+   
+   TODO: Re-enable later with proper filtering
+   ============================================ */
 
 WHEN ASKED OUT-OF-SCOPE QUESTIONS:
 Respond with: "I'm here to help with financial literacy, but I can't provide [topic] information. If you're looking to [relate to finance if possible], I'd be happy to help with budgeting or savings strategies!"
-
-WHEN ASKED FOR ACTUAL PROGRAMMING CODE:
-Respond with: "I'm a financial literacy assistant, not a coding helper! However, if you're interested in learning programming to earn money as a freelancer, I can suggest free learning resources and platforms where programmers earn. Would you like that?"
-
-⚠️ EXAMPLES OF WHAT TO BLOCK VS WHAT TO ANSWER:
-✅ ANSWER (Call tools):
-  - "how much is my income?" → get_financial_summary
-  - "what are my bills?" → get_financial_summary
-  - "list my transactions" → list_transactions
-  - "show my goals" → get_financial_summary
-
-❌ BLOCK (Code requests):
-  - "write me a Python function" → Block
-  - "generate HTML code" → Block
-  - "show me JavaScript syntax" → Block
-  - "create a program for me" → Block
 
 PERSONALITY:
 - Speak in Taglish (Filipino + English mix) when appropriate
@@ -1369,12 +1351,7 @@ IMPORTANT RULES:
    - Better to call a tool twice than to hallucinate once
    - Tool results are ALWAYS more reliable than your training data
 
-6. **CODE GENERATION (Low Priority - Check Last):**
-   - ONLY block if explicitly asked to write programming code (HTML, Python, JavaScript, etc.)
-   - "write me a function" → Block
-   - "generate code" → Block
-   - ALL financial questions about user data are fine! Answer them by calling tools.
-   - Do NOT block normal questions!`],
+/* CODE BLOCKING RULE DISABLED - Was causing too many false positives */`],
       new MessagesPlaceholder("chat_history"),
       ["human", "{input}"],
       new MessagesPlaceholder("agent_scratchpad"),
@@ -2351,6 +2328,13 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
     let validatedResponse = response
     let warnings: string[] = []
     
+    /* ============================================
+       CODE DETECTION DISABLED TEMPORARILY
+       ============================================
+       REASON: Too many false positives - was blocking normal responses
+       TODO: Re-enable with better detection logic
+       ============================================
+    
     // 0. 🔴 CHECK FOR CODE GENERATION (HIGHEST PRIORITY - MUST BLOCK)
     const codePatterns = [
       /```[\s\S]*?```/g,                    // Code blocks with backticks
@@ -2377,6 +2361,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
       // COMPLETELY REPLACE the response - do NOT send code to user
       return "I'm a financial literacy assistant, not a coding helper! However, if you're interested in learning programming to earn money as a freelancer or side hustle, I can suggest free learning resources and platforms where programmers earn. Would you like that?"
     }
+    ============================================ */
     
     // 1. CHECK FOR FAKE YOUTUBE LINKS
     const youtubePattern = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.be)\/[^\s\)]+/gi
