@@ -408,8 +408,16 @@ function AIAssistantContent() {
         // Load theme and language preferences
         const prefs = (data as any).preferences || {}
         if (prefs.language) {
-          setLanguage(prefs.language)
-          console.log('✅ Language preference loaded:', prefs.language)
+          // MIGRATION: Convert old 'taglish' to 'en' (Taglish removed)
+          const migratedLanguage = prefs.language === 'taglish' ? 'en' : prefs.language
+          setLanguage(migratedLanguage)
+          console.log('✅ Language preference loaded:', prefs.language, '→ migrated to:', migratedLanguage)
+          
+          // Auto-update database if it was taglish
+          if (prefs.language === 'taglish') {
+            console.log('🔄 Auto-migrating taglish → en in database')
+            saveLanguagePreference('en').catch(err => console.error('Migration failed:', err))
+          }
         }
       }
     } catch (err) {
