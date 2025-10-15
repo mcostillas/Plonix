@@ -2612,34 +2612,51 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
     // 0. 🔴 CHECK FOR CODE GENERATION (SMART DETECTION - ONLY BLOCK ACTUAL CODE)
     // NEW APPROACH: Only block if response contains ACTUAL programming code, not just mentions
     
-    // Check for code blocks (``` or multi-line code)
+    // Check for code blocks (``` with actual code content)
     const hasCodeBlock = /```[\s\S]{20,}```/g.test(response)
     
     // Check for MULTIPLE programming patterns (not just one keyword)
+    // CRITICAL: Use STRICT patterns that match code SYNTAX, not normal English!
     let programmingSignals = 0
     
-    // Signal 1: Function definitions (def, function, const, etc.)
-    if (/\b(?:def|function|const|let|var|class)\s+\w+[\s\(]/g.test(response)) {
+    // Signal 1: Function definitions with parentheses (actual code syntax)
+    // Must have: keyword + name + ( or =
+    // ✅ Matches: "function add(", "def calculate(", "const sum = ("
+    // ❌ Won't match: "for programming", "if you're interested"
+    if (/\b(?:def|function|const|let|var|class)\s+\w+\s*[\(=]/g.test(response)) {
       programmingSignals++
     }
     
-    // Signal 2: Code syntax (return, if, while, for statements)
-    if (/\b(?:return|if|while|for|elif|else:)\s+/g.test(response)) {
+    // Signal 2: Code syntax with specific patterns (NOT normal English)
+    // Must have: keyword + code pattern (parentheses, colon, semicolon)
+    // ✅ Matches: "return x;", "if (condition)", "for (i=0", "while True:"
+    // ❌ Won't match: "if you want", "for programming", "return to menu"
+    if (/\b(?:return\s+\w+\s*[;\(\)]|if\s*\(|while\s*\(|for\s*\(|elif\s*\w+\s*:|else\s*:)/g.test(response)) {
       programmingSignals++
     }
     
-    // Signal 3: Import/include statements
-    if (/\b(?:import|from|include|require)\s+[\w\.]+/g.test(response)) {
+    // Signal 3: Import statements (actual import syntax)
+    // Must have: import/from + module pattern
+    // ✅ Matches: "import numpy", "from math import", "require('fs')"
+    // ❌ Won't match: "important information", "from now on"
+    if (/\b(?:import\s+[\w\.]+|from\s+[\w\.]+\s+import|require\s*\(['"])/g.test(response)) {
       programmingSignals++
     }
     
-    // Signal 4: HTML/XML tags (multiple)
+    // Signal 4: HTML/XML tags (multiple) - unchanged, this is fine
     const htmlTags = response.match(/<[a-z]+[^>]*>/gi)
     if (htmlTags && htmlTags.length >= 3) {
       programmingSignals++
     }
     
-    // ONLY block if: Code block present OR multiple programming signals
+    // Signal 5: Code operators and syntax characters in sequence
+    // ✅ Matches: "x = 5;", "arr[0]", "obj.method()"
+    // ❌ Won't match: normal punctuation in sentences
+    if (/[{}\[\]();].*[{}\[\]();].*[{}\[\]();]/g.test(response)) {
+      programmingSignals++
+    }
+    
+    // ONLY block if: Code block present OR multiple programming signals (2+)
     const isActualCode = hasCodeBlock || programmingSignals >= 2
     
     if (isActualCode) {
