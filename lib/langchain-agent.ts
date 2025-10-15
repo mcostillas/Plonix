@@ -1545,8 +1545,20 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
         {
           type: "function",
           function: {
+            name: "list_monthly_bills",
+            description: "🚨 **MANDATORY TOOL FOR BILLS** 🚨 **YOU MUST USE THIS TOOL WHEN USER ASKS ABOUT BILLS!** Returns user's monthly bills/recurring payments/subscriptions. **DO NOT use get_financial_summary for bills - use THIS tool instead!** Keywords that REQUIRE this tool: 'list my bills', 'show my bills', 'what are my bills', 'my monthly bills', 'my active bills', 'my subscriptions', 'recurring payments', 'what bills do I have', 'can you list my bills'. This tool returns ONLY bill data (no confusion with other financial data). **If user says the word 'bills' → CALL THIS TOOL!**",
+            parameters: {
+              type: "object",
+              properties: {},
+              required: []
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
             name: "get_financial_summary",
-            description: "**CRITICAL TOOL - USE WHEN USER ASKS ABOUT THEIR FINANCIAL DATA** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, active challenges, and monthly bills. **MUST call this when user asks about bills/recurring expenses!** **ALWAYS call this when user mentions the word 'bills' in ANY context!** **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords that MUST trigger this tool: 'what is my', 'how much is my', 'check my', 'show my', 'what's my total', 'my current', 'look at my', 'see my', 'what are my monthly bills', 'list my bills', 'list my active bills', 'show my bills', 'my active monthly bills', 'show my recurring expenses', 'my monthly bills', 'my subscriptions', 'my bills'. Required: userId.",
+            description: "**USE FOR OVERALL FINANCIAL SNAPSHOT ONLY** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, and active challenges. **DO NOT use this for listing bills - use list_monthly_bills instead!** **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords: 'what is my income', 'how much is my balance', 'check my progress', 'show my goals', 'my financial status', 'how am I doing financially'. Required: userId.",
             parameters: {
               type: "object",
               properties: {
@@ -1661,18 +1673,6 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 isActive: { type: "boolean", description: "Whether the bill is active (default: true)" }
               },
               required: ["name", "amount", "category", "dueDay"]
-            }
-          }
-        },
-        {
-          type: "function",
-          function: {
-            name: "list_monthly_bills",
-            description: "**USE THIS TOOL** when user asks about their monthly bills, recurring payments, or subscriptions. Keywords: 'list my bills', 'show my bills', 'what are my monthly bills', 'my active bills', 'my subscriptions', 'recurring payments', 'what bills do I have'. Returns a clean list of all active monthly bills with names, amounts, due days, and categories.",
-            parameters: {
-              type: "object",
-              properties: {},
-              required: []
             }
           }
         },
