@@ -1136,6 +1136,39 @@ Response: "Got it! When is your internet bill usually due each month? (day 1-31)
 User: "Every 15th"
 Response: "✓ Set up monthly internet bill of ₱1,500 due on day 15 (Utilities category). You'll get reminders before it's due!"
 
+**When to use list_monthly_bills:**
+User wants to see their recurring monthly expenses or subscriptions:
+- "List my bills"
+- "Show my monthly bills"
+- "What are my bills?"
+- "What are my active bills?"
+- "Show my recurring payments"
+- "What subscriptions do I have?"
+- "List my monthly expenses"
+
+**List Monthly Bills Flow:**
+1. Acknowledge the request
+2. Call list_monthly_bills tool (NO parameters needed)
+3. Present bills in numbered list format with:
+   - Bill name
+   - Amount (in pesos)
+   - Due day of month
+   - Category
+4. Include total monthly obligation
+5. Offer to help manage bills
+
+Example:
+User: "List my bills"
+Response: "Here are your current monthly bills:
+
+1. Internet: ₱5,000 - Due on day 15 (Utilities)
+2. Rent: ₱4,000 - Due on day 10 (Housing)
+3. Netflix: ₱149 - Due on day 16 (Entertainment)
+
+**Total Monthly Bills: ₱9,149**
+
+Your bills are organized! Would you like to set reminders for payment due dates?"
+
 **When to use list_transactions:**
 User wants to see their transaction history or details:
 - "Show me my transactions"
@@ -1308,46 +1341,45 @@ IMPORTANT RULES:
    - NEVER say "search on YouTube" - always call suggest_learning_resources first
 
 2. **NEVER GUESS USER DATA:**
-   - If user asks about their income/expenses/goals/bills/transactions, ALWAYS call get_financial_summary first
-   - ESPECIALLY when user mentions "bills" in ANY form → MUST call get_financial_summary
-   - Bill keywords that trigger tool call: "bills", "monthly bills", "active bills", "recurring payments", "subscriptions"
+   - If user asks about their income/expenses/goals/bills/transactions, ALWAYS call the appropriate tool first
+   - 🚨 **FOR BILLS:** When user mentions "bills" in ANY form → CALL list_monthly_bills tool (NOT get_financial_summary!)
+   - Bill keywords that trigger list_monthly_bills: "bills", "monthly bills", "active bills", "recurring payments", "subscriptions"
    - Example triggers: "what are my bills", "list my bills", "show my bills", "my active bills", "monthly payments"
+   - 🚨 **FOR TRANSACTIONS:** When user asks about spending/transactions → CALL list_transactions tool
+   - 🚨 **FOR SUMMARY:** When user asks about overall financial status/balance → CALL get_financial_summary tool
    - NEVER assume amounts or counts - use actual tool data
    - If you don't have the data, ask them to add it, don't make it up
-   - IMPORTANT: "Monthly bills" exist in scheduled_payments table - check there first!
 
 3. **NEVER CONFUSE DATA TYPES:**
    - monthly_income (from userProfile) ≠ goal target_amount (from goals)
    - Count ALL items in arrays (bills, transactions, etc.)
    - Use exact field names from tool responses
 
-3a. **MONTHLY BILLS - CRITICAL PARSING RULES:**
-   🚨 **STEP-BY-STEP PROCESS (FOLLOW EXACTLY):**
+3a. **MONTHLY BILLS - USE DEDICATED TOOL:**
+   🚨 **CRITICAL: Use list_monthly_bills tool, NOT get_financial_summary!**
    
-   **STEP 1:** When user asks about bills → CALL get_financial_summary tool
+   **STEP 1:** When user asks about bills → CALL list_monthly_bills tool
    - Triggers: "bills", "monthly bills", "list my bills", "what are my bills", "active bills"
+   - This tool is SPECIFICALLY designed for listing bills (like list_transactions for transactions)
    
-   **STEP 2:** Read tool response monthlyBills object which contains:
-   - monthlyBills.allBills = ARRAY of bill objects
-   - Each bill object has: name, amount, dueDay, category
-   - Example bill: name="Internet", amount=5000, dueDay=15
+   **STEP 2:** Read tool response which contains:
+   - bills = ARRAY of bill objects (already numbered!)
+   - Each bill has: number, name, amount, category, dueDay
+   - totalMonthlyAmount = sum of all bills
+   - Example: {number: 1, name: "Internet", amount: 5000, dueDay: 15}
    
-   **STEP 3:** Parse monthlyBills.allBills array ITEM BY ITEM:
-   - Loop through EACH item in allBills array
-   - For each item, read: item.name and item.amount
-   - Format each as: "1. [name from item]: ₱[amount from item]"
+   **STEP 3:** List EACH bill from the bills array:
+   - Format: "[number]. [name]: ₱[amount] - Due on day [dueDay] ([category])"
+   - Example: "1. Internet: ₱5,000 - Due on day 15 (Utilities)"
    
-   **STEP 4:** List bills using EXACT values from each array item:
-   - ✅ CORRECT: Read Internet amount=5000 → Write "Internet: ₱5,000"
-   - ✅ CORRECT: Read Rent amount=4000 → Write "Rent: ₱4,000"
-   - ❌ WRONG: Saying "Internet: ₱1,500" when array shows amount=5000
-   - ❌ WRONG: Making up "Electricity: ₱649" when it's not in allBills array
+   **STEP 4:** After listing all bills, show total:
+   - "Total Monthly Bills: ₱[totalMonthlyAmount]"
    
-   **CRITICAL WARNINGS:**
-   - totalMonthlyAmount = SUM of all bills (DO NOT use this for individual bills!)
-   - If you say "Internet: ₱X" then X MUST equal the amount field from Internet item in allBills
-   - If bill doesn't exist in allBills array, DON'T mention it
-   - ONLY list bills that exist in monthlyBills.allBills array with their ACTUAL amounts
+   **WHY THIS WORKS:**
+   - list_monthly_bills returns CLEAN, pre-formatted bill data
+   - No confusion with other financial data (transactions, goals, etc.)
+   - Just like list_transactions works perfectly for transactions!
+   - The tool response has ONLY bills, nothing else to confuse you
 
 4. **NEVER CREATE FAKE EXAMPLES:**
    - Don't say "like Product X" if you haven't searched for Product X
@@ -1629,6 +1661,18 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 isActive: { type: "boolean", description: "Whether the bill is active (default: true)" }
               },
               required: ["name", "amount", "category", "dueDay"]
+            }
+          }
+        },
+        {
+          type: "function",
+          function: {
+            name: "list_monthly_bills",
+            description: "**USE THIS TOOL** when user asks about their monthly bills, recurring payments, or subscriptions. Keywords: 'list my bills', 'show my bills', 'what are my monthly bills', 'my active bills', 'my subscriptions', 'recurring payments', 'what bills do I have'. Returns a clean list of all active monthly bills with names, amounts, due days, and categories.",
+            parameters: {
+              type: "object",
+              properties: {},
+              required: []
             }
           }
         },
@@ -2124,6 +2168,64 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
               functionResult = JSON.stringify({
                 success: false,
                 error: "Failed to add monthly bill. Please try again later."
+              })
+            }
+            break
+
+          case "list_monthly_bills":
+            console.log('📋 Listing monthly bills')
+            try {
+              // Use service role to bypass RLS
+              const { createClient } = await import('@supabase/supabase-js')
+              const supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!).trim()
+              )
+              
+              const queryUserId = userContext?.id || userId
+              
+              // Fetch active monthly bills
+              const { data: bills, error } = await supabase
+                .from('scheduled_payments')
+                .select('*')
+                .eq('user_id', queryUserId)
+                .eq('is_active', true)
+                .order('due_day', { ascending: true })
+              
+              if (error) {
+                console.error('❌ Error fetching bills:', error)
+                functionResult = JSON.stringify({
+                  success: false,
+                  error: 'Failed to fetch monthly bills'
+                })
+              } else {
+                const totalMonthly = bills?.reduce((sum, b) => sum + (b.amount || 0), 0) || 0
+                
+                // Format bills for clean display
+                const formattedBills = bills?.map((b, idx) => ({
+                  number: idx + 1,
+                  name: b.name,
+                  amount: b.amount,
+                  category: b.category,
+                  dueDay: b.due_day,
+                  description: b.description
+                })) || []
+                
+                console.log('✅ Found', bills?.length || 0, 'active bills, total:', totalMonthly)
+                
+                functionResult = JSON.stringify({
+                  success: true,
+                  bills: formattedBills,
+                  totalBills: bills?.length || 0,
+                  totalMonthlyAmount: totalMonthly,
+                  message: `Found ${bills?.length || 0} active monthly bills totaling ₱${totalMonthly.toLocaleString()}/month. IMPORTANT: List each bill individually with its exact name and amount from the bills array.`
+                })
+              }
+            } catch (error) {
+              console.error('❌ List bills error:', error)
+              functionResult = JSON.stringify({
+                success: false,
+                error: 'Failed to fetch monthly bills. Please try again later.'
               })
             }
             break
