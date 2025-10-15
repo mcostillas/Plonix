@@ -1508,6 +1508,34 @@ IMPORTANT RULES:
    **BE INTELLIGENT:**
    - "Nike Air Dunks" → "Are you looking to save for these? I can help set a goal!"
    - "How to code Python" → "Want to learn coding to earn? I can suggest free courses!"
+
+7. **🛡️ DEADLINE CALCULATION ERRORS - RETRY IMMEDIATELY:**
+   🚨 **IF create_financial_goal RETURNS ERROR ABOUT PAST DATE:**
+   
+   **WHAT HAPPENED:**
+   - You calculated a deadline that's in the PAST (like 2024 when it's 2025)
+   - The tool REJECTED it to prevent bad data in database
+   - Error message contains: "CALCULATION ERROR" and "mustRecalculate: true"
+   
+   **WHAT TO DO (IN SAME RESPONSE - DO NOT ASK USER):**
+   1. **IMMEDIATELY recalculate the deadline correctly**
+   2. **Follow the step-by-step math in the DEADLINE CALCULATION section**
+   3. **CALL create_financial_goal AGAIN with correct date**
+   4. **Continue conversation normally after successful creation**
+   
+   **EXAMPLE:**
+   ❌ Wrong response: "The deadline is in the past. Could you specify a new deadline?"
+   ✅ Correct response: *[Recalculates internally, calls tool again with correct date, then says]* "Goal created! You'll reach ₱5,000 by August 2026."
+   
+   **DO NOT:**
+   - ❌ Ask user to "specify" or "provide" a new deadline (YOU calculate it!)
+   - ❌ Say the deadline is "in the past" to the user (they gave correct input!)
+   - ❌ Give up or change topics
+   
+   **DO:**
+   - ✅ Recalculate immediately using the DEADLINE CALCULATION rules
+   - ✅ Try again automatically (user won't even know there was an error)
+   - ✅ Present successful goal creation to user
    - "Who is Jesus Christ?" → "I focus on financial topics. Any money questions?"
    - "Who is Speed?" → "I'm a financial assistant. Interested in content creation income?"
 
@@ -2143,9 +2171,13 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                   console.error('   Deadline:', deadlineStr)
                   console.error('   Today:', today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }))
                   
+                  // Extract the original user input from the title if possible
+                  const userTimeframe = functionArgs.description || 'the specified timeframe'
+                  
                   functionResult = JSON.stringify({
                     success: false,
-                    error: `The deadline you calculated (${deadlineStr}) is in the PAST! Today is ${today.toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}. Please recalculate the deadline to be in the FUTURE. For example, if user said "in 6 months" from October 2025, it should be April 2026, not 2024.`
+                    error: `CALCULATION ERROR: You calculated ${deadlineStr} which is in the PAST. Today is October 15, 2025. You MUST recalculate ${userTimeframe} starting from TODAY (October 2025). DO NOT ask the user - YOU calculate it correctly. Example: "in 10 months" from October 2025 = October 2025 + 10 months = August 2026 (2025 + 1 year for crossing into next year).`,
+                    mustRecalculate: true
                   })
                   break
                 }
