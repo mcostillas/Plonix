@@ -1308,26 +1308,56 @@ Response: "Perfect! I've created your ₱10,000 Savings Goal with a 6-month dead
 
 **CURRENT DATE: October 14, 2025**
 
-DEADLINE PARSING RULES:
-1. "in X months" → Add X months to TODAY (October 14, 2025)
-   - Example: "in 6 months" = April 14, 2026 (NOT 2024!)
-   - Example: "in 3 months" = January 14, 2026
-   - Example: "in 12 months" = October 14, 2026
-   
-2. "in X weeks" → Add X weeks to TODAY
-   - Example: "in 4 weeks" = November 11, 2025
-   
-3. "by [Month Year]" → Use last day of that month/year
-   - Example: "by December 2025" = 2025-12-31
-   - Example: "by June 2026" = 2026-06-30
-   
-4. "by [specific date]" → Use that exact date (MUST be in future)
-   - Example: "by December 25, 2025" = 2025-12-25
-   
-5. "no deadline" / "no rush" / "flexible" → set deadline to null
+🗓️ **DEADLINE CALCULATION - STEP BY STEP (FOLLOW EXACTLY!):**
 
-**CRITICAL: ALWAYS check the calculated date is in the FUTURE, not the past!**
-**If your calculation results in a 2024 date, you made an error - recalculate!**
+**CURRENT DATE: October 15, 2025** ← START HERE FOR ALL CALCULATIONS
+
+**Rule 1: "in X months"**
+DO THE MATH STEP BY STEP:
+
+Example: "in 6 months"
+Step 1: Current month = October (month 10)
+Step 2: Add 6 months: 10 + 6 = 16
+Step 3: 16 is greater than 12, so: 16 - 12 = 4 (April)
+Step 4: Year changes: 2025 + 1 = 2026
+Step 5: Result = April 2026 = **2026-04-15** ✅
+
+Example: "in 3 months"  
+Step 1: Current = October 2025 (month 10)
+Step 2: 10 + 3 = 13
+Step 3: 13 > 12, so: 13 - 12 = 1 (January)
+Step 4: 2025 + 1 = 2026
+Step 5: Result = **2026-01-15** ✅
+
+Example: "in 2 months"
+Step 1: Current = October (month 10)
+Step 2: 10 + 2 = 12 (December)
+Step 3: Same year = 2025
+Step 4: Result = **2025-12-15** ✅
+
+🚨 **COMMON ERROR - DO NOT DO THIS:**
+❌ "in 6 months" = May 2024 (WRONG! That's the PAST!)
+❌ "in 6 months" = April 2024 (WRONG! 2024 is LAST YEAR!)
+
+**Rule 2: "in X weeks"** → Add X weeks to October 15, 2025
+- "in 4 weeks" = October 15 + 28 days = November 12, 2025
+
+**Rule 3: "by [Month Year]"** → Last day of month
+- "by December 2025" = 2025-12-31
+- "by June 2026" = 2026-06-30
+
+**Rule 4: "by [date]"** → Use exact date
+- "by December 25, 2025" = 2025-12-25
+
+**Rule 5: "no deadline"** → null
+
+🔴 **VALIDATION (MANDATORY BEFORE SUBMITTING):**
+1. Look at the YEAR in your answer
+2. Is it 2024? → ❌ WRONG! GO BACK AND RECALCULATE!
+3. Is it before October 2025? → ❌ WRONG! That's the past!
+4. Is it late 2025 or 2026? → ✅ CORRECT!
+
+**IF YOU CALCULATED 2024 OR EARLY 2025 → YOU MADE AN ERROR!**
 
 Example responses for learning:
 ✅ "I see you're interested in freelancing but don't have the skills yet. Let me find learning resources for you..."
