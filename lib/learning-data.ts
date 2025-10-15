@@ -78,8 +78,8 @@ This rule adapts to Filipino culture by allowing flexibility for family support 
               'Fresh graduate with ₱25,000 salary: ₱12,500 needs, ₱7,500 wants, ₱5,000 savings'
             ],
             source: {
-              title: 'Khan Academy - Planning a Budget',
-              url: 'https://www.khanacademy.org/college-careers-more/financial-literacy/xa6995ea67a8e9fdd:budgeting-and-saving/xa6995ea67a8e9fdd:budgeting/a/planning-a-budget-start',
+              title: 'Khan Academy - Budgeting and the 50/30/20 Rule',
+              url: 'https://www.khanacademy.org/economics-finance-domain/economics-personal-finance-va/x3ed8f3aede624754:budgeting-saving/x3ed8f3aede624754:budgeting/v/budgeting-and-the-503020-rule',
               type: 'Educational'
             }
           }
@@ -125,8 +125,8 @@ Set up automatic transfers on payday. Treat savings like a bill you must pay you
               'House fund: ₱100,000 in balanced mutual fund for 5+ years growth'
             ],
             source: {
-              title: 'Bangko Sentral ng Pilipinas - Consumer Education',
-              url: 'https://www.bsp.gov.ph/SitePages/Default.aspx',
+              title: 'BSP - Deposit Insurance & Banking Information',
+              url: 'https://www.bsp.gov.ph/SitePages/FinancialStability/DirBanksFIList.aspx',
               type: 'Government'
             }
           }
@@ -175,9 +175,9 @@ Begin with ₱1,000 monthly in a balanced mutual fund. As you learn and earn mor
               'Emergency fund first, then invest surplus money for long-term goals'
             ],
             source: {
-              title: 'Securities and Exchange Commission - Investor Education',
-              url: 'https://www.sec.gov.ph/#gsc.tab=0',
-              type: 'Government'
+              title: 'BPI Asset Management - Investment Products',
+              url: 'https://www.bpiassetmanagement.com/',
+              type: 'Educational'
             }
           }
         },
@@ -507,8 +507,8 @@ Emergency funds should be easily accessible but earn more than inflation (3-4% a
               'Family crisis: Separate emergency fund protects personal goals'
             ],
             source: {
-              title: 'PDIC - Deposit Insurance Information',
-              url: 'https://www.pdic.gov.ph/',
+              title: 'BSP - Financial Stability & Banking Directory',
+              url: 'https://www.bsp.gov.ph/SitePages/FinancialStability/DirBanksFIList.aspx',
               type: 'Government'
             }
           }
@@ -579,8 +579,8 @@ Set up automatic transfers on payday:
               'Business fund: ₱3,000 monthly × 36 months = ₱108,000 startup capital'
             ],
             source: {
-              title: 'Investopedia - Goal-Based Investing',
-              url: 'https://www.investopedia.com/articles/personal-finance/061914/goal-based-investing-vs-traditional-wealth-management.asp',
+              title: 'Investopedia - Setting Financial Goals',
+              url: 'https://www.investopedia.com/articles/personal-finance/100516/setting-financial-goals/',
               type: 'Educational'
             }
           }
@@ -728,8 +728,8 @@ Emergency fund provides security buffer, motorcycle improves lifestyle/earning p
               'Stock market history: PSEi averaged 8.7% annually over 20+ years'
             ],
             source: {
-              title: 'Philippine Stock Exchange - Investment Education',
-              url: 'https://www.pse.com.ph/stocksreport/home.html',
+              title: 'COL Financial - Online Stock Trading Platform',
+              url: 'https://www.colfinancial.com/',
               type: 'Educational'
             }
           }
@@ -808,8 +808,8 @@ Emergency fund provides security buffer, motorcycle improves lifestyle/earning p
               'Aggressive portfolio: 80% stocks + 20% REITs/alternative investments'
             ],
             source: {
-              title: 'Securities and Exchange Commission Philippines',
-              url: 'https://www.sec.gov.ph/information/market-and-securities-regulation-department-msrd/',
+              title: 'PSA - Consumer Price Index & Inflation Data',
+              url: 'https://psa.gov.ph/price-indices/cpi-and-inflation-rate',
               type: 'Government'
             }
           }
@@ -972,8 +972,8 @@ Different timelines require different risk levels. Shorter goals need stability,
               '₱5,000 extra monthly payment reduces 10-year debt to 2 years'
             ],
             source: {
-              title: 'Bangko Sentral ng Pilipinas - Consumer Protection',
-              url: 'https://www.bsp.gov.ph/Regulations/Consumer%20Protection/',
+              title: 'BSP - Credit and Debit Card Regulations',
+              url: 'https://www.bsp.gov.ph/Regulations/Issuances/2023/1165.pdf',
               type: 'Government'
             }
           }
@@ -1054,8 +1054,8 @@ Timeline: 18 months to debt freedom vs. 8+ years with minimums`,
               'Side hustle impact: ₱5,000 monthly extra income cuts debt timeline in half'
             ],
             source: {
-              title: 'National Debt Management Office - Financial Literacy',
-              url: 'https://www.dof.gov.ph/ndmo/',
+              title: 'CICC - Cybercrime Investigation & Coordination',
+              url: 'https://cicc.gov.ph/advisories/',
               type: 'Government'
             }
           }
@@ -1217,8 +1217,8 @@ Miguel's ₱18,500 in debt payments become available for emergency fund building
               'Disability scenario: Unable to work for 2 years = ₱720,000 lost income'
             ],
             source: {
-              title: 'Insurance Commission Philippines',
-              url: 'https://www.insurance.gov.ph/',
+              title: 'PhilHealth - National Health Insurance',
+              url: 'https://www.philhealth.gov.ph/',
               type: 'Government'
             }
           }
@@ -1302,9 +1302,9 @@ Miguel's ₱18,500 in debt payments become available for emergency fund building
               'Established family: Full ladder including disability and property insurance'
             ],
             source: {
-              title: 'Philippine Life Insurance Association',
-              url: 'https://www.plia.org.ph/',
-              type: 'Educational'
+              title: 'SSS - Social Security System',
+              url: 'https://www.sss.gov.ph/',
+              type: 'Government'
             }
           }
         },
@@ -1462,8 +1462,8 @@ Add disability insurance (₱1,500 monthly) and husband's life insurance (₱1,0
               'Mutual fund vs. bank savings: 0% vs. 20% tax on gains'
             ],
             source: {
-              title: 'Bureau of Internal Revenue - TRAIN Law',
-              url: 'https://www.bir.gov.ph/index.php/tax-information/income-tax.html',
+              title: 'BSP - Interest Rate Statistics',
+              url: 'https://www.bsp.gov.ph/statistics/',
               type: 'Government'
             }
           }
@@ -1555,8 +1555,8 @@ Add disability insurance (₱1,500 monthly) and husband's life insurance (₱1,0
               'Freelancer earning ₱2M: ₱160,000 tax (8% rate) vs. ₱290,000+ (income tax rates)'
             ],
             source: {
-              title: 'Bureau of Internal Revenue - Tax Optimization Guide',
-              url: 'https://www.bir.gov.ph/',
+              title: 'BSP - Inclusive Finance & Financial Education',
+              url: 'https://www.bsp.gov.ph/SitePages/InclusiveFinance/InclusiveFinance.aspx',
               type: 'Government'
             }
           }
@@ -1754,9 +1754,9 @@ This strategy provides immediate tax benefits, long-term tax-free growth, and di
               'Dividend income: ₱2M invested at 5% yield = ₱100,000 annual passive income'
             ],
             source: {
-              title: 'Department of Trade and Industry - Entrepreneurship',
-              url: 'https://www.dti.gov.ph/',
-              type: 'Government'
+              title: 'GCash - Digital Payments Platform',
+              url: 'https://www.gcash.com/',
+              type: 'Educational'
             }
           }
         },
@@ -1878,8 +1878,8 @@ This strategy provides immediate tax benefits, long-term tax-free growth, and di
               'Digital product success: Course creation → ₱500k annual sales with minimal ongoing work'
             ],
             source: {
-              title: 'Freelancer.com - Philippines Market Report',
-              url: 'https://www.freelancer.com/about/resources/',
+              title: 'Maya - Digital Banking & Payments',
+              url: 'https://www.maya.ph/',
               type: 'Educational'
             }
           }
