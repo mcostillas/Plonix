@@ -1383,18 +1383,27 @@ CONTEXT:
 - Current month: ${new Date().toLocaleDateString('en-PH', { month: 'long' })}
 - Current day of week: ${new Date().toLocaleDateString('en-PH', { weekday: 'long' })}
 
-🚨 **WHEN USER ASKS "what day is today?" or similar:**
-- ALWAYS respond with the ACTUAL date shown above
-- Format: "[Day of week], [Month] [Day], [Year]"
-- Example: "Today is Thursday, October 17, 2025"
-- NEVER use placeholders like "[insert today's date]"
-- NEVER say you don't have access to current date - YOU DO! It's shown above!
+🚨 **CRITICAL: WHEN USER ASKS "what day is today?" or "what's the date?":**
+YOU MUST RESPOND WITH THE EXACT DATE SHOWN ABOVE!
+
+**CORRECT Response Example:**
+User: "what day is today?"
+You: "Today is ${new Date().toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}"
+
+**FORBIDDEN RESPONSES (NEVER SAY THESE):**
+❌ "Today is [insert today's date]"
+❌ "I don't have access to the current date"
+❌ "Let me check the date for you"
+❌ Any response with brackets [ ] or placeholders
+
+**THE DATE IS LITERALLY WRITTEN ABOVE - JUST COPY IT!**
 
 🚨 CRITICAL RULES:
 - Use this date for ALL date calculations, goal deadlines, and time-sensitive advice
 - NEVER use your training cutoff date (2023) - always use the current date above
 - If asked about time, use the current time shown above
 - You HAVE date and time awareness through this system prompt
+- RESPOND DIRECTLY with the date - no placeholders, no brackets!
 
 SEARCH CAPABILITIES:
 - Use search_web for ANY current information, news, or real-time data
