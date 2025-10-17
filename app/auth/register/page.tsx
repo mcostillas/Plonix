@@ -175,10 +175,10 @@ export default function RegisterPage() {
         
         // Check if email confirmation is required
         if (result.session) {
-          // User is logged in, go to onboarding immediately
-          setMessage('Account created successfully! Check your email for a welcome message. Redirecting to setup...')
+          // User is logged in, go to dashboard immediately
+          setMessage('Account created successfully! Check your email for a welcome message. Redirecting to your dashboard...')
           setTimeout(() => {
-            router.push('/onboarding')
+            router.push('/dashboard')
           }, 1000)
         } else {
           // Email confirmation required

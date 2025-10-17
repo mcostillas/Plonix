@@ -1,0 +1,43 @@
+{
+  "timestamp": "2025-10-16T03:12:29.333Z",
+  "tables": {
+    "transactions": 66,
+    "goals": 26,
+    "scheduled_payments": 37,
+    "learning_reflections": 566,
+    "challenges": 8,
+    "user_challenges": 27,
+    "notifications": 0
+  },
+  "totalRecords": 730,
+  "errors": [
+    {
+      "table": "users",
+      "error": "relation \"public.users\" does not exist"
+    },
+    {
+      "table": "monthly_bills",
+      "error": "relation \"public.monthly_bills\" does not exist"
+    },
+    {
+      "table": "ai_chat_sessions",
+      "error": "relation \"public.ai_chat_sessions\" does not exist"
+    },
+    {
+      "table": "ai_chat_messages",
+      "error": "relation \"public.ai_chat_messages\" does not exist"
+    },
+    {
+      "table": "learning_progress",
+      "error": "relation \"public.learning_progress\" does not exist"
+    },
+    {
+      "table": "admin_users",
+      "error": "relation \"public.admin_users\" does not exist"
+    },
+    {
+      "table": "admin_activity_logs",
+      "error": "relation \"public.admin_activity_logs\" does not exist"
+    }
+  ]
+}

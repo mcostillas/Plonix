@@ -229,17 +229,6 @@ function DashboardContent() {
     fetchFinancialData()
   }, [user, refreshTrigger])
 
-  // Check if user just completed onboarding
-  useEffect(() => {
-    if (searchParams?.get('onboarding') === 'complete') {
-      setShowWelcomeMessage(true)
-      // Auto-hide after 5 seconds
-      setTimeout(() => {
-        setShowWelcomeMessage(false)
-      }, 5000)
-    }
-  }, [searchParams])
-
   // Fetch challenges data
   useEffect(() => {
     async function fetchChallengesData() {
