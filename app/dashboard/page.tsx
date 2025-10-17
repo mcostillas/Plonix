@@ -75,7 +75,7 @@ function DashboardContent() {
       try {
         const { supabase } = await import('@/lib/supabase')
         
-        // Check database first for cross-device persistence
+        // ALWAYS check database first for cross-device/browser persistence
         const { data, error } = await supabase
           .from('user_profiles')
           .select('tour_completed')
@@ -84,50 +84,49 @@ function DashboardContent() {
         
         if (!error && data) {
           const tourCompleted = (data as any).tour_completed
-          console.log('🔍 Database tour status:', tourCompleted)
+          console.log('🔍 Database tour status for user', user!.id, ':', tourCompleted)
           
-          // If tour is explicitly marked as completed, never show it again
+          // If tour is marked as completed in database, NEVER show it again
           if (tourCompleted === true) {
-            console.log('✅ Tour already completed (from database)')
+            console.log('✅ Tour already completed in database - will NOT show')
             setShowTour(false)
             setTourChecked(true)
-            // Also sync to localStorage for faster future checks
+            // Sync to localStorage for faster future checks
             localStorage.setItem('plounix_tour_shown', 'true')
             return
           }
+          
+          // Tour NOT completed in database - check if this is truly a new user
+          console.log('🆕 Tour not completed in database - showing tour')
+          setIsNewUser(true)
+          setShowTour(true)
+          setTourChecked(true)
+          return
         }
         
-        // Fallback to localStorage (for existing users before database field was added)
-        const tourShown = localStorage.getItem('plounix_tour_shown')
+        // If we get here, there was an error or no profile found
+        console.error('⚠️ Database check failed:', error)
         
+        // Fallback to localStorage ONLY if database fails
+        const tourShown = localStorage.getItem('plounix_tour_shown')
         if (tourShown === 'true') {
-          console.log('✅ Tour already shown (from localStorage, syncing to database...)')
-          // Update database to sync for cross-device support
+          console.log('✅ Tour shown before (localStorage fallback) - syncing to database')
+          // Try to update database for future cross-device support
           await (supabase as any)
             .from('user_profiles')
             .update({ tour_completed: true })
             .eq('user_id', user!.id)
           setShowTour(false)
-          setTourChecked(true)
-          return
+        } else {
+          console.log('🚀 New user (localStorage fallback) - showing tour')
+          setShowTour(true)
         }
-        
-        // Show tour for new users (only once, ever)
-        console.log('🚀 New user detected, showing interactive tour (ONCE ONLY)')
-        setIsNewUser(true)
-        setShowTour(true)
         setTourChecked(true)
       } catch (error) {
         console.error('❌ Error checking tour status:', error)
-        // Fallback to localStorage only if database fails
+        // Only on critical failure, use localStorage fallback
         const tourShown = localStorage.getItem('plounix_tour_shown')
-        if (tourShown !== 'true') {
-          console.log('⚠️ Database error, checking localStorage fallback')
-          setShowTour(true)
-        } else {
-          console.log('✅ Tour already shown (localStorage fallback)')
-          setShowTour(false)
-        }
+        setShowTour(tourShown !== 'true')
         setTourChecked(true)
       }
     }
@@ -357,29 +356,36 @@ function DashboardContent() {
   }
 
   const handleTourComplete = async () => {
-    console.log('✅ Tour completed, saving to database')
+    console.log('✅ Tour completed by user - saving permanently')
     setShowTour(false)
+    setTourChecked(true) // Prevent re-checking
     
-    // Save to localStorage for immediate effect
+    // Save to localStorage immediately for instant effect
     localStorage.setItem('plounix_tour_shown', 'true')
     
-    // Save to database for cross-device persistence
+    // Save to database for cross-device/cross-browser persistence (CRITICAL!)
     if (user?.id) {
       try {
         const { supabase } = await import('@/lib/supabase')
         const { error } = await (supabase as any)
           .from('user_profiles')
-          .update({ tour_completed: true })
+          .update({ 
+            tour_completed: true,
+            updated_at: new Date().toISOString()
+          })
           .eq('user_id', user.id)
         
         if (error) {
-          console.error('Error saving tour status to database:', error)
+          console.error('❌ Error saving tour status to database:', error)
+          // Even if database fails, localStorage will prevent re-showing on this browser
         } else {
-          console.log('✅ Tour status saved to database')
+          console.log('✅ Tour completion saved to database - will persist across devices!')
         }
       } catch (error) {
-        console.error('Error updating tour status:', error)
+        console.error('❌ Exception while updating tour status:', error)
       }
+    } else {
+      console.error('⚠️ No user ID found - cannot save tour completion to database')
     }
   }
 
