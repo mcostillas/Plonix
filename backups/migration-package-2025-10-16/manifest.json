@@ -1,0 +1,32 @@
+{
+  "created": "2025-10-16T03:17:38.392Z",
+  "source": "https://ftxvmaurxhatqhzowgkb.supabase.co/",
+  "tables": [
+    {
+      "table": "transactions",
+      "records": 66
+    },
+    {
+      "table": "goals",
+      "records": 26
+    },
+    {
+      "table": "scheduled_payments",
+      "records": 37
+    },
+    {
+      "table": "learning_reflections",
+      "records": 566
+    },
+    {
+      "table": "challenges",
+      "records": 8
+    },
+    {
+      "table": "user_challenges",
+      "records": 27
+    }
+  ],
+  "totalRecords": 730,
+  "schemaFiles": 10
+}
