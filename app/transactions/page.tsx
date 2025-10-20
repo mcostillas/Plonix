@@ -941,23 +941,23 @@ function TransactionsContent() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-1.5 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto">
+                <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto">
                   {formattedTransactions.map((transaction, idx) => {
                     // Find the original transaction object
                     const originalTransaction = filteredTransactions[idx]
                     return (
-                      <div key={transaction.id} className="flex items-center justify-between p-1.5 md:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                        <div className="flex items-center space-x-2 md:space-x-3 min-w-0 flex-1">
-                          <div className={`w-6 h-6 md:w-10 md:h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
+                      <div key={transaction.id} className="flex items-center justify-between p-3 md:p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div className="flex items-center space-x-3 md:space-x-4 min-w-0 flex-1">
+                          <div className={`w-8 h-8 md:w-10 md:h-10 ${transaction.type === 'income' ? 'bg-green-100' : 'bg-red-100'} rounded-full flex items-center justify-center flex-shrink-0`}>
                             {transaction.type === 'income' ? (
-                              <ArrowUpRight className="w-3 h-3 md:w-5 md:h-5 text-green-600" />
+                              <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
                             ) : (
-                              <ArrowDownRight className="w-3 h-3 md:w-5 md:h-5 text-red-600" />
+                              <ArrowDownRight className="w-4 h-4 md:w-5 md:h-5 text-red-600" />
                             )}
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[10px] md:text-sm font-medium truncate">{transaction.description}</p>
-                            <p className="text-[8px] md:text-xs text-gray-600 capitalize truncate">
+                            <p className="text-xs md:text-sm font-medium truncate">{transaction.description}</p>
+                            <p className="text-[10px] md:text-xs text-gray-600 capitalize truncate">
                               {transaction.category} • {new Date(transaction.date).toLocaleDateString()} • {transaction.time}
                               {originalTransaction.payment_method && (
                                 <> • {originalTransaction.payment_method}</>
@@ -965,31 +965,31 @@ function TransactionsContent() {
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-1 md:space-x-2 flex-shrink-0 ml-2">
-                          <span className={`text-[10px] md:text-sm font-medium ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className="flex items-center space-x-2 md:space-x-2 flex-shrink-0 ml-3 md:ml-4">
+                          <span className={`text-xs md:text-sm font-semibold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
                             {transaction.type === 'income' ? '+' : '-'}₱{transaction.amount.toLocaleString()}
                           </span>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-6 w-6 md:h-8 md:w-8 p-0 hover:bg-blue-50"
+                            className="h-7 w-7 md:h-8 md:w-8 p-0 hover:bg-blue-50"
                             onClick={() => {
                               setSelectedTransaction(originalTransaction)
                               setShowEditTransactionModal(true)
                             }}
                           >
-                            <Edit3 className="w-3 h-3 md:w-4 md:h-4 text-blue-600" />
+                            <Edit3 className="w-3.5 h-3.5 md:w-4 md:h-4 text-blue-600" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="sm" 
-                            className="h-6 w-6 md:h-8 md:w-8 p-0 hover:bg-red-50"
+                            className="h-7 w-7 md:h-8 md:w-8 p-0 hover:bg-red-50"
                             onClick={() => {
                               setSelectedTransaction(originalTransaction)
                               setShowDeleteTransactionModal(true)
                             }}
                           >
-                            <Trash2 className="w-3 h-3 md:w-4 md:h-4 text-red-600" />
+                            <Trash2 className="w-3.5 h-3.5 md:w-4 md:h-4 text-red-600" />
                           </Button>
                         </div>
                       </div>
