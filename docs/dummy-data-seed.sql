@@ -92,20 +92,20 @@ RAISE NOTICE '✅ Created monthly bills';
 
 -- Emergency Fund Goal (Active)
 INSERT INTO goals (user_id, title, description, target_amount, current_amount, deadline, category, icon, color, status)
-VALUES (test_user_id, 'Emergency Fund', 'Build 6 months worth of expenses', 150000, 45000, '2026-06-30', 'emergency', '🛡️', 'blue', 'active')
+VALUES (test_user_id, 'Emergency Fund', 'Build 6 months worth of expenses', 150000, 45000, '2026-06-30', 'emergency', 'shield', 'blue', 'active')
 RETURNING id INTO test_goal_id;
 
 -- Laptop Goal (Active)
 INSERT INTO goals (user_id, title, description, target_amount, current_amount, deadline, category, icon, color, status)
-VALUES (test_user_id, 'New Laptop', 'Macbook Air for work', 65000, 18000, '2026-03-31', 'electronics', '💻', 'purple', 'active');
+VALUES (test_user_id, 'New Laptop', 'Macbook Air for work', 65000, 18000, '2026-03-31', 'electronics', 'laptop', 'purple', 'active');
 
 -- Vacation Goal (Active)
 INSERT INTO goals (user_id, title, description, target_amount, current_amount, deadline, category, icon, color, status)
-VALUES (test_user_id, 'Japan Trip', 'Dream vacation to Tokyo', 80000, 12000, '2026-12-31', 'travel', '✈️', 'green', 'active');
+VALUES (test_user_id, 'Japan Trip', 'Dream vacation to Tokyo', 80000, 12000, '2026-12-31', 'travel', 'plane', 'green', 'active');
 
 -- Completed Goal
 INSERT INTO goals (user_id, title, description, target_amount, current_amount, deadline, category, icon, color, status)
-VALUES (test_user_id, 'New Phone', 'iPhone 14 Pro', 55000, 55000, '2025-09-30', 'electronics', '📱', 'yellow', 'completed');
+VALUES (test_user_id, 'New Phone', 'iPhone 14 Pro', 55000, 55000, '2025-09-30', 'electronics', 'phone', 'yellow', 'completed');
 
 RAISE NOTICE '✅ Created goals (3 active, 1 completed)';
 
@@ -142,7 +142,7 @@ IF test_challenge_id IS NOT NULL THEN
   ) RETURNING id INTO test_user_challenge_id;
 
   -- Temporarily disable the trigger to avoid conflicts
-  ALTER TABLE challenge_progress DISABLE TRIGGER update_challenge_progress_trigger;
+  ALTER TABLE challenge_progress DISABLE TRIGGER update_progress_on_checkin;
 
   -- Add check-in history (bulk insert now safe without trigger)
   INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
@@ -157,7 +157,7 @@ IF test_challenge_id IS NOT NULL THEN
     (test_user_challenge_id, 'daily_checkin', '2025-10-19', true, 100);
 
   -- Re-enable the trigger
-  ALTER TABLE challenge_progress ENABLE TRIGGER update_challenge_progress_trigger;
+  ALTER TABLE challenge_progress ENABLE TRIGGER update_progress_on_checkin;
 
   -- Manually update the counts (since trigger was disabled)
   UPDATE user_challenges
@@ -177,36 +177,22 @@ END IF;
 -- 6. CREATE NOTIFICATIONS
 -- =====================================================
 
-INSERT INTO notifications (user_id, type, title, message, priority, is_read, metadata) VALUES
+INSERT INTO notifications (user_id, type, title, message, is_read, metadata) VALUES
 -- Unread notifications
-(test_user_id, 'goal_milestone', '🎯 Goal Progress!', 'You''re 30% towards your Emergency Fund goal!', 'medium', false, '{"goal_id": "' || test_goal_id::text || '", "progress": 30}'),
-(test_user_id, 'bill_due', '📅 Bill Reminder', 'Your Rent payment of ₱3,000 is due in 3 days', 'high', false, '{"amount": 3000, "due_date": "2025-11-05"}'),
-(test_user_id, 'challenge_progress', '🏆 Challenge Update', 'Great job! 8 check-ins completed for ₱100 Daily Challenge', 'low', false, '{"challenge_id": "' || COALESCE(test_user_challenge_id::text, 'null') || '"}'),
-(test_user_id, 'savings_reminder', '💰 Savings Tip', 'You saved ₱5,000 this month! Keep up the great work!', 'low', false, '{"amount": 5000}'),
+(test_user_id, 'budget_alert', 'Goal Progress', 'You are 30% towards your Emergency Fund goal', false, ('{"goal_id": "' || test_goal_id::text || '", "progress": 30}')::jsonb),
+(test_user_id, 'bill_reminder', 'Bill Reminder', 'Your Rent payment of 3000 is due in 3 days', false, '{"amount": 3000, "due_date": "2025-11-05"}'::jsonb),
+(test_user_id, 'achievement', 'Challenge Update', 'Great job! 8 check-ins completed for 100 Daily Challenge', false, ('{"challenge_id": "' || COALESCE(test_user_challenge_id::text, 'null') || '"}')::jsonb),
+(test_user_id, 'budget_alert', 'Savings Tip', 'You saved 5000 this month! Keep up the great work', false, '{"amount": 5000}'::jsonb),
 
 -- Read notifications (older)
-(test_user_id, 'goal_created', '🎯 New Goal Created', 'Emergency Fund goal created successfully!', 'low', true, '{"goal_id": "' || test_goal_id::text || '"}'),
-(test_user_id, 'transaction_added', '💸 Expense Logged', 'Added ₱2,500 expense for Electric bill', 'low', true, '{"amount": 2500}'),
-(test_user_id, 'bill_paid', '✅ Bill Paid', 'Electric Bill payment recorded', 'low', true, '{"amount": 2500}'),
-(test_user_id, 'challenge_joined', '🎮 Challenge Started', 'You joined ₱100 Daily Challenge!', 'medium', true, '{}'),
-(test_user_id, 'goal_milestone', '🎉 Milestone Reached', 'You reached 20% of your Laptop goal!', 'medium', true, '{}'),
-(test_user_id, 'learning_complete', '📚 Module Complete', 'You completed the Budgeting module!', 'low', true, '{}');
+(test_user_id, 'system', 'New Goal Created', 'Emergency Fund goal created successfully', true, ('{"goal_id": "' || test_goal_id::text || '"}')::jsonb),
+(test_user_id, 'budget_alert', 'Expense Logged', 'Added 2500 expense for Electric bill', true, '{"amount": 2500}'::jsonb),
+(test_user_id, 'bill_reminder', 'Bill Paid', 'Electric Bill payment recorded', true, '{"amount": 2500}'::jsonb),
+(test_user_id, 'achievement', 'Challenge Started', 'You joined 100 Daily Challenge', true, '{}'::jsonb),
+(test_user_id, 'achievement', 'Milestone Reached', 'You reached 20% of your Laptop goal', true, '{}'::jsonb),
+(test_user_id, 'learning', 'Module Complete', 'You completed the Budgeting module', true, '{}'::jsonb);
 
 RAISE NOTICE '✅ Created notifications (4 unread, 6 read)';
-
--- =====================================================
--- 7. LEARNING PROGRESS
--- =====================================================
-
-INSERT INTO learning_progress (user_id, module_id, completed, progress_percentage) VALUES
-(test_user_id, 'budgeting', true, 100),
-(test_user_id, 'saving', true, 100),
-(test_user_id, 'investing', true, 100),
-(test_user_id, 'emergency-fund', true, 100),
-(test_user_id, 'credit-debt', true, 100),
-(test_user_id, 'digital-money', false, 60);
-
-RAISE NOTICE '✅ Created learning progress (5 complete, 1 in progress)';
 
 -- =====================================================
 -- SUMMARY
@@ -223,7 +209,6 @@ RAISE NOTICE '  • Monthly Bills: 6 active';
 RAISE NOTICE '  • Goals: 4 (3 active, 1 completed)';
 RAISE NOTICE '  • Challenges: 1 active with 8 check-ins';
 RAISE NOTICE '  • Notifications: 10 (4 unread, 6 read)';
-RAISE NOTICE '  • Learning: 5 modules completed';
 RAISE NOTICE '';
 RAISE NOTICE '🧪 Test These Features:';
 RAISE NOTICE '  1. Financial Overview - Check transaction history';

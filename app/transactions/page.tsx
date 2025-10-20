@@ -97,6 +97,7 @@ function TransactionsContent() {
     async function fetchTransactions() {
       if (!user?.id) return
       
+      console.log('🔍 Fetching transactions for period:', selectedPeriod)
       setLoading(true)
       try {
         const { supabase } = await import('@/lib/supabase')
@@ -145,6 +146,11 @@ function TransactionsContent() {
           }
         }
         
+        console.log('📅 Date range:', {
+          start: startDate?.toISOString().split('T')[0],
+          end: endDate?.toISOString().split('T')[0]
+        })
+        
         let query = supabase
           .from('transactions')
           .select('*')
@@ -163,10 +169,13 @@ function TransactionsContent() {
           .order('created_at', { ascending: false })
 
         if (!error && data) {
+          console.log('✅ Fetched', data.length, 'transactions')
           setTransactions(data)
+        } else if (error) {
+          console.error('❌ Error fetching transactions:', error)
         }
       } catch (err) {
-        console.error('Error fetching transactions:', err)
+        console.error('❌ Error fetching transactions:', err)
       } finally {
         setLoading(false)
       }
@@ -703,6 +712,7 @@ function TransactionsContent() {
                 <Select
                   value={selectedPeriod}
                   onValueChange={(value) => {
+                    console.log('🔄 Time period changed to:', value)
                     setSelectedPeriod(value)
                     if (value === 'custom') {
                       setShowDatePicker(true)
