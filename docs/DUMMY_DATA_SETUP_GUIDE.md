@@ -155,6 +155,10 @@ END $$;
 
 ## 🐛 Troubleshooting
 
+### Error: "tuple to be updated was already modified"
+- **Solution:** This was fixed in the latest version. Make sure you're using the updated script that inserts check-ins one at a time.
+- If you still see this, it means the trigger is firing multiple times. This is now resolved.
+
 ### Error: "relation does not exist"
 - **Solution:** Make sure all tables are created. Run the schema files first:
   - `docs/challenges-schema.sql`

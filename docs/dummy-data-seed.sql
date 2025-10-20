@@ -141,18 +141,32 @@ IF test_challenge_id IS NOT NULL THEN
     NOW() + INTERVAL '12 days'
   ) RETURNING id INTO test_user_challenge_id;
 
-  -- Add some check-in history
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value) VALUES
-  (test_user_challenge_id, 'daily_checkin', '2025-10-12', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-13', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-14', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-15', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-16', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-17', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-18', true, 100),
-  (test_user_challenge_id, 'daily_checkin', '2025-10-19', true, 100);
+  -- Add some check-in history (one at a time to avoid trigger conflicts)
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-12', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-13', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-14', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-15', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-16', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-17', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-18', true, 100);
+  
+  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
+  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-19', true, 100);
 
-  RAISE NOTICE '✅ Joined challenge with check-in history';
+  RAISE NOTICE '✅ Joined challenge with 8 check-ins';
 ELSE
   RAISE NOTICE '⚠️ No challenge found - skipping challenge data';
 END IF;
