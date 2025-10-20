@@ -941,7 +941,7 @@ function TransactionsContent() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto pb-3 md:pb-4">
+                <div className="space-y-2 md:space-y-3 max-h-[500px] md:max-h-[600px] overflow-y-auto pb-3 md:pb-4">
                   {formattedTransactions.map((transaction, idx) => {
                     // Find the original transaction object
                     const originalTransaction = filteredTransactions[idx]
