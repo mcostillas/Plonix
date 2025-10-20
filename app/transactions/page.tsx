@@ -922,7 +922,7 @@ function TransactionsContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-3 md:p-6 pt-0">
+            <CardContent className="p-4 md:p-6 pt-3 md:pt-4">
               {loading ? (
                 <div className="text-center py-4 md:py-8 text-gray-500">
                   <Spinner size="lg" color="primary" className="mx-auto" />
