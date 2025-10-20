@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plounix Icon Generator - Lucide Piggy Bank</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .icon-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        #icon-canvas {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            display: block;
+            margin: 20px auto;
+            background: white;
+        }
+        
+        h1 {
+            color: #10b981;
+            margin: 0 0 10px 0;
+        }
+        
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #059669;
+        }
+        
+        .size-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+        
+        .info {
+            background: #d1fae5;
+            padding: 15px;
+            border-radius: 8px;
+            color: #065f46;
+            font-weight: 500;
+            margin-top: 15px;
+        }
+        
+        .preview {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .preview-item {
+            text-align: center;
+        }
+        
+        .preview-label {
+            font-size: 12px;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+        
+        .instructions {
+            max-width: 700px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="icon-container">
+        <h1>🐷 Plounix Piggy Bank Icon</h1>
+        <p style="color: #6b7280; margin-bottom: 10px;">Lucide Icon in Plounix Green</p>
+        
+        <div class="size-options">
+            <button onclick="renderIcon(512)">512x512</button>
+            <button onclick="renderIcon(1024)">1024x1024</button>
+            <button onclick="renderIcon(192, true)">192x192 (PWA)</button>
+        </div>
+        
+        <canvas id="icon-canvas"></canvas>
+        
+        <div class="preview">
+            <div class="preview-item">
+                <div class="preview-label">16x16</div>
+                <canvas id="preview-16" width="16" height="16"></canvas>
+            </div>
+            <div class="preview-item">
+                <div class="preview-label">32x32</div>
+                <canvas id="preview-32" width="32" height="32"></canvas>
+            </div>
+            <div class="preview-item">
+                <div class="preview-label">64x64</div>
+                <canvas id="preview-64" width="64" height="64"></canvas>
+            </div>
+        </div>
+        
+        <button onclick="downloadImage()" style="background: #059669;">
+            📥 Download PNG
+        </button>
+        
+        <div class="info">
+            ✅ Current size: <span id="current-size">512x512</span>px
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2 style="color: #10b981; margin-top: 0;">🚀 Quick Setup (2 Options)</h2>
+        
+        <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin-top: 0; color: #92400e;">⚡ EASIEST: Use Favicon Generator</h3>
+            <ol style="color: #374151; line-height: 1.8; margin: 10px 0;">
+                <li>Click <strong>512x512</strong> button above</li>
+                <li>Click <strong>📥 Download PNG</strong></li>
+                <li>Go to <a href="https://realfavicongenerator.net/" target="_blank">realfavicongenerator.net</a></li>
+                <li>Upload your PNG</li>
+                <li>Set theme color: <code>#10b981</code></li>
+                <li>Download package</li>
+                <li>Extract ALL files to <code>/public/</code> folder</li>
+                <li>Done! ✨</li>
+            </ol>
+        </div>
+        
+        <div style="background: #dbeafe; padding: 20px; border-radius: 8px;">
+            <h3 style="margin-top: 0; color: #1e40af;">🎯 MANUAL: Download Each Size</h3>
+            <ol style="color: #374151; line-height: 1.8; margin: 10px 0;">
+                <li>Download 512x512 → save as <code>icon-512.png</code></li>
+                <li>Download 192x192 → save as <code>icon-192.png</code></li>
+                <li>Create smaller sizes using an image editor or online tool</li>
+                <li>Save all to <code>/public/</code> folder</li>
+            </ol>
+        </div>
+        
+        <h2 style="color: #10b981; margin-top: 30px;">📋 Files You Need</h2>
+        <ul style="color: #374151; line-height: 1.8;">
+            <li><code>favicon.ico</code> - 16x16, 32x32 (multi-size ICO)</li>
+            <li><code>icon-192.png</code> - 192x192 (Android)</li>
+            <li><code>icon-512.png</code> - 512x512 (Android, PWA)</li>
+            <li><code>apple-icon.png</code> - 180x180 (iOS)</li>
+        </ul>
+        
+        <div style="background: #d1fae5; padding: 15px; border-radius: 8px; margin-top: 20px; color: #065f46;">
+            <strong>💡 Pro Tip:</strong> The favicon generator creates ALL these files automatically. That's why it's the easiest option! 🎉
+        </div>
+    </div>
+
+    <script>
+        let currentSize = 512;
+        let isPWA = false;
+        const canvas = document.getElementById('icon-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Piggy bank SVG path
+        const piggyPath1 = 'M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2h0V5z';
+        const piggyPath2 = 'M2 9v1c0 1.1.9 2 2 2h1';
+        const piggyPath3 = 'M16 11h0';
+        
+        function drawPiggyBank(context, size, color = '#10b981') {
+            const scale = size / 24;
+            context.save();
+            context.scale(scale, scale);
+            context.strokeStyle = color;
+            context.lineWidth = 2 / scale;
+            context.lineCap = 'round';
+            context.lineJoin = 'round';
+            
+            // Draw paths
+            const path1 = new Path2D(piggyPath1);
+            const path2 = new Path2D(piggyPath2);
+            const path3 = new Path2D(piggyPath3);
+            
+            context.stroke(path1);
+            context.stroke(path2);
+            context.stroke(path3);
+            
+            context.restore();
+        }
+        
+        function renderIcon(size, pwa = false) {
+            currentSize = size;
+            isPWA = pwa;
+            canvas.width = size;
+            canvas.height = size;
+            
+            // White background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw piggy bank centered
+            ctx.save();
+            ctx.translate((size - size) / 2, (size - size) / 2);
+            drawPiggyBank(ctx, size);
+            ctx.restore();
+            
+            const sizeText = pwa ? `${size}x${size} (PWA)` : `${size}x${size}`;
+            document.getElementById('current-size').textContent = sizeText;
+            
+            // Update previews
+            updatePreviews();
+        }
+        
+        function updatePreviews() {
+            [16, 32, 64].forEach(size => {
+                const previewCanvas = document.getElementById(`preview-${size}`);
+                const previewCtx = previewCanvas.getContext('2d');
+                
+                previewCtx.fillStyle = '#ffffff';
+                previewCtx.fillRect(0, 0, size, size);
+                drawPiggyBank(previewCtx, size);
+            });
+        }
+        
+        function downloadImage() {
+            const link = document.createElement('a');
+            const fileName = isPWA 
+                ? `icon-${currentSize}.png`
+                : `plounix-icon-${currentSize}.png`;
+            link.download = fileName;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Initial render
+        renderIcon(512);
+    </script>
+</body>
+</html>

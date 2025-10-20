@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Piggy Bank Emoji to Icon</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            background: #f3f4f6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .emoji-container {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        #emoji-canvas {
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            display: block;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #10b981;
+            margin: 0 0 10px 0;
+        }
+        
+        .instructions {
+            max-width: 600px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #059669;
+        }
+        
+        .size-options {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .info {
+            background: #d1fae5;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            color: #065f46;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="emoji-container">
+        <h1>🐷 Piggy Bank Emoji to Icon</h1>
+        <p style="color: #6b7280; margin-bottom: 20px;">High-quality emoji render - ready to download!</p>
+        
+        <canvas id="emoji-canvas"></canvas>
+        
+        <div class="size-options">
+            <button onclick="renderEmoji(512)">512x512</button>
+            <button onclick="renderEmoji(1024)">1024x1024</button>
+            <button onclick="renderEmoji(2048)">2048x2048</button>
+        </div>
+        
+        <button onclick="downloadImage()" style="background: #059669; margin-top: 20px;">
+            📥 Download PNG
+        </button>
+        
+        <div class="info">
+            ✅ Current size: <span id="current-size">512x512</span>px
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h2 style="color: #10b981; margin-top: 0;">📋 How to Use</h2>
+        <ol style="text-align: left; color: #374151; line-height: 1.8;">
+            <li><strong>Choose size:</strong> Click 512x512 (recommended) or larger</li>
+            <li><strong>Download:</strong> Click "Download PNG" button</li>
+            <li><strong>Save as:</strong> <code>plounix-icon.png</code></li>
+            <li><strong>Go to:</strong> <a href="https://realfavicongenerator.net/" target="_blank">realfavicongenerator.net</a></li>
+            <li><strong>Upload</strong> your PNG</li>
+            <li><strong>Set theme color:</strong> #10b981</li>
+            <li><strong>Download</strong> favicon package</li>
+            <li><strong>Extract</strong> to <code>/public/</code> folder</li>
+            <li><strong>Done!</strong> ✨</li>
+        </ol>
+        
+        <div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin-top: 20px; color: #92400e;">
+            <strong>💡 Pro Tip:</strong> Start with 512x512. If the quality isn't good enough, try 1024x1024 or 2048x2048 for super crisp results!
+        </div>
+        
+        <h2 style="color: #10b981; margin-top: 30px;">🎨 Alternative Options</h2>
+        <p style="color: #374151;">If emoji quality isn't perfect, you can also:</p>
+        <ul style="text-align: left; color: #374151; line-height: 1.8;">
+            <li>Search "piggy bank icon PNG" on Google Images</li>
+            <li>Use <a href="https://www.flaticon.com/" target="_blank">Flaticon.com</a> (free icons)</li>
+            <li>Use <a href="https://icons8.com/" target="_blank">Icons8.com</a> (download in any size)</li>
+            <li>Or keep the custom green SVG I made earlier! 😊</li>
+        </ul>
+    </div>
+
+    <script>
+        let currentSize = 512;
+        const canvas = document.getElementById('emoji-canvas');
+        const ctx = canvas.getContext('2d');
+        
+        function renderEmoji(size) {
+            currentSize = size;
+            canvas.width = size;
+            canvas.height = size;
+            
+            // White background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, size, size);
+            
+            // Draw emoji
+            ctx.font = `${size * 0.8}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('🐷', size / 2, size / 2);
+            
+            document.getElementById('current-size').textContent = `${size}x${size}`;
+        }
+        
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = `plounix-icon-${currentSize}x${currentSize}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+        
+        // Initial render
+        renderEmoji(512);
+    </script>
+</body>
+</html>
