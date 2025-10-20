@@ -402,7 +402,7 @@ function ChallengesContent() {
                   <div className="p-1 md:p-3 bg-green-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
                     <PiggyBank className="w-3 h-3 md:w-6 md:h-6 text-white" />
                   </div>
-                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">₱{stats.totalSaved.toLocaleString()}</h3>
+                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.totalSaved.toLocaleString()}</h3>
                   <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Saved</p>
                 </CardContent>
               </Card>
