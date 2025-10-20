@@ -574,6 +574,13 @@ function TransactionsContent() {
     return true
   })
 
+  // Get unique categories for debugging
+  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)))
+  console.log('🏷️ Category filter:', selectedCategory)
+  console.log('🏷️ Unique categories in DB:', uniqueCategories)
+  console.log('📊 Transactions before filter:', transactions.length)
+  console.log('📊 Transactions after filter:', filteredTransactions.length)
+
   // Format transaction for display
   const formattedTransactions = filteredTransactions.map(t => {
     // Normalize category name
@@ -895,7 +902,10 @@ function TransactionsContent() {
                 <div className="flex space-x-2">
                   <Select
                     value={selectedCategory}
-                    onValueChange={(value) => setSelectedCategory(value)}
+                    onValueChange={(value) => {
+                      console.log('🏷️ Category changed to:', value)
+                      setSelectedCategory(value)
+                    }}
                   >
                     <SelectTrigger className="w-32 md:w-40 text-[10px] md:text-sm h-7 md:h-10">
                       <SelectValue placeholder="All Categories" />
