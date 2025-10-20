@@ -6,9 +6,9 @@
 1. Go to **https://realfavicongenerator.net/**
 2. Upload your Plounix logo (PNG, at least 512x512px)
 3. Customize:
-   - iOS: Enable "Add solid color background" with purple (#9333ea)
-   - Android: Use purple theme color (#9333ea)
-   - Windows: Use purple tile color
+   - iOS: Enable "Add solid color background" with green (#10b981)
+   - Android: Use green theme color (#10b981)
+   - Windows: Use green tile color
 4. Click "Generate favicons"
 5. Download the package
 6. Extract ALL files to `/public/` folder
@@ -52,9 +52,9 @@ public/
 5. **Book + money** representing financial literacy
 
 ### Colors to Use:
-- Primary: `#9333ea` (Purple - from your brand)
-- Secondary: `#10b981` (Green - income/growth)
-- Accent: `#f59e0b` (Orange - savings/goals)
+- Primary: `#10b981` (Green - Plounix brand color!)
+- Secondary: `#059669` (Darker green - for depth)
+- Accent: `#d1fae5` (Light green - for highlights)
 
 ### Design Rules:
 - ✅ Keep it simple (recognizable at 16x16)
@@ -73,8 +73,8 @@ Create a **1200x630px** image for social media previews:
 **Content:**
 - Plounix logo/icon
 - Tagline: "Financial Literacy for Filipino Youth"
-- Background: Purple gradient or branded design
-- Text: Large, readable font
+- Background: Green gradient (#10b981 to #059669) or branded design
+- Text: Large, readable font (white text on green background)
 
 **Tools:**
 - Canva: https://www.canva.com/create/og-images/
@@ -146,5 +146,16 @@ Wait 2-3 minutes for Vercel deployment, then test!
 **Need help?** Check the images should be:
 - Sharp and clear
 - Recognizable at tiny sizes
-- On-brand with Plounix colors
+- On-brand with Plounix GREEN colors (#10b981)
 - Optimized for web (compressed PNG)
+
+---
+
+## 🎨 Plounix Brand Colors Reference
+
+**Primary Green:** `#10b981` (Main brand color)
+**Dark Green:** `#059669` (Depth/shadows)
+**Light Green:** `#d1fae5` (Highlights/accents)
+**White:** `#ffffff` (Text on green)
+
+Use these consistently across all icons and images!
