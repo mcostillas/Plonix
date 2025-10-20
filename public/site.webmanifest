@@ -1,0 +1,27 @@
+{
+  "name": "Plounix - Financial Literacy Platform",
+  "short_name": "Plounix",
+  "description": "Master budgeting, saving, and investing with AI-powered guidance for Filipino youth",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#9333ea",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "education", "productivity"],
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en-PH"
+}
