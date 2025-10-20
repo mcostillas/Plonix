@@ -142,10 +142,74 @@ function GoalsContent() {
   }
 
   const handleUpdateProgress = async (goal: Goal, addAmount: number) => {
+    if (!user?.id) return
+    
     const newAmount = goal.current_amount + addAmount
     
     setLoading(true)
     try {
+      // VALIDATION: Check available money BEFORE adding to savings
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+      // Fetch monthly income
+      const { data: incomeData } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('transaction_type', 'income')
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+
+      // Fetch scheduled bills
+      const { data: billsData } = await supabase
+        .from('scheduled_payments')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+
+      // Fetch current month's expenses
+      const { data: expensesData } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', user.id)
+        .eq('transaction_type', 'expense')
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+
+      const monthlyIncome = incomeData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+      const monthlyBills = billsData?.reduce((sum: number, bill: any) => sum + Number(bill.amount), 0) || 0
+      const currentExpenses = expensesData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+      const availableMoney = monthlyIncome - monthlyBills - currentExpenses
+
+      // Check if user has enough money to save
+      if (addAmount > availableMoney) {
+        setLoading(false)
+        
+        if (availableMoney <= 0) {
+          toast.error('❌ No Money Available for Savings', {
+            description: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot save ₱${addAmount.toLocaleString()}. Add income first!`,
+            duration: 5000
+          })
+        } else {
+          toast.error('❌ Insufficient Funds for Savings', {
+            description: `You only have ₱${availableMoney.toLocaleString()} available, but trying to save ₱${addAmount.toLocaleString()}. Short by ₱${(addAmount - availableMoney).toLocaleString()}!`,
+            duration: 5000
+          })
+        }
+        return
+      }
+
+      // Warning if savings will leave less than ₱500
+      const moneyAfterSavings = availableMoney - addAmount
+      if (moneyAfterSavings > 0 && moneyAfterSavings < 500) {
+        toast.warning('⚠️ Very Little Money Left', {
+          description: `After saving ₱${addAmount.toLocaleString()}, you'll only have ₱${moneyAfterSavings.toLocaleString()} left for other expenses!`,
+          duration: 4000
+        })
+      }
+      
       // Update goal progress
       const { error: goalError } = await (supabase as any)
         .from('goals')
@@ -178,7 +242,7 @@ function GoalsContent() {
         // Don't show error to user since goal was updated successfully
       }
 
-      toast.success('Progress updated', {
+      toast.success('✅ Savings Updated', {
         description: `Added ₱${addAmount.toLocaleString()} to ${goal.title}`
       })
       fetchGoals()

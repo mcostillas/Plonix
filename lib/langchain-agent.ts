@@ -489,7 +489,7 @@ export class PlounixAIAgent {
 
             // Calculate learning statistics
             const completedModules = learningProgress?.length || 0
-            const totalModules = 16 // Total modules available in the platform
+            const totalModules = 9 // Total modules available in the platform (3 core + 6 essential)
             const learningPercentage = ((completedModules / totalModules) * 100).toFixed(1)
 
             // Get completed module details WITH reflection answers
@@ -1018,8 +1018,8 @@ Response: "Great question! Let me give you a complete picture:
 - Keep it up! You're on track!
 
 📚 **Learning Progress:**
-- Completed 8 out of 16 modules (50%)
-- You're halfway through! Great dedication!
+- Completed 8 out of 9 modules (89%)
+- Almost done! Just one more module to complete!
 
 🏆 **Challenges:**
 - 2 active challenges
@@ -1070,9 +1070,9 @@ Response: "Here are your monthly bills:
 Would you like to set reminders for these bills?"
 
 User: "How many learning modules have I completed?"
-Response: "You've completed 8 out of 16 learning modules - that's 50% progress! 📚
+Response: "You've completed 8 out of 9 learning modules - that's 89% progress! 📚
 
-You're doing great! Keep learning to strengthen your financial literacy. Which topic would you like to learn about next?"
+Amazing work! You're almost at 100%! Just one more module to go. Keep learning to strengthen your financial literacy. Which topic would you like to learn about next?"
 
 **USING LEARNING REFLECTIONS FOR PERSONALIZED ADVICE:**
 
@@ -2112,7 +2112,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
               
               // Calculate learning stats
               const completedModules = new Set(learningProgress?.map((r: any) => r.module_id)).size
-              const totalModules = 16
+              const totalModules = 9 // Total modules: 3 core + 6 essential
               const learningPercentage = ((completedModules / totalModules) * 100).toFixed(0)
               
               // Calculate challenges stats

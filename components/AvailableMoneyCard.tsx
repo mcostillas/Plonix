@@ -81,6 +81,9 @@ export function AvailableMoneyCard() {
       const monthlyIncome = incomeData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
       const scheduledExpenses = scheduledData?.reduce((sum: number, payment: any) => sum + Number(payment.amount), 0) || 0
       const availableMoney = monthlyIncome - scheduledExpenses
+      
+      // Show the actual available money (can be negative for deficit display)
+      // But we'll handle the display differently in the UI
 
       setData({
         monthlyIncome,
@@ -149,14 +152,35 @@ export function AvailableMoneyCard() {
       <CardContent className="pt-0">
         {/* Main Available Money Display */}
         <div className="text-center mb-4">
-          <div className={`text-3xl font-bold mb-2 ${
-            data.availableMoney >= 0 ? 'text-indigo-600' : 'text-red-600'
-          }`}>
-            ₱{data.availableMoney.toLocaleString()}
-          </div>
-          <p className="text-sm text-gray-600">
-            After fixed expenses this month
-          </p>
+          {data.availableMoney >= 0 ? (
+            <>
+              <div className="text-3xl font-bold mb-2 text-indigo-600">
+                ₱{data.availableMoney.toLocaleString()}
+              </div>
+              <p className="text-sm text-gray-600">
+                After fixed expenses this month
+              </p>
+              {data.availableMoney < 1000 && data.availableMoney > 0 && (
+                <div className="mt-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-xs text-yellow-700 font-medium">⚠️ Money running low!</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <>
+              <div className="text-3xl font-bold mb-2 text-red-600">
+                ₱0
+              </div>
+              <p className="text-sm text-red-600 font-medium">
+                ⚠️ Budget Deficit: ₱{Math.abs(data.availableMoney).toLocaleString()}
+              </p>
+              <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-xs text-red-700">
+                  Your expenses exceed your income. Add income or reduce bills!
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Breakdown */}

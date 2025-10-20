@@ -74,6 +74,91 @@ export async function POST(request: NextRequest) {
     // Use provided date or default to today
     const finalDate = date || new Date().toISOString().split('T')[0]
 
+    // 🛡️ VALIDATION: Check available money BEFORE allowing expense
+    if (transactionType === 'expense') {
+      const now = new Date()
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+      // Get monthly income
+      const { data: incomeData } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('transaction_type', 'income')
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+
+      // Get monthly bills
+      const { data: billsData } = await supabase
+        .from('scheduled_payments')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+
+      // Get current expenses
+      const { data: expensesData } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('transaction_type', 'expense')
+        .gte('date', startOfMonth)
+        .lte('date', endOfMonth)
+
+      const monthlyIncome = incomeData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+      const monthlyBills = billsData?.reduce((sum: number, bill: any) => sum + Number(bill.amount), 0) || 0
+      const currentExpenses = expensesData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+      const availableMoney = monthlyIncome - monthlyBills - currentExpenses
+
+      // Block expense if insufficient funds
+      if (numAmount > availableMoney) {
+        console.log('❌ Insufficient funds:', {
+          requested: numAmount,
+          available: availableMoney,
+          income: monthlyIncome,
+          bills: monthlyBills,
+          expenses: currentExpenses
+        })
+
+        if (availableMoney <= 0) {
+          return NextResponse.json({
+            error: 'Insufficient funds',
+            message: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot add ₱${numAmount.toLocaleString()} expense. Please add income first!`,
+            details: {
+              requested: numAmount,
+              available: availableMoney,
+              monthlyIncome,
+              monthlyBills,
+              currentExpenses,
+              deficit: Math.abs(availableMoney)
+            }
+          }, { status: 400 })
+        } else {
+          return NextResponse.json({
+            error: 'Insufficient funds',
+            message: `You only have ₱${availableMoney.toLocaleString()} available, but trying to spend ₱${numAmount.toLocaleString()}. Short by ₱${(numAmount - availableMoney).toLocaleString()}!`,
+            details: {
+              requested: numAmount,
+              available: availableMoney,
+              monthlyIncome,
+              monthlyBills,
+              currentExpenses,
+              shortfall: numAmount - availableMoney
+            }
+          }, { status: 400 })
+        }
+      }
+
+      // Log warning if money is getting low
+      const moneyAfterExpense = availableMoney - numAmount
+      if (moneyAfterExpense > 0 && moneyAfterExpense < 1000) {
+        console.log('⚠️ Low funds warning:', {
+          afterExpense: moneyAfterExpense,
+          message: `Only ₱${moneyAfterExpense.toLocaleString()} will remain after this expense`
+        })
+      }
+    }
+
     console.log('📝 Preparing to insert transaction:', { 
       userId, 
       amount: numAmount,

@@ -128,12 +128,90 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
       return
     }
 
+    const expenseAmount = parseFloat(transactionData.amount)
+
+    // VALIDATION: Check available money BEFORE adding expense
+    if (transactionType === 'expense') {
+      setLoading(true)
+      try {
+        // Get current month's income
+        const now = new Date()
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+
+        // Fetch monthly income
+        const { data: incomeData } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('transaction_type', 'income')
+          .gte('date', startOfMonth)
+          .lte('date', endOfMonth)
+
+        // Fetch scheduled bills
+        const { data: billsData } = await supabase
+          .from('scheduled_payments')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        // Fetch current month's expenses
+        const { data: expensesData } = await supabase
+          .from('transactions')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('transaction_type', 'expense')
+          .gte('date', startOfMonth)
+          .lte('date', endOfMonth)
+
+        const monthlyIncome = incomeData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+        const monthlyBills = billsData?.reduce((sum: number, bill: any) => sum + Number(bill.amount), 0) || 0
+        const currentExpenses = expensesData?.reduce((sum: number, tx: any) => sum + Number(tx.amount), 0) || 0
+        const availableMoney = monthlyIncome - monthlyBills - currentExpenses
+
+        // Check if user has enough money
+        if (expenseAmount > availableMoney) {
+          setLoading(false)
+          
+          if (availableMoney <= 0) {
+            toast.error('❌ No Money Available', {
+              description: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot add ₱${expenseAmount.toLocaleString()} expense. Add income first!`,
+              duration: 5000
+            })
+          } else {
+            toast.error('❌ Insufficient Funds', {
+              description: `You only have ₱${availableMoney.toLocaleString()} available, but trying to spend ₱${expenseAmount.toLocaleString()}. Short by ₱${(expenseAmount - availableMoney).toLocaleString()}!`,
+              duration: 5000
+            })
+          }
+          return
+        }
+
+        // Warning if money is getting low (less than ₱1000 after this expense)
+        const moneyAfterExpense = availableMoney - expenseAmount
+        if (moneyAfterExpense > 0 && moneyAfterExpense < 1000) {
+          toast.warning('⚠️ Money Running Low', {
+            description: `After this expense, you'll only have ₱${moneyAfterExpense.toLocaleString()} left. Be careful!`,
+            duration: 4000
+          })
+        }
+
+      } catch (error) {
+        console.error('Error checking available money:', error)
+        setLoading(false)
+        toast.error('Error validating funds', {
+          description: 'Could not verify available money. Please try again.'
+        })
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const { error } = await (supabase as any)
         .from('transactions')
         .insert([{
-          amount: parseFloat(transactionData.amount),
+          amount: expenseAmount,
           merchant: transactionData.merchant,
           category: transactionData.category,
           date: transactionData.date || new Date().toISOString().split('T')[0],
@@ -150,8 +228,8 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
         })
       } else {
         // Success
-        toast.success('Transaction added successfully', {
-          description: `₱${transactionData.amount} ${transactionType} in ${transactionData.category}`
+        toast.success('✅ Transaction added successfully', {
+          description: `₱${expenseAmount.toLocaleString()} ${transactionType} in ${transactionData.category}`
         })
         
         // Close modal first
