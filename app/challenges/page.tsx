@@ -387,7 +387,7 @@ function ChallengesContent() {
         ) : (
           <>
             {/* Stats Overview */}
-            <div className="grid grid-cols-3 gap-2 md:gap-6 mb-4 md:mb-12">
+            <div className="grid grid-cols-2 gap-2 md:gap-6 mb-4 md:mb-12">
               <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
                 <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
                   <div className="p-1 md:p-3 bg-yellow-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
@@ -395,15 +395,6 @@ function ChallengesContent() {
                   </div>
                   <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.completed}</h3>
                   <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Challenges</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
-                  <div className="p-1 md:p-3 bg-green-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
-                    <PiggyBank className="w-3 h-3 md:w-6 md:h-6 text-white" />
-                  </div>
-                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.totalSaved.toLocaleString()}</h3>
-                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Saved</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
