@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requireAdmin, createAdminClient } from '@/lib/admin-auth'
 
+export const dynamic = 'force-dynamic'
+export const runtime = 'nodejs'
+
 export async function GET() {
   try {
     // Check admin authentication
