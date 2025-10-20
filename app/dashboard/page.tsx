@@ -272,9 +272,17 @@ function DashboardContent() {
 
   // Handle check-in
   const handleCheckIn = async (challengeId: string, challengeTitle: string) => {
+    console.log('🔍 Check-in clicked:', { challengeId, challengeTitle })
+    
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return
+      if (!session) {
+        console.error('❌ No session found')
+        toast.error('Please log in to check in')
+        return
+      }
+
+      console.log('✅ Session found:', session.user.id)
 
       // Determine check-in value based on challenge title
       let checkInValue = 100 // Default for ₱100 Daily Challenge
@@ -282,6 +290,8 @@ function DashboardContent() {
       // Future: Could fetch from challenge requirements if needed
       // For now, ₱100 Daily Challenge is the main one being used
 
+      console.log('📤 Sending check-in request to:', `/api/challenges/${challengeId}/progress`)
+      
       const response = await fetch(`/api/challenges/${challengeId}/progress`, {
         method: 'POST',
         headers: {
@@ -295,13 +305,18 @@ function DashboardContent() {
         })
       })
 
+      console.log('📥 Response status:', response.status)
+      
       if (response.ok) {
+        const result = await response.json()
+        console.log('✅ Check-in successful:', result)
         setRefreshTrigger(prev => prev + 1) // Refresh data
         // Show success modal
         setCheckedInChallengeTitle(challengeTitle)
         setCheckInModalOpen(true)
       } else {
         const error = await response.json()
+        console.error('❌ Check-in failed:', error)
         // Check if already checked in
         if (error.error?.includes('Already checked in')) {
           setAlreadyCheckedInModalOpen(true)
@@ -312,8 +327,10 @@ function DashboardContent() {
         }
       }
     } catch (error) {
-      console.error('Error checking in:', error)
-      toast.error('Failed to check in')
+      console.error('❌ Error checking in:', error)
+      toast.error('Failed to check in', {
+        description: 'An unexpected error occurred'
+      })
     }
   }
 

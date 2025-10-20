@@ -14,9 +14,17 @@ export async function POST(
     const body = await request.json()
     const { completed, note, checkin_date, value } = body
     
+    console.log('🔍 Check-in API called:', {
+      userChallengeId,
+      completed,
+      checkin_date,
+      value
+    })
+    
     // Get authenticated user
     const authHeader = request.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
+      console.error('❌ No auth header')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
     
@@ -35,8 +43,11 @@ export async function POST(
     
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
+      console.error('❌ Auth error:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
+    
+    console.log('✅ User authenticated:', user.id)
     
     // Verify user owns this challenge
     const { data: userChallenge, error: challengeError } = await supabase
@@ -48,8 +59,11 @@ export async function POST(
       .single()
     
     if (challengeError || !userChallenge) {
+      console.error('❌ Challenge not found:', challengeError)
       return NextResponse.json({ error: 'Challenge not found or not active' }, { status: 404 })
     }
+    
+    console.log('✅ Challenge found:', userChallenge.challenges.title)
     
     // Check if already checked in for this date
     const checkDate = checkin_date || new Date().toISOString().split('T')[0]
@@ -61,6 +75,7 @@ export async function POST(
       .maybeSingle()
     
     if (existingCheckin) {
+      console.log('⚠️ Already checked in for:', checkDate)
       return NextResponse.json({ 
         error: 'Already checked in for this date' 
       }, { status: 400 })
@@ -69,6 +84,13 @@ export async function POST(
     // Determine progress type
     const isRetroactive = checkin_date && checkin_date !== new Date().toISOString().split('T')[0]
     const progressType = isRetroactive ? 'retroactive_checkin' : 'daily_checkin'
+    
+    console.log('📝 Inserting progress:', {
+      user_challenge_id: userChallengeId,
+      progress_type: progressType,
+      checkin_date: checkDate,
+      value
+    })
     
     // Log the progress
     const { data: progress, error: progressError } = await supabase
@@ -85,9 +107,11 @@ export async function POST(
       .single()
     
     if (progressError) {
-      console.error('Error logging progress:', progressError)
-      return NextResponse.json({ error: 'Failed to log progress' }, { status: 500 })
+      console.error('❌ Error logging progress:', progressError)
+      return NextResponse.json({ error: 'Failed to log progress', details: progressError.message }, { status: 500 })
     }
+    
+    console.log('✅ Progress logged successfully')
     
     // Get updated challenge info (triggers will have updated progress)
     const { data: updatedChallenge } = await supabase
@@ -98,6 +122,11 @@ export async function POST(
     
     // Check if challenge is now complete
     const isComplete = updatedChallenge?.progress_percent >= 100
+    
+    console.log('✅ Check-in complete:', {
+      checkins: `${updatedChallenge?.checkins_completed}/${updatedChallenge?.checkins_required}`,
+      isComplete
+    })
     
     return NextResponse.json({ 
       success: true,
@@ -110,7 +139,7 @@ export async function POST(
     })
     
   } catch (error) {
-    console.error('Progress API error:', error)
+    console.error('❌ Progress API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
