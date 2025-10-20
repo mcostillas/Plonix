@@ -120,7 +120,7 @@ WHERE title ILIKE '%100%daily%'
 LIMIT 1;
 
 IF test_challenge_id IS NOT NULL THEN
-  -- Join the challenge
+  -- Join the challenge (with initial counts at 0)
   INSERT INTO user_challenges (
     user_id, 
     challenge_id, 
@@ -134,37 +134,39 @@ IF test_challenge_id IS NOT NULL THEN
     test_user_id,
     test_challenge_id,
     'active',
-    40,
-    8,
+    0,  -- Will update after inserting check-ins
+    0,  -- Will update after inserting check-ins
     20,
-    320,
+    0,  -- Will update after inserting check-ins
     NOW() + INTERVAL '12 days'
   ) RETURNING id INTO test_user_challenge_id;
 
-  -- Add some check-in history (one at a time to avoid trigger conflicts)
+  -- Temporarily disable the trigger to avoid conflicts
+  ALTER TABLE challenge_progress DISABLE TRIGGER update_challenge_progress_trigger;
+
+  -- Add check-in history (bulk insert now safe without trigger)
   INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-12', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-13', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-14', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-15', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-16', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-17', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-18', true, 100);
-  
-  INSERT INTO challenge_progress (user_challenge_id, progress_type, checkin_date, completed, value)
-  VALUES (test_user_challenge_id, 'daily_checkin', '2025-10-19', true, 100);
+  VALUES 
+    (test_user_challenge_id, 'daily_checkin', '2025-10-12', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-13', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-14', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-15', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-16', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-17', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-18', true, 100),
+    (test_user_challenge_id, 'daily_checkin', '2025-10-19', true, 100);
+
+  -- Re-enable the trigger
+  ALTER TABLE challenge_progress ENABLE TRIGGER update_challenge_progress_trigger;
+
+  -- Manually update the counts (since trigger was disabled)
+  UPDATE user_challenges
+  SET 
+    checkins_completed = 8,
+    progress_percent = 40,  -- 8/20 * 100 = 40%
+    points_earned = 320,    -- 8 * 40 points each
+    updated_at = NOW()
+  WHERE id = test_user_challenge_id;
 
   RAISE NOTICE '✅ Joined challenge with 8 check-ins';
 ELSE

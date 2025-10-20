@@ -156,8 +156,21 @@ END $$;
 ## 🐛 Troubleshooting
 
 ### Error: "tuple to be updated was already modified"
-- **Solution:** This was fixed in the latest version. Make sure you're using the updated script that inserts check-ins one at a time.
-- If you still see this, it means the trigger is firing multiple times. This is now resolved.
+
+**Problem**: 
+```
+ERROR: tuple to be updated was already modified by an operation triggered by the current command
+```
+
+**Cause**: The `update_challenge_progress()` BEFORE trigger tries to update the same `user_challenges` row multiple times when inserting multiple check-ins.
+
+**Solution**: The script now:
+1. ✅ Temporarily **disables** the trigger
+2. ✅ Inserts all 8 check-ins at once (bulk insert)
+3. ✅ Re-enables the trigger
+4. ✅ Manually updates the counts
+
+This is the **safest approach** for bulk historical data. Make sure you're using the latest version of the script.
 
 ### Error: "relation does not exist"
 - **Solution:** Make sure all tables are created. Run the schema files first:
