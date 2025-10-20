@@ -857,7 +857,7 @@ function TransactionsContent() {
           <MonthlyBillsManager />
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-3 md:gap-8 mb-3 md:mb-8">
+        <div className="grid lg:grid-cols-3 gap-3 md:gap-8 mb-3 md:mb-6">
           {/* Expense Categories */}
           <Card className="lg:col-span-1">
             <CardHeader className="p-3 md:p-6 pb-2 md:pb-6">
