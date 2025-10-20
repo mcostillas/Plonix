@@ -922,7 +922,7 @@ function TransactionsContent() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="px-4 py-3 md:px-6 md:py-4">
+            <CardContent className="px-4 pt-3 pb-0 md:px-6 md:pt-4 md:pb-0">
               {loading ? (
                 <div className="text-center py-4 md:py-8 text-gray-500">
                   <Spinner size="lg" color="primary" className="mx-auto" />
@@ -941,7 +941,7 @@ function TransactionsContent() {
                   </Button>
                 </div>
               ) : (
-                <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto">
+                <div className="space-y-2 md:space-y-3 max-h-60 md:max-h-96 overflow-y-auto pb-3 md:pb-4">
                   {formattedTransactions.map((transaction, idx) => {
                     // Find the original transaction object
                     const originalTransaction = filteredTransactions[idx]
