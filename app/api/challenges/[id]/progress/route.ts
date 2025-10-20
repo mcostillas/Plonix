@@ -4,6 +4,21 @@ import { createClient } from '@supabase/supabase-js'
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
 
+// Initialize Supabase client with service role to bypass RLS
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '')
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!.trim()
+
+const supabaseAdmin = createClient(
+  supabaseUrl,
+  serviceRoleKey,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
+
 // POST /api/challenges/[id]/progress - Log progress/check-in
 export async function POST(
   request: NextRequest,
@@ -21,7 +36,7 @@ export async function POST(
       value
     })
     
-    // Get authenticated user
+    // Get authenticated user from session
     const authHeader = request.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       console.error('❌ No auth header')
@@ -29,8 +44,10 @@ export async function POST(
     }
     
     const token = authHeader.substring(7)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    
+    // Create user-scoped client for authentication
+    const supabaseUser = createClient(
+      supabaseUrl,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
       {
         global: {
@@ -41,7 +58,7 @@ export async function POST(
       }
     )
     
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const { data: { user }, error: authError } = await supabaseUser.auth.getUser()
     if (authError || !user) {
       console.error('❌ Auth error:', authError)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -49,8 +66,8 @@ export async function POST(
     
     console.log('✅ User authenticated:', user.id)
     
-    // Verify user owns this challenge
-    const { data: userChallenge, error: challengeError } = await supabase
+    // Verify user owns this challenge (using admin client)
+    const { data: userChallenge, error: challengeError } = await supabaseAdmin
       .from('user_challenges')
       .select('*, challenges(*)')
       .eq('id', userChallengeId)
@@ -65,9 +82,9 @@ export async function POST(
     
     console.log('✅ Challenge found:', userChallenge.challenges.title)
     
-    // Check if already checked in for this date
+    // Check if already checked in for this date (using admin client)
     const checkDate = checkin_date || new Date().toISOString().split('T')[0]
-    const { data: existingCheckin } = await supabase
+    const { data: existingCheckin } = await supabaseAdmin
       .from('challenge_progress')
       .select('id')
       .eq('user_challenge_id', userChallengeId)
@@ -92,8 +109,8 @@ export async function POST(
       value
     })
     
-    // Log the progress
-    const { data: progress, error: progressError } = await supabase
+    // Log the progress (using admin client to bypass RLS)
+    const { data: progress, error: progressError } = await supabaseAdmin
       .from('challenge_progress')
       .insert({
         user_challenge_id: userChallengeId,
@@ -113,8 +130,8 @@ export async function POST(
     
     console.log('✅ Progress logged successfully')
     
-    // Get updated challenge info (triggers will have updated progress)
-    const { data: updatedChallenge } = await supabase
+    // Get updated challenge info (using admin client - triggers will have updated progress)
+    const { data: updatedChallenge } = await supabaseAdmin
       .from('user_challenges')
       .select('*, challenges(*)')
       .eq('id', userChallengeId)
