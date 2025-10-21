@@ -6,6 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Bot, BookOpen, Target, Users, TrendingUp, Calculator, PiggyBank, Search, MessageCircle, ArrowRight, Star, Shield, Zap, CheckCircle, Sparkles, Trophy, Clock, Lock, Heart, Award, ChevronRight } from 'lucide-react'
 import { PlounixLogo } from '@/components/ui/logo'
 import { useAuth } from '@/lib/auth-hooks'
+import { 
+  organizationSchema, 
+  websiteSchema, 
+  educationalOrganizationSchema, 
+  softwareApplicationSchema, 
+  faqSchema,
+  breadcrumbSchema 
+} from './metadata'
 
 export default function HomePage() {
   const { user, isLoading } = useAuth()
@@ -45,6 +53,32 @@ export default function HomePage() {
   return (
     // TODO: Dark mode under works - will be implemented next time
     <div className="min-h-screen bg-white">
+      {/* Structured Data for SEO */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(educationalOrganizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       {/* Navigation */}
       <nav className="fixed top-0 w-full bg-white/80 backdrop-blur-md border-b z-50">
         <div className="flex items-center justify-between p-3 md:p-6 max-w-7xl mx-auto">

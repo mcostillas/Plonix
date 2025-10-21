@@ -567,41 +567,53 @@ function TransactionsContent() {
     }))
     .sort((a, b) => b.amount - a.amount)
 
-  const filteredTransactions = transactions.filter(transaction => {
-    if (selectedCategory !== 'all' && transaction.category !== selectedCategory) {
+  // Helper function to normalize category names
+  const normalizeCategory = (category: string | null | undefined): string => {
+    let normalized = category || 'Others'
+    
+    // Capitalize first letter of each word
+    normalized = normalized.split(' ')
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ')
+    
+    // Merge "Food" with "Food & Dining"
+    if (normalized === 'Food') {
+      normalized = 'Food & Dining'
+    }
+    
+    return normalized
+  }
+
+  // Normalize all transactions first
+  const normalizedTransactions = transactions.map(t => ({
+    ...t,
+    normalizedCategory: normalizeCategory(t.category)
+  }))
+
+  // Get unique normalized categories for the dropdown
+  const uniqueCategories = Array.from(new Set(normalizedTransactions.map(t => t.normalizedCategory)))
+  
+  // Apply category filter using normalized categories
+  const filteredTransactions = normalizedTransactions.filter(transaction => {
+    if (selectedCategory !== 'all' && transaction.normalizedCategory !== selectedCategory) {
       return false
     }
     return true
   })
 
-  // Get unique categories for debugging
-  const uniqueCategories = Array.from(new Set(transactions.map(t => t.category)))
   console.log('🏷️ Category filter:', selectedCategory)
-  console.log('🏷️ Unique categories in DB:', uniqueCategories)
+  console.log('🏷️ Unique normalized categories:', uniqueCategories)
   console.log('📊 Transactions before filter:', transactions.length)
   console.log('📊 Transactions after filter:', filteredTransactions.length)
 
   // Format transaction for display
   const formattedTransactions = filteredTransactions.map(t => {
-    // Normalize category name
-    let category = t.category || 'Others'
-    
-    // Capitalize first letter of each word
-    category = category.split(' ')
-      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(' ')
-    
-    // Merge "Food" with "Food & Dining"
-    if (category === 'Food') {
-      category = 'Food & Dining'
-    }
-    
     return {
       id: t.id,
       type: t.transaction_type,
       amount: Number(t.amount),
       description: t.merchant,
-      category: category,
+      category: t.normalizedCategory,
       date: t.date,
       time: new Date(t.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     }
@@ -912,11 +924,11 @@ function TransactionsContent() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="Food & Dining">Food & Dining</SelectItem>
-                      <SelectItem value="Transportation">Transportation</SelectItem>
-                      <SelectItem value="Entertainment">Entertainment</SelectItem>
-                      <SelectItem value="Utilities">Utilities</SelectItem>
-                      <SelectItem value="Income">Income</SelectItem>
+                      {uniqueCategories.sort().map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

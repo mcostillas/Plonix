@@ -1,10 +1,32 @@
-# Allow all crawlers
+# Plounix - Free AI Financial Literacy for Filipino Youth
+# Allow all search engines to crawl public pages
+
 User-agent: *
 Allow: /
 
-# Disallow admin and API routes
+# Important public pages (hint for crawlers)
+Allow: /auth/login
+Allow: /auth/register
+Allow: /ai-assistant
+Allow: /learning
+Allow: /goals
+Allow: /challenges
+Allow: /resource-hub
+Allow: /digital-tools
+Allow: /privacy
+Allow: /terms
+
+# Disallow protected and internal routes
 Disallow: /api/
 Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /transactions/
+Disallow: /test/
+Disallow: /test-ai/
+Disallow: /test-email/
+Disallow: /debug/
 
-# Sitemap location
+# Sitemap location (both static and dynamic versions)
 Sitemap: https://www.plounix.xyz/sitemap.xml
+Sitemap: https://www.plounix.xyz/sitemap-static.xml
