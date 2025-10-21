@@ -336,20 +336,6 @@ function LearningContent() {
                     )}
                   </div>
                 )}
-                
-                {/* Debug reset button - only show in development */}
-                {completedModules.length > 0 && (
-                  <div className="mt-2 md:mt-3 pt-2 md:pt-3 border-t border-gray-200">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={resetProgress}
-                      className="text-[10px] md:text-xs h-7 md:h-8"
-                    >
-                      Reset Progress
-                    </Button>
-                  </div>
-                )}
               </div>
             </CardContent>
           </Card>
