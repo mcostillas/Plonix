@@ -585,34 +585,34 @@ function GoalsContent() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 gap-2 md:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4 lg:gap-6">
             {goals.map((goal) => {
               const progressPercentage = (goal.current_amount / goal.target_amount) * 100;
               const remaining = goal.target_amount - goal.current_amount;
               
               return (
                 <Card key={goal.id} className="border border-gray-200 hover:shadow-md transition-shadow">
-                  <CardContent className="p-1.5 md:p-6">
+                  <CardContent className="p-4 md:p-6">
                     {/* Title & Edit on one line */}
-                    <div className="flex items-center justify-between mb-1 md:mb-3">
-                      <h3 className="text-[10px] md:text-lg font-semibold text-gray-900 line-clamp-1 flex-1">{goal.title}</h3>
+                    <div className="flex items-center justify-between mb-2 md:mb-3">
+                      <h3 className="text-sm md:text-lg font-semibold text-gray-900 line-clamp-1 flex-1">{goal.title}</h3>
                       <Button 
                         variant="ghost"
                         size="sm"
                         onClick={() => openEditModal(goal)}
-                        className="text-gray-400 hover:text-primary h-5 w-5 md:h-8 md:w-8 p-0 flex-shrink-0"
+                        className="text-gray-400 hover:text-primary h-8 w-8 p-0 flex-shrink-0 ml-2"
                       >
-                        <Edit className="w-2 h-2 md:w-4 md:h-4" />
+                        <Edit className="w-4 h-4" />
                       </Button>
                     </div>
 
-                    {/* Description - Hide on mobile */}
+                    {/* Description */}
                     {goal.description && (
-                      <p className="hidden md:block text-sm text-gray-500 mb-3 line-clamp-2">{goal.description}</p>
+                      <p className="text-xs md:text-sm text-gray-500 mb-3 line-clamp-2">{goal.description}</p>
                     )}
 
-                    {/* Details in One Row - Hide on mobile */}
-                    <div className="hidden md:flex gap-6 text-sm mb-4">
+                    {/* Details in One Row */}
+                    <div className="flex flex-wrap gap-3 md:gap-6 text-xs md:text-sm mb-4">
                       {goal.deadline && (
                         <div>
                           <span className="text-gray-500">Deadline: </span>
@@ -635,59 +635,59 @@ function GoalsContent() {
                       </div>
                     </div>
 
-                    {/* Mobile: Cards stacked, Desktop: Everything in one row */}
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-1 md:gap-3">
-                      {/* Amount Cards Container - Side by Side on Mobile */}
-                      <div className="flex gap-1 md:gap-3 flex-1">
+                    {/* Amount Cards - Responsive Layout */}
+                    <div className="flex flex-col gap-3 mb-4">
+                      {/* Saved & Target Side by Side */}
+                      <div className="flex gap-2 md:gap-3">
                         {/* Saved */}
-                        <div className="flex-1 text-center px-1 py-0.5 md:px-5 md:py-3 bg-blue-50 rounded border border-blue-100">
-                          <div className="text-[9px] md:text-xl font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
-                          <div className="text-[7px] md:text-xs text-gray-600">Saved</div>
+                        <div className="flex-1 text-center px-3 py-2 md:px-5 md:py-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <div className="text-base md:text-xl font-bold text-blue-600">₱{goal.current_amount.toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">Saved</div>
                         </div>
 
                         {/* Target */}
-                        <div className="flex-1 text-center px-1 py-0.5 md:px-5 md:py-3 bg-green-50 rounded border border-green-100">
-                          <div className="text-[9px] md:text-xl font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
-                          <div className="text-[7px] md:text-xs text-gray-600">Target</div>
+                        <div className="flex-1 text-center px-3 py-2 md:px-5 md:py-3 bg-green-50 rounded-lg border border-green-100">
+                          <div className="text-base md:text-xl font-bold text-green-600">₱{goal.target_amount.toLocaleString()}</div>
+                          <div className="text-xs text-gray-600">Target</div>
                         </div>
                       </div>
 
-                      {/* Remaining */}
+                      {/* Remaining Amount */}
                       {remaining > 0 && (
-                        <div className="text-center px-1 py-0.5 md:px-5 md:py-3 bg-amber-50 rounded border border-amber-200 lg:w-auto">
-                          <div className="text-[9px] md:text-base font-semibold text-amber-700">
+                        <div className="text-center px-3 py-2 md:px-5 md:py-3 bg-amber-50 rounded-lg border border-amber-200">
+                          <div className="text-sm md:text-base font-semibold text-amber-700">
                             ₱{remaining.toLocaleString()} left
                           </div>
                         </div>
                       )}
+                    </div>
 
-                      {/* Buttons */}
-                      <div className="flex gap-1 md:gap-2 lg:flex-shrink-0">
-                        <Button 
-                          className="bg-green-600 hover:bg-green-700 text-white px-1.5 md:px-5 h-6 md:h-10 text-[8px] md:text-sm"
-                          onClick={() => {
-                            setSelectedGoal(goal)
-                            setAmountToAdd('')
-                            setAddAmountModalOpen(true)
-                          }}
-                          disabled={loading || goal.status === 'completed'}
-                        >
-                          <TrendingUp className="w-2 h-2 md:w-4 md:h-4 mr-0.5 md:mr-1.5" />
-                          Update
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          size="icon"
-                          onClick={() => {
-                            setDeletingGoalId(goal.id)
-                            setDeletingGoalTitle(goal.title)
-                            setDeleteModalOpen(true)
-                          }}
-                          className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 h-6 w-6 md:h-10 md:w-10"
-                        >
-                          <Trash2 className="w-2 h-2 md:w-4 md:h-4" />
-                        </Button>
-                      </div>
+                    {/* Buttons */}
+                    <div className="flex gap-2">
+                      <Button 
+                        className="flex-1 bg-green-600 hover:bg-green-700 text-white h-10 text-sm"
+                        onClick={() => {
+                          setSelectedGoal(goal)
+                          setAmountToAdd('')
+                          setAddAmountModalOpen(true)
+                        }}
+                        disabled={loading || goal.status === 'completed'}
+                      >
+                        <TrendingUp className="w-4 h-4 mr-2" />
+                        Update
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          setDeletingGoalId(goal.id)
+                          setDeletingGoalTitle(goal.title)
+                          setDeleteModalOpen(true)
+                        }}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200 h-10 w-10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
