@@ -82,10 +82,10 @@ function TransactionsContent() {
       return `${new Date(customStartDate).toLocaleDateString()} - ${new Date(customEndDate).toLocaleDateString()}`
     }
     switch(selectedPeriod) {
+      case 'yesterday': return 'Yesterday'
+      case 'this-week': return 'This Week'
       case 'this-month': return 'This Month'
       case 'last-month': return 'Last Month'
-      case 'last-3-months': return 'Last 3 Months'
-      case 'last-6-months': return 'Last 6 Months'
       case 'this-year': return 'This Year'
       case 'last-year': return 'Last Year'
       case 'all-time': return 'All Time'
@@ -118,18 +118,25 @@ function TransactionsContent() {
           }
         } else {
           switch(selectedPeriod) {
+            case 'yesterday':
+              const yesterday = new Date(now)
+              yesterday.setDate(yesterday.getDate() - 1)
+              startDate = new Date(yesterday.setHours(0, 0, 0, 0))
+              endDate = new Date(yesterday.setHours(23, 59, 59, 999))
+              break
+            case 'this-week':
+              // Week starts on Sunday
+              const startOfWeek = new Date(now)
+              startOfWeek.setDate(now.getDate() - now.getDay())
+              startDate = new Date(startOfWeek.setHours(0, 0, 0, 0))
+              endDate = new Date(now.setHours(23, 59, 59, 999))
+              break
             case 'this-month':
               startDate = new Date(now.getFullYear(), now.getMonth(), 1)
               break
             case 'last-month':
               startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
               endDate = new Date(now.getFullYear(), now.getMonth(), 0)
-              break
-            case 'last-3-months':
-              startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1)
-              break
-            case 'last-6-months':
-              startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
               break
             case 'this-year':
               startDate = new Date(now.getFullYear(), 0, 1)
@@ -770,10 +777,10 @@ function TransactionsContent() {
                     <SelectValue placeholder="Select time period" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="yesterday">Yesterday</SelectItem>
+                    <SelectItem value="this-week">This Week</SelectItem>
                     <SelectItem value="this-month">This Month</SelectItem>
                     <SelectItem value="last-month">Last Month</SelectItem>
-                    <SelectItem value="last-3-months">Last 3 Months</SelectItem>
-                    <SelectItem value="last-6-months">Last 6 Months</SelectItem>
                     <SelectItem value="this-year">This Year</SelectItem>
                     <SelectItem value="last-year">Last Year</SelectItem>
                     <SelectItem value="all-time">All Time</SelectItem>
