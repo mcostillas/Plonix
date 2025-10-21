@@ -252,17 +252,17 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-3 md:p-6">
-        <DialogHeader className="space-y-1 md:space-y-1.5">
-          <DialogTitle className="text-base md:text-2xl font-bold">Add Transaction</DialogTitle>
-          <DialogDescription className="text-xs md:text-sm">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+        <DialogHeader className="space-y-2">
+          <DialogTitle className="text-2xl font-semibold">Add Transaction</DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground">
             Track your income and expenses
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3 md:space-y-6">
+        <div className="space-y-6">
           {/* Transaction Type Selection */}
-          <div className="grid grid-cols-2 gap-2 md:gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <Card 
               className={`cursor-pointer transition-all duration-200 ${
                 transactionType === 'income' 
@@ -271,11 +271,11 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
               }`}
               onClick={() => setTransactionType('income')}
             >
-              <CardHeader className="text-center pb-2 md:pb-3 pt-2 md:pt-4 p-2 md:p-6">
-                <Plus className="w-4 h-4 md:w-8 md:h-8 text-green-600 mx-auto mb-1 md:mb-2" />
-                <CardTitle className="text-[10px] md:text-lg text-green-600">Add Income</CardTitle>
+              <CardHeader className="text-center p-6">
+                <Plus className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <CardTitle className="text-base font-medium text-green-600">Add Income</CardTitle>
                 {transactionType === 'income' && (
-                  <p className="text-[8px] md:text-xs text-green-600 mt-0.5 md:mt-1 font-semibold">✓ Selected</p>
+                  <p className="text-xs text-green-600 mt-1 font-medium">✓ Selected</p>
                 )}
               </CardHeader>
             </Card>
@@ -288,11 +288,11 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
               }`}
               onClick={() => setTransactionType('expense')}
             >
-              <CardHeader className="text-center pb-2 md:pb-3 pt-2 md:pt-4 p-2 md:p-6">
-                <Receipt className="w-4 h-4 md:w-8 md:h-8 text-red-600 mx-auto mb-1 md:mb-2" />
-                <CardTitle className="text-[10px] md:text-lg text-red-600">Add Expense</CardTitle>
+              <CardHeader className="text-center p-6">
+                <Receipt className="w-8 h-8 text-red-600 mx-auto mb-2" />
+                <CardTitle className="text-base font-medium text-red-600">Add Expense</CardTitle>
                 {transactionType === 'expense' && (
-                  <p className="text-[8px] md:text-xs text-red-600 mt-0.5 md:mt-1 font-semibold">✓ Selected</p>
+                  <p className="text-xs text-red-600 mt-1 font-medium">✓ Selected</p>
                 )}
               </CardHeader>
             </Card>
@@ -303,16 +303,16 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
             <div className="absolute inset-0 flex items-center">
               <div className="w-full border-t border-gray-200"></div>
             </div>
-            <div className="relative flex justify-center text-[8px] md:text-xs uppercase">
-              <span className="bg-white px-2 md:px-3 text-gray-500 font-medium">Transaction Details</span>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-3 text-muted-foreground font-medium">Transaction Details</span>
             </div>
           </div>
 
           {/* Transaction Form */}
-          <div className="space-y-3 md:space-y-5">
-            <div className="space-y-1 md:space-y-2">
-              <Label htmlFor="amount" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                <DollarSign className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="amount" className="flex items-center gap-2 text-sm font-medium">
+                <DollarSign className="w-4 h-4 text-muted-foreground" />
                 <span>Amount (₱) <span className="text-red-500">*</span></span>
               </Label>
               <Input
@@ -321,13 +321,13 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
                 placeholder="0.00"
                 value={transactionData.amount}
                 onChange={(e) => setTransactionData({...transactionData, amount: e.target.value})}
-                className="text-sm md:text-lg h-8 md:h-10"
+                className="text-base h-10"
               />
             </div>
 
-            <div className="space-y-1 md:space-y-2">
-              <Label htmlFor="merchant" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                <Receipt className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+            <div className="space-y-2">
+              <Label htmlFor="merchant" className="flex items-center gap-2 text-sm font-medium">
+                <Receipt className="w-4 h-4 text-muted-foreground" />
                 <span>{transactionType === 'income' ? 'Source' : 'Description'} <span className="text-red-500">*</span></span>
               </Label>
               <Input
@@ -336,17 +336,17 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
                 placeholder={transactionType === 'income' ? 'e.g., Monthly Salary, Freelance Project' : 'e.g., Grocery shopping, Restaurant'}
                 value={transactionData.merchant}
                 onChange={(e) => setTransactionData({...transactionData, merchant: e.target.value})}
-                className="h-8 md:h-10 text-xs md:text-base"
+                className="h-10 text-sm"
               />
             </div>
 
-            <div className="space-y-1 md:space-y-2">
-              <Label htmlFor="category" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                <Tag className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+            <div className="space-y-2">
+              <Label htmlFor="category" className="flex items-center gap-2 text-sm font-medium">
+                <Tag className="w-4 h-4 text-muted-foreground" />
                 <span>Category <span className="text-red-500">*</span></span>
               </Label>
               <Select value={transactionData.category} onValueChange={(value) => setTransactionData({...transactionData, category: value})}>
-                <SelectTrigger id="category">
+                <SelectTrigger id="category" className="h-10 text-sm">
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
@@ -376,9 +376,9 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
               </Select>
             </div>
 
-            <div className="space-y-1 md:space-y-2">
-              <Label htmlFor="transaction-date" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                <CalendarIcon className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+            <div className="space-y-2">
+              <Label htmlFor="transaction-date" className="flex items-center gap-2 text-sm font-medium">
+                <CalendarIcon className="w-4 h-4 text-muted-foreground" />
                 <span>Date</span>
               </Label>
               <div className="relative flex gap-2">
@@ -386,7 +386,7 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
                   id="transaction-date"
                   value={dateInputValue}
                   placeholder={formatDateDisplay(new Date())}
-                  className="pr-10 h-8 md:h-10 text-xs md:text-base"
+                  className="pr-10 h-10 text-sm"
                   onChange={(e) => {
                     const date = new Date(e.target.value)
                     setDateInputValue(e.target.value)
@@ -438,13 +438,13 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
             </div>
 
             {transactionType === 'expense' && (
-              <div className="space-y-1 md:space-y-2">
-                <Label htmlFor="payment-method" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                  <CreditCard className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+              <div className="space-y-2">
+                <Label htmlFor="payment-method" className="flex items-center gap-2 text-sm font-medium">
+                  <CreditCard className="w-4 h-4 text-muted-foreground" />
                   <span>Payment Method</span>
                 </Label>
                 <Select value={transactionData.paymentMethod} onValueChange={(value) => setTransactionData({...transactionData, paymentMethod: value})}>
-                  <SelectTrigger id="payment-method" className="h-8 md:h-10 text-xs md:text-base">
+                  <SelectTrigger id="payment-method" className="h-10 text-sm">
                     <SelectValue placeholder="Select payment method" />
                   </SelectTrigger>
                   <SelectContent>
@@ -456,37 +456,37 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
               </div>
             )}
 
-            <div className="space-y-1 md:space-y-2">
-              <Label htmlFor="notes" className="flex items-center space-x-1 md:space-x-2 text-[10px] md:text-sm">
-                <FileText className="w-3 h-3 md:w-4 md:h-4 text-gray-500" />
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="w-4 h-4 text-muted-foreground" />
                 <span>Notes (Optional)</span>
               </Label>
               <Textarea
                 id="notes"
                 placeholder="Add any additional notes..."
-                rows={2}
+                rows={3}
                 value={transactionData.notes}
                 onChange={(e) => setTransactionData({...transactionData, notes: e.target.value})}
-                className="resize-none text-xs md:text-base min-h-[60px] md:min-h-[80px]"
+                className="resize-none text-sm min-h-[80px]"
               />
             </div>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex flex-col sm:flex-row justify-end gap-2 md:gap-3 pt-2 md:pt-4">
+        <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={loading}
-            className="w-full sm:w-auto h-8 md:h-10 text-[10px] md:text-sm"
+            className="w-full sm:w-auto h-10 text-sm font-medium"
           >
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={loading}
-            className={`w-full sm:w-auto h-8 md:h-10 text-[10px] md:text-sm text-white ${
+            className={`w-full sm:w-auto h-10 text-sm font-medium text-white ${
               transactionType === 'income' 
                 ? 'bg-green-600 hover:bg-green-700' 
                 : 'bg-red-600 hover:bg-red-700'
