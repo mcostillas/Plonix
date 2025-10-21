@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { PlounixAIAgent } from '@/lib/langchain-agent'
 import { getAuthenticatedMemoryContext, addToUserMemory } from '@/lib/authenticated-memory'
 import { createClient } from '@supabase/supabase-js'
+import { checkAIUsageLimit, incrementAIUsage, getMembershipType } from '@/lib/ai-usage-limits'
 
 // Force dynamic rendering for this route
 export const dynamic = 'force-dynamic'
@@ -22,7 +23,9 @@ export async function POST(request: NextRequest) {
     console.log('🌐 Language preference:', language || 'taglish (default)')
 
     // Get authenticated user from Authorization header (token-based auth for API routes)
-    let authenticatedUser = null
+    let authenticatedUser: any = null
+    let supabaseClient: any = null
+    
     try {
       const authHeader = request.headers.get('Authorization')
       console.log('🔑 Auth header present:', !!authHeader)
@@ -31,7 +34,7 @@ export async function POST(request: NextRequest) {
         const token = authHeader.substring(7)
         
         // Create Supabase client with the token
-        const supabase = createClient(
+        supabaseClient = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL!,
           process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           {
@@ -44,18 +47,22 @@ export async function POST(request: NextRequest) {
         )
         
         // Get user from token
-        const { data: { user }, error } = await supabase.auth.getUser()
+        const { data: { user }, error } = await supabaseClient.auth.getUser()
         
         if (user && !error) {
+          const membershipType = getMembershipType(user.user_metadata)
+          
           authenticatedUser = {
             id: user.id,
             email: user.email!,
-            name: user.user_metadata?.name || user.email?.split('@')[0]
+            name: user.user_metadata?.name || user.email?.split('@')[0],
+            membershipType
           }
           console.log('🔐 Authentication check:', {
             isAuthenticated: true,
             userId: authenticatedUser.id,
-            userEmail: authenticatedUser.email
+            userEmail: authenticatedUser.email,
+            membershipType: authenticatedUser.membershipType
           })
         } else {
           console.log('❌ Token validation failed:', error?.message)
@@ -66,6 +73,40 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       // User not authenticated, continue with general mode
       console.log('❌ Authentication error:', error)
+    }
+
+    // ✅ CHECK AI USAGE LIMIT (for authenticated users only)
+    if (authenticatedUser && supabaseClient) {
+      try {
+        const usageLimit = await checkAIUsageLimit(
+          supabaseClient,
+          authenticatedUser.id,
+          authenticatedUser.membershipType
+        )
+
+        console.log('📊 AI Usage Check:', usageLimit)
+
+        if (!usageLimit.allowed) {
+          // User has reached their limit
+          return NextResponse.json({
+            response: usageLimit.message,
+            success: false,
+            limitReached: true,
+            membershipType: authenticatedUser.membershipType,
+            remaining: 0,
+            resetDate: usageLimit.resetDate,
+            authenticated: true
+          })
+        }
+
+        // Log remaining messages for freemium users
+        if (authenticatedUser.membershipType === 'freemium' && usageLimit.remaining >= 0) {
+          console.log(`💬 Freemium user has ${usageLimit.remaining} messages remaining`)
+        }
+      } catch (error) {
+        console.error('⚠️ Error checking AI usage limit:', error)
+        // Continue on error (fail open) but log it
+      }
     }
 
     // Check if OpenAI API key is available
@@ -109,6 +150,17 @@ export async function POST(request: NextRequest) {
     // Get AI response with user context
     // Pass recent messages for immediate session context
     const response = await agent.chat(effectiveSessionId, contextualMessage, authenticatedUser, recentMessages, language)
+
+    // ✅ INCREMENT AI USAGE COUNTER (for authenticated users only)
+    if (authenticatedUser && supabaseClient) {
+      try {
+        await incrementAIUsage(supabaseClient, authenticatedUser.id, authenticatedUser.membershipType)
+        console.log('📈 AI usage incremented for user:', authenticatedUser.id)
+      } catch (error) {
+        console.error('⚠️ Error incrementing AI usage:', error)
+        // Continue anyway - don't block the response
+      }
+    }
 
     // Save to memory if user is authenticated
     // CRITICAL FIX: Pass effectiveSessionId (not user.id!) as first parameter for session_id

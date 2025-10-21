@@ -212,6 +212,35 @@ export interface Database {
           updated_at?: string
         }
       }
+      ai_usage_tracking: {
+        Row: {
+          id: string
+          user_id: string
+          month: string
+          message_count: number
+          last_message_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          month: string
+          message_count?: number
+          last_message_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          month?: string
+          message_count?: number
+          last_message_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
     Views: {
       [_ in never]: never
@@ -254,6 +283,7 @@ export type ChatMessage = Database['public']['Tables']['chat_history']['Row']
 export type FinancialMemory = Database['public']['Tables']['financial_memories']['Row']
 export type Transaction = Database['public']['Tables']['transactions']['Row']
 export type Goal = Database['public']['Tables']['goals']['Row']
+export type AIUsageTracking = Database['public']['Tables']['ai_usage_tracking']['Row']
 
 export type ProfileInsert = Database['public']['Tables']['profiles']['Insert']
 export type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert']
@@ -261,6 +291,7 @@ export type ChatMessageInsert = Database['public']['Tables']['chat_history']['In
 export type FinancialMemoryInsert = Database['public']['Tables']['financial_memories']['Insert']
 export type TransactionInsert = Database['public']['Tables']['transactions']['Insert']
 export type GoalInsert = Database['public']['Tables']['goals']['Insert']
+export type AIUsageTrackingInsert = Database['public']['Tables']['ai_usage_tracking']['Insert']
 
 export type ProfileUpdate = Database['public']['Tables']['profiles']['Update']
 export type UserProfileUpdate = Database['public']['Tables']['user_profiles']['Update']
@@ -268,6 +299,7 @@ export type ChatMessageUpdate = Database['public']['Tables']['chat_history']['Up
 export type FinancialMemoryUpdate = Database['public']['Tables']['financial_memories']['Update']
 export type TransactionUpdate = Database['public']['Tables']['transactions']['Update']
 export type GoalUpdate = Database['public']['Tables']['goals']['Update']
+export type AIUsageTrackingUpdate = Database['public']['Tables']['ai_usage_tracking']['Update']
 
 // ================================
 // AUTHENTICATION TYPES
@@ -279,6 +311,7 @@ export interface AuthUser {
   user_metadata?: {
     full_name?: string
     avatar_url?: string
+    membership_type?: 'freemium' | 'premium'
   }
 }
 
