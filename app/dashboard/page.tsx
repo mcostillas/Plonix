@@ -186,12 +186,25 @@ function DashboardContent() {
               income += amount
             }
           })
-
-          setMonthlySpent(spent)
-          setMonthlyIncome(income)
-          // Money Left = Income - Regular Expenses - Savings
-          setTotalSaved(income - spent - savedToGoals)
         }
+
+        // Fetch monthly bills (scheduled payments)
+        const { data: billsData, error: billsError } = await (supabase as any)
+          .from('scheduled_payments')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        let monthlyBills = 0
+        if (!billsError && billsData) {
+          monthlyBills = billsData.reduce((sum: number, bill: any) => sum + Number(bill.amount), 0)
+        }
+
+        setMonthlySpent(spent)
+        setMonthlyIncome(income)
+        // Money Left = Income - Monthly Bills - Regular Expenses - Savings
+        // Monthly bills are deducted immediately, regardless of due date
+        setTotalSaved(income - monthlyBills - spent - savedToGoals)
 
         // Fetch active goals (top 3 for dashboard)
         const { data: goalsData, error: goalsError } = await supabase

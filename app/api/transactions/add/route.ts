@@ -123,7 +123,7 @@ export async function POST(request: NextRequest) {
         if (availableMoney <= 0) {
           return NextResponse.json({
             error: 'Insufficient funds',
-            message: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot add ₱${numAmount.toLocaleString()} expense. Please add income first!`,
+            message: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot add ₱${numAmount.toLocaleString()} expense. Note: Monthly bills (₱${monthlyBills.toLocaleString()}) are already deducted from your available money. Please add income first!`,
             details: {
               requested: numAmount,
               available: availableMoney,
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         } else {
           return NextResponse.json({
             error: 'Insufficient funds',
-            message: `You only have ₱${availableMoney.toLocaleString()} available, but trying to spend ₱${numAmount.toLocaleString()}. Short by ₱${(numAmount - availableMoney).toLocaleString()}!`,
+            message: `You only have ₱${availableMoney.toLocaleString()} available (after ₱${monthlyBills.toLocaleString()} monthly bills are set aside), but trying to spend ₱${numAmount.toLocaleString()}. Short by ₱${(numAmount - availableMoney).toLocaleString()}!`,
             details: {
               requested: numAmount,
               available: availableMoney,

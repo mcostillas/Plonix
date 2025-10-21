@@ -158,7 +158,10 @@ export function AvailableMoneyCard() {
                 ₱{data.availableMoney.toLocaleString()}
               </div>
               <p className="text-sm text-gray-600">
-                After fixed expenses this month
+                After all monthly bills are set aside
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                Monthly bills are deducted immediately to show realistic spending money
               </p>
               {data.availableMoney < 1000 && data.availableMoney > 0 && (
                 <div className="mt-2 px-3 py-1.5 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -176,7 +179,7 @@ export function AvailableMoneyCard() {
               </p>
               <div className="mt-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
                 <p className="text-xs text-red-700">
-                  Your expenses exceed your income. Add income or reduce bills!
+                  Your monthly bills exceed your income. Add income or reduce bills!
                 </p>
               </div>
             </>
@@ -193,16 +196,19 @@ export function AvailableMoneyCard() {
                 <span className="font-medium text-green-600">₱{data.monthlyIncome.toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Scheduled Expenses</span>
+                <span className="text-sm text-gray-600">Monthly Bills (Set Aside)</span>
                 <span className="font-medium text-orange-600">-₱{data.scheduledExpenses.toLocaleString()}</span>
               </div>
               <hr className="my-2" />
               <div className="flex justify-between items-center font-semibold">
-                <span>Available Money</span>
+                <span>Available to Spend</span>
                 <span className={data.availableMoney >= 0 ? 'text-indigo-600' : 'text-red-600'}>
                   ₱{data.availableMoney.toLocaleString()}
                 </span>
               </div>
+              <p className="text-xs text-gray-500 pt-2 border-t">
+                💡 All monthly bills are deducted upfront. Due dates are just reminders for when to pay.
+              </p>
             </div>
 
             {/* Upcoming Payments */}
@@ -210,10 +216,12 @@ export function AvailableMoneyCard() {
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-800 flex items-center">
                   <Calendar className="w-4 h-4 mr-2" />
-                  Upcoming Payments
+                  Payment Reminders
                 </h4>
-                <div className="space-y-2 max-h-40 overflow-y-auto">
-                  {data.upcomingPayments.map((payment) => (
+                <p className="text-xs text-gray-500 -mt-2">
+                  These bills are already deducted from your available money. This shows when they're due.
+                </p>
+                <div className="space-y-2 max-h-40 overflow-y-auto">{data.upcomingPayments.map((payment) => (
                     <div key={payment.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
                       <div className="flex-1">
                         <div className="flex items-center justify-between">

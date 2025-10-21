@@ -189,12 +189,12 @@ function GoalsContent() {
         
         if (availableMoney <= 0) {
           toast.error('❌ No Money Available for Savings', {
-            description: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot save ₱${addAmount.toLocaleString()}. Add income first!`,
+            description: `You have ₱${Math.abs(availableMoney).toLocaleString()} deficit. Cannot save ₱${addAmount.toLocaleString()}. Note: Monthly bills (₱${monthlyBills.toLocaleString()}) are already deducted from your income.`,
             duration: 5000
           })
         } else {
           toast.error('❌ Insufficient Funds for Savings', {
-            description: `You only have ₱${availableMoney.toLocaleString()} available, but trying to save ₱${addAmount.toLocaleString()}. Short by ₱${(addAmount - availableMoney).toLocaleString()}!`,
+            description: `You only have ₱${availableMoney.toLocaleString()} available (after ₱${monthlyBills.toLocaleString()} monthly bills), but trying to save ₱${addAmount.toLocaleString()}. Short by ₱${(addAmount - availableMoney).toLocaleString()}!`,
             duration: 5000
           })
         }

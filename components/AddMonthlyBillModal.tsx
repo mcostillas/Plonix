@@ -202,14 +202,24 @@ export function AddMonthlyBillModal({ children, onPaymentAdded, onShowMessage }:
 
           {/* Preview */}
           {formData.name && formData.amount && formData.due_day && (
-            <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-              <p className="text-sm font-medium text-indigo-900 mb-1">Preview:</p>
-              <p className="text-sm text-indigo-700">
+            <div className="p-2 md:p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+              <p className="text-xs md:text-sm font-medium text-indigo-900 mb-1">Preview:</p>
+              <p className="text-xs md:text-sm text-indigo-700">
                 <span className="font-medium">{formData.name}</span> - ₱{formData.amount} 
-                {` due on day ${formData.due_day} of each month`}
+                {` due on day ${formData.due_day}`}
               </p>
             </div>
           )}
+
+          {/* Important Info */}
+          <div className="p-2 md:p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-[9px] md:text-xs text-blue-800 font-medium mb-1">💡 How monthly bills work:</p>
+            <ul className="text-[8px] md:text-xs text-blue-700 space-y-1 list-disc list-inside">
+              <li>This amount will be <strong>deducted from your available money immediately</strong></li>
+              <li>The due date is only for <strong>payment reminders</strong></li>
+              <li>This helps you see your <strong>realistic spending money</strong></li>
+            </ul>
+          </div>
 
           {/* Submit Button */}
           <div className="flex gap-3 pt-4">

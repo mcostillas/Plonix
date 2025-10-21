@@ -222,7 +222,7 @@ export function MonthlyBillsManager() {
             <Calendar className="w-8 h-8 md:w-12 md:h-12 text-gray-400 mx-auto mb-2 md:mb-4" />
             <h3 className="text-xs md:text-base lg:text-lg font-medium text-gray-900 mb-1 md:mb-2">No monthly bills yet</h3>
             <p className="text-[10px] md:text-sm text-gray-600 mb-2 md:mb-4 px-2">
-              Add your recurring expenses like rent, utilities, and subscriptions. They'll be automatically deducted from your available money at the start of each month.
+              Add your recurring expenses like rent, utilities, and subscriptions. <strong>They'll be deducted from your available money immediately</strong> — even if they're not due yet. Due dates only serve as payment reminders.
             </p>
             <AddMonthlyBillModal 
               onPaymentAdded={fetchMonthlyBills}

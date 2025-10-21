@@ -61,6 +61,7 @@ function TransactionsContent() {
   const [showDeleteTransactionModal, setShowDeleteTransactionModal] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null)
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [monthlyBills, setMonthlyBills] = useState(0)
   const exportDropdownRef = useRef<HTMLDivElement>(null)
 
   // Close dropdown when clicking outside
@@ -174,6 +175,22 @@ function TransactionsContent() {
         } else if (error) {
           console.error('❌ Error fetching transactions:', error)
         }
+
+        // Fetch monthly bills (scheduled payments) - always active regardless of period
+        const { data: billsData, error: billsError } = await (supabase as any)
+          .from('scheduled_payments')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+
+        if (!billsError && billsData) {
+          const totalBills = billsData.reduce((sum: number, bill: any) => sum + Number(bill.amount), 0)
+          console.log('✅ Fetched monthly bills:', totalBills)
+          setMonthlyBills(totalBills)
+        } else if (billsError) {
+          console.error('❌ Error fetching monthly bills:', billsError)
+          setMonthlyBills(0)
+        }
       } catch (err) {
         console.error('❌ Error fetching transactions:', err)
       } finally {
@@ -233,9 +250,10 @@ function TransactionsContent() {
     
     const summaryData = [
       ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Monthly Bills (Set Aside)', `PHP ${summary.monthlyBills.toLocaleString()}`],
       ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
-      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Money Left', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Transaction Count', summary.transactionCount.toString()],
       ['Savings Rate', `${((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)}%`],
       ['Daily Avg Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
@@ -310,9 +328,10 @@ function TransactionsContent() {
     
     const summaryData = [
       ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Monthly Bills (Set Aside)', `PHP ${summary.monthlyBills.toLocaleString()}`],
       ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
-      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Money Left', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Transaction Count', summary.transactionCount.toString()],
       ['Savings Rate', `${((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)}%`],
       ['Daily Avg Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
@@ -399,7 +418,8 @@ function TransactionsContent() {
     const netSavingsRate = ((summary.netCashflow / summary.totalIncome) * 100).toFixed(1)
     const summaryText = [
       `During this period, you had a total income of PHP ${summary.totalIncome.toLocaleString()} and expenses of PHP ${summary.totalExpenses.toLocaleString()}.`,
-      `You saved PHP ${summary.totalSaved.toLocaleString()} toward your goals (${actualSavingsRate}% savings rate) with a net cashflow of PHP ${summary.netCashflow.toLocaleString()}.`,
+      `Your monthly bills of PHP ${summary.monthlyBills.toLocaleString()} are set aside immediately, leaving you with PHP ${summary.netCashflow.toLocaleString()} available.`,
+      `You saved PHP ${summary.totalSaved.toLocaleString()} toward your goals (${actualSavingsRate}% savings rate).`,
       `You completed ${summary.transactionCount} transactions with an average daily spending of PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}.`
     ]
     
@@ -417,9 +437,10 @@ function TransactionsContent() {
 
     const detailedSummaryData = [
       ['Total Income', `PHP ${summary.totalIncome.toLocaleString()}`],
+      ['Monthly Bills (Set Aside)', `PHP ${summary.monthlyBills.toLocaleString()}`],
       ['Total Expenses', `PHP ${summary.totalExpenses.toLocaleString()}`],
-      ['Net Cashflow', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Total Saved', `PHP ${summary.totalSaved.toLocaleString()}`],
+      ['Money Left', `PHP ${summary.netCashflow.toLocaleString()}`],
       ['Transaction Count', summary.transactionCount.toString()],
       ['Savings Rate', `${actualSavingsRate}%`],
       ['Daily Average Spending', `PHP ${Math.round(summary.totalExpenses / 30).toLocaleString()}`],
@@ -524,10 +545,13 @@ function TransactionsContent() {
     totalSaved: transactions
       .filter(t => t.transaction_type === 'expense' && t.category === 'Savings')
       .reduce((sum, t) => sum + Number(t.amount), 0),
+    monthlyBills: monthlyBills, // Add monthly bills to summary
     netCashflow: 0, // Will calculate below
     transactionCount: transactions.length
   }
-  summary.netCashflow = summary.totalIncome - summary.totalExpenses - summary.totalSaved
+  // Money Left = Income - Monthly Bills - Expenses - Savings
+  // Monthly bills are deducted immediately, regardless of due date
+  summary.netCashflow = summary.totalIncome - summary.monthlyBills - summary.totalExpenses - summary.totalSaved
 
   // Calculate category breakdown from real data
   const categoryMap = new Map<string, { amount: number; count: number }>()
@@ -844,7 +868,7 @@ function TransactionsContent() {
                 <div className="min-w-0 flex-1">
                   <p className="text-xs md:text-xl lg:text-2xl font-bold text-blue-600 truncate">₱{summary.netCashflow.toLocaleString()}</p>
                   <p className="text-[9px] md:text-xs lg:text-sm text-blue-700 font-medium truncate">Money Left</p>
-                  <p className="text-[7px] md:text-[10px] lg:text-xs text-blue-600 truncate">{getPeriodLabel()}</p>
+                  <p className="text-[7px] md:text-[10px] lg:text-xs text-blue-600 truncate">After bills (₱{summary.monthlyBills.toLocaleString()})</p>
                 </div>
                 <TrendingUp className="w-4 h-4 md:w-6 md:h-6 lg:w-8 lg:h-8 text-blue-500 flex-shrink-0 ml-1" />
               </div>

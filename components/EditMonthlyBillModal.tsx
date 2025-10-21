@@ -215,10 +215,18 @@ export function EditMonthlyBillModal({ bill, open, onOpenChange, onBillUpdated, 
               <p className="text-[10px] md:text-sm font-medium text-indigo-900 mb-0.5 md:mb-1">Preview:</p>
               <p className="text-[10px] md:text-sm text-indigo-700">
                 <span className="font-medium">{formData.name}</span> - ₱{formData.amount} 
-                {` due on day ${formData.due_day} of each month`}
+                {` due on day ${formData.due_day}`}
               </p>
             </div>
           )}
+
+          {/* Important Info */}
+          <div className="p-2 md:p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-[9px] md:text-xs text-blue-800 font-medium mb-1">💡 Reminder:</p>
+            <p className="text-[8px] md:text-xs text-blue-700">
+              Amount changes are <strong>deducted from available money immediately</strong>. Due dates are only for payment reminders.
+            </p>
+          </div>
 
           {/* Submit Button */}
           <div className="flex gap-2 md:gap-3 pt-2 md:pt-4">
