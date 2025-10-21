@@ -1523,7 +1523,15 @@ function AIAssistantContent() {
                       <p className="text-sm font-medium truncate text-gray-900 dark:text-gray-100">
                         {user?.name || user?.email?.split('@')[0] || 'Guest User'}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">View settings</p>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          user?.membershipType === 'premium' 
+                            ? 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border border-amber-200' 
+                            : 'bg-gray-100 text-gray-700 border border-gray-200'
+                        }`}>
+                          {user?.membershipType === 'premium' ? '⭐ Premium' : 'Freemium'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <Settings className="w-4 h-4 text-gray-400" />

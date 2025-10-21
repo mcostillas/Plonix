@@ -6,6 +6,7 @@ export interface User {
   email: string
   name?: string
   created_at?: string
+  membershipType?: 'freemium' | 'premium'
 }
 
 export interface AuthSession {
@@ -149,6 +150,7 @@ export const auth = {
           email: user.email!,
           name: user.user_metadata?.name || user.email?.split('@')[0],
           created_at: user.created_at,
+          membershipType: user.user_metadata?.membership_type || 'freemium',
         } : null,
       }
     } catch (error: any) {
@@ -178,6 +180,7 @@ export const auth = {
           email: session.user.email!,
           name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
           created_at: session.user.created_at,
+          membershipType: session.user.user_metadata?.membership_type || 'freemium',
         } : null,
       }
     } catch (error: any) {
@@ -217,6 +220,7 @@ export function onAuthStateChange(callback: (user: User | null) => void) {
       email: session.user.email!,
       name: session.user.user_metadata?.name || session.user.email?.split('@')[0],
       created_at: session.user.created_at,
+      membershipType: session.user.user_metadata?.membership_type || 'freemium',
     } : null
 
     callback(user)
