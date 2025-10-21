@@ -46,6 +46,7 @@
             margin: 10px 0;
             border: 1px solid #e5e7eb;
             background: white;
+            border-radius: 50%;
         }
         .dark-preview {
             background: #1f2937;
@@ -161,6 +162,12 @@
 
         function drawPiggyBank(canvas, size) {
             const ctx = canvas.getContext('2d');
+            
+            // Create circular clipping path
+            ctx.beginPath();
+            ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+            ctx.closePath();
+            ctx.clip();
             
             // Fill with white background
             ctx.fillStyle = '#FFFFFF';
