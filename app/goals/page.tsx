@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Navbar } from '@/components/ui/navbar'
 import { AuthGuard } from '@/components/AuthGuard'
 import { PageLoader } from '@/components/ui/page-loader'
@@ -56,6 +58,35 @@ function GoalsContent() {
     icon: '🎯',
     color: 'blue'
   })
+  const [selectedDeadline, setSelectedDeadline] = useState<Date | undefined>(undefined)
+  const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false)
+  const [deadlineMonth, setDeadlineMonth] = useState<Date | undefined>(new Date())
+  const [deadlineInputValue, setDeadlineInputValue] = useState('')
+
+  // Helper functions for date formatting
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return ''
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const isValidDate = (date: Date | undefined) => {
+    if (!date) return false
+    return !isNaN(date.getTime())
+  }
+
+  // Update formData deadline when selectedDeadline changes
+  useEffect(() => {
+    if (selectedDeadline) {
+      setFormData(prev => ({
+        ...prev,
+        deadline: selectedDeadline.toISOString().split('T')[0]
+      }))
+    }
+  }, [selectedDeadline])
 
   // Get current user
   useEffect(() => {
@@ -130,6 +161,8 @@ function GoalsContent() {
           icon: '🎯',
           color: 'blue'
         })
+        setSelectedDeadline(undefined)
+        setDeadlineInputValue('')
         setShowCreateForm(false)
         fetchGoals()
       }
@@ -428,12 +461,59 @@ function GoalsContent() {
               <div className="grid md:grid-cols-2 gap-2 md:gap-6">
                 <div>
                   <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Deadline (optional)</label>
-                  <Input
-                    type="date"
-                    value={formData.deadline}
-                    onChange={(e) => setFormData({...formData, deadline: e.target.value})}
-                    className="border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
-                  />
+                  <div className="relative flex gap-2">
+                    <Input
+                      value={deadlineInputValue}
+                      placeholder={formatDateDisplay(new Date())}
+                      className="pr-10 border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
+                      onChange={(e) => {
+                        const date = new Date(e.target.value)
+                        setDeadlineInputValue(e.target.value)
+                        if (isValidDate(date)) {
+                          setSelectedDeadline(date)
+                          setDeadlineMonth(date)
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault()
+                          setDeadlinePickerOpen(true)
+                        }
+                      }}
+                    />
+                    <Popover open={deadlinePickerOpen} onOpenChange={setDeadlinePickerOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2"
+                        >
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span className="sr-only">Select deadline</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent
+                        className="w-auto overflow-hidden p-0"
+                        align="end"
+                        alignOffset={-8}
+                        sideOffset={10}
+                      >
+                        <CalendarComponent
+                          mode="single"
+                          selected={selectedDeadline}
+                          captionLayout="dropdown"
+                          month={deadlineMonth}
+                          onMonthChange={setDeadlineMonth}
+                          onSelect={(date) => {
+                            setSelectedDeadline(date)
+                            setDeadlineInputValue(formatDateDisplay(date))
+                            setDeadlinePickerOpen(false)
+                          }}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-[10px] md:text-sm font-semibold mb-1 md:mb-2 text-gray-700">Category</label>
@@ -460,7 +540,20 @@ function GoalsContent() {
                   <Target className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
                   Create Goal
                 </Button>
-                <Button variant="outline" onClick={() => setShowCreateForm(false)} className="h-8 md:h-12 px-3 md:px-8 text-[10px] md:text-base">
+                <Button variant="outline" onClick={() => {
+                  setShowCreateForm(false)
+                  setSelectedDeadline(undefined)
+                  setDeadlineInputValue('')
+                  setFormData({
+                    title: '',
+                    description: '',
+                    targetAmount: '',
+                    deadline: '',
+                    category: '',
+                    icon: '🎯',
+                    color: 'blue'
+                  })
+                }} className="h-8 md:h-12 px-3 md:px-8 text-[10px] md:text-base">
                   Cancel
                 </Button>
               </div>

@@ -6,6 +6,9 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Calendar as CalendarComponent } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
@@ -54,6 +57,14 @@ function TransactionsContent() {
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [customStartDate, setCustomStartDate] = useState('')
   const [customEndDate, setCustomEndDate] = useState('')
+  const [selectedStartDate, setSelectedStartDate] = useState<Date | undefined>(undefined)
+  const [selectedEndDate, setSelectedEndDate] = useState<Date | undefined>(undefined)
+  const [startDatePickerOpen, setStartDatePickerOpen] = useState(false)
+  const [endDatePickerOpen, setEndDatePickerOpen] = useState(false)
+  const [startMonth, setStartMonth] = useState<Date | undefined>(new Date())
+  const [endMonth, setEndMonth] = useState<Date | undefined>(new Date())
+  const [startDateInputValue, setStartDateInputValue] = useState('')
+  const [endDateInputValue, setEndDateInputValue] = useState('')
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showAddTransactionModal, setShowAddTransactionModal] = useState(false)
@@ -63,6 +74,35 @@ function TransactionsContent() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [monthlyBills, setMonthlyBills] = useState(0)
   const exportDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Helper functions for date formatting
+  const formatDateDisplay = (date: Date | undefined) => {
+    if (!date) return ''
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    })
+  }
+
+  const isValidDate = (date: Date | undefined) => {
+    if (!date) return false
+    return !isNaN(date.getTime())
+  }
+
+  // Update customStartDate when selectedStartDate changes
+  useEffect(() => {
+    if (selectedStartDate) {
+      setCustomStartDate(selectedStartDate.toISOString().split('T')[0])
+    }
+  }, [selectedStartDate])
+
+  // Update customEndDate when selectedEndDate changes
+  useEffect(() => {
+    if (selectedEndDate) {
+      setCustomEndDate(selectedEndDate.toISOString().split('T')[0])
+    }
+  }, [selectedEndDate])
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -82,10 +122,10 @@ function TransactionsContent() {
       return `${new Date(customStartDate).toLocaleDateString()} - ${new Date(customEndDate).toLocaleDateString()}`
     }
     switch(selectedPeriod) {
-      case 'yesterday': return 'Yesterday'
-      case 'this-week': return 'This Week'
       case 'this-month': return 'This Month'
       case 'last-month': return 'Last Month'
+      case 'last-3-months': return 'Last 3 Months'
+      case 'last-6-months': return 'Last 6 Months'
       case 'this-year': return 'This Year'
       case 'last-year': return 'Last Year'
       case 'all-time': return 'All Time'
@@ -118,25 +158,18 @@ function TransactionsContent() {
           }
         } else {
           switch(selectedPeriod) {
-            case 'yesterday':
-              const yesterday = new Date(now)
-              yesterday.setDate(yesterday.getDate() - 1)
-              startDate = new Date(yesterday.setHours(0, 0, 0, 0))
-              endDate = new Date(yesterday.setHours(23, 59, 59, 999))
-              break
-            case 'this-week':
-              // Week starts on Sunday
-              const startOfWeek = new Date(now)
-              startOfWeek.setDate(now.getDate() - now.getDay())
-              startDate = new Date(startOfWeek.setHours(0, 0, 0, 0))
-              endDate = new Date(now.setHours(23, 59, 59, 999))
-              break
             case 'this-month':
               startDate = new Date(now.getFullYear(), now.getMonth(), 1)
               break
             case 'last-month':
               startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
               endDate = new Date(now.getFullYear(), now.getMonth(), 0)
+              break
+            case 'last-3-months':
+              startDate = new Date(now.getFullYear(), now.getMonth() - 3, 1)
+              break
+            case 'last-6-months':
+              startDate = new Date(now.getFullYear(), now.getMonth() - 6, 1)
               break
             case 'this-year':
               startDate = new Date(now.getFullYear(), 0, 1)
@@ -770,6 +803,10 @@ function TransactionsContent() {
                       setShowDatePicker(false)
                       setCustomStartDate('')
                       setCustomEndDate('')
+                      setSelectedStartDate(undefined)
+                      setSelectedEndDate(undefined)
+                      setStartDateInputValue('')
+                      setEndDateInputValue('')
                     }
                   }}
                 >
@@ -777,10 +814,10 @@ function TransactionsContent() {
                     <SelectValue placeholder="Select time period" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="yesterday">Yesterday</SelectItem>
-                    <SelectItem value="this-week">This Week</SelectItem>
                     <SelectItem value="this-month">This Month</SelectItem>
                     <SelectItem value="last-month">Last Month</SelectItem>
+                    <SelectItem value="last-3-months">Last 3 Months</SelectItem>
+                    <SelectItem value="last-6-months">Last 6 Months</SelectItem>
                     <SelectItem value="this-year">This Year</SelectItem>
                     <SelectItem value="last-year">Last Year</SelectItem>
                     <SelectItem value="all-time">All Time</SelectItem>
@@ -793,21 +830,115 @@ function TransactionsContent() {
                 <div className="flex flex-col md:flex-row gap-2 md:gap-3 md:items-end flex-1">
                   <div className="flex-1">
                     <label className="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2 block">Start Date</label>
-                    <input
-                      type="date"
-                      value={customStartDate}
-                      onChange={(e) => setCustomStartDate(e.target.value)}
-                      className="w-full p-1.5 md:p-2 text-[10px] md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                    <div className="relative flex gap-2">
+                      <Input
+                        value={startDateInputValue}
+                        placeholder={formatDateDisplay(new Date())}
+                        className="pr-10 h-8 md:h-10 text-xs md:text-sm"
+                        onChange={(e) => {
+                          const date = new Date(e.target.value)
+                          setStartDateInputValue(e.target.value)
+                          if (isValidDate(date)) {
+                            setSelectedStartDate(date)
+                            setStartMonth(date)
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault()
+                            setStartDatePickerOpen(true)
+                          }
+                        }}
+                      />
+                      <Popover open={startDatePickerOpen} onOpenChange={setStartDatePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2"
+                          >
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span className="sr-only">Select start date</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto overflow-hidden p-0"
+                          align="end"
+                          alignOffset={-8}
+                          sideOffset={10}
+                        >
+                          <CalendarComponent
+                            mode="single"
+                            selected={selectedStartDate}
+                            captionLayout="dropdown"
+                            month={startMonth}
+                            onMonthChange={setStartMonth}
+                            onSelect={(date) => {
+                              setSelectedStartDate(date)
+                              setStartDateInputValue(formatDateDisplay(date))
+                              setStartDatePickerOpen(false)
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                   <div className="flex-1">
                     <label className="text-[10px] md:text-sm font-medium text-gray-700 mb-1 md:mb-2 block">End Date</label>
-                    <input
-                      type="date"
-                      value={customEndDate}
-                      onChange={(e) => setCustomEndDate(e.target.value)}
-                      className="w-full p-1.5 md:p-2 text-[10px] md:text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                    <div className="relative flex gap-2">
+                      <Input
+                        value={endDateInputValue}
+                        placeholder={formatDateDisplay(new Date())}
+                        className="pr-10 h-8 md:h-10 text-xs md:text-sm"
+                        onChange={(e) => {
+                          const date = new Date(e.target.value)
+                          setEndDateInputValue(e.target.value)
+                          if (isValidDate(date)) {
+                            setSelectedEndDate(date)
+                            setEndMonth(date)
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "ArrowDown") {
+                            e.preventDefault()
+                            setEndDatePickerOpen(true)
+                          }
+                        }}
+                      />
+                      <Popover open={endDatePickerOpen} onOpenChange={setEndDatePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute top-1/2 right-2 h-6 w-6 -translate-y-1/2"
+                          >
+                            <Calendar className="h-3.5 w-3.5" />
+                            <span className="sr-only">Select end date</span>
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent
+                          className="w-auto overflow-hidden p-0"
+                          align="end"
+                          alignOffset={-8}
+                          sideOffset={10}
+                        >
+                          <CalendarComponent
+                            mode="single"
+                            selected={selectedEndDate}
+                            captionLayout="dropdown"
+                            month={endMonth}
+                            onMonthChange={setEndMonth}
+                            onSelect={(date) => {
+                              setSelectedEndDate(date)
+                              setEndDateInputValue(formatDateDisplay(date))
+                              setEndDatePickerOpen(false)
+                            }}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                   <Button
                     onClick={() => {
