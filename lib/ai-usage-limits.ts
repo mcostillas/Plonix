@@ -25,7 +25,7 @@ const UNLIMITED = -1
  * Get membership type from user metadata
  */
 export function getMembershipType(userMetadata: any): MembershipType {
-  return userMetadata?.membership_type || 'premium' // Default to premium
+  return userMetadata?.membership_type || 'freemium' // Default to freemium
 }
 
 /**

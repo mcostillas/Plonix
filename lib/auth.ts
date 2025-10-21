@@ -77,7 +77,7 @@ export const auth = {
           data: {
             name: name || email.split('@')[0],
             age: age,
-            membership_type: 'premium', // All users start as premium
+            membership_type: 'freemium', // All users start as freemium (50 messages/month)
           },
         },
       })
