@@ -179,6 +179,17 @@ function GoalsContent() {
     
     const newAmount = goal.current_amount + addAmount
     
+    // 🚨 VALIDATION: Prevent exceeding goal target
+    if (newAmount > goal.target_amount) {
+      const remainingAmount = goal.target_amount - goal.current_amount
+      toast.error('❌ Amount Exceeds Goal Target', {
+        description: `Your goal target is ₱${goal.target_amount.toLocaleString()}. You can only add up to ₱${remainingAmount.toLocaleString()} more to reach your goal.`,
+        duration: 5000
+      })
+      setLoading(false)
+      return
+    }
+    
     setLoading(true)
     try {
       // VALIDATION: Check available money BEFORE adding to savings
@@ -820,6 +831,14 @@ function GoalsContent() {
                     style={{ width: `${Math.min((selectedGoal.current_amount / selectedGoal.target_amount) * 100, 100)}%` }}
                   ></div>
                 </div>
+                <div className="mt-3 pt-3 border-t border-green-200">
+                  <div className="text-xs text-green-700">
+                    <span className="font-medium">Maximum you can add:</span>{' '}
+                    <span className="font-bold text-green-900">
+                      ₱{(selectedGoal.target_amount - selectedGoal.current_amount).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -859,6 +878,17 @@ function GoalsContent() {
             <Button
               onClick={() => {
                 if (selectedGoal && amountToAdd && !isNaN(Number(amountToAdd)) && Number(amountToAdd) > 0) {
+                  // Validate that the amount won't exceed the goal target
+                  const newTotal = selectedGoal.current_amount + Number(amountToAdd)
+                  if (newTotal > selectedGoal.target_amount) {
+                    const remainingAmount = selectedGoal.target_amount - selectedGoal.current_amount
+                    toast.error('❌ Amount Exceeds Goal Target', {
+                      description: `Your goal target is ₱${selectedGoal.target_amount.toLocaleString()}. You can only add up to ₱${remainingAmount.toLocaleString()} more to reach your goal.`,
+                      duration: 5000
+                    })
+                    return
+                  }
+                  
                   handleUpdateProgress(selectedGoal, Number(amountToAdd))
                   setAddAmountModalOpen(false)
                   setSelectedGoal(null)
