@@ -1360,7 +1360,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                         {reflectionInputs[index] && reflectionInputs[index].trim().length >= 20 && (
                           <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1">
                             <CheckCircle className="w-3 h-3" />
-                            Your reflection has been saved and will help the AI understand you better
+                            Saved
                           </p>
                         )}
                       </div>
