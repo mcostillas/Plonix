@@ -286,6 +286,16 @@ function DashboardContent() {
   // Handle check-in
   const handleCheckIn = async (challengeId: string, challengeTitle: string) => {
     console.log('🔍 Check-in clicked:', { challengeId, challengeTitle })
+    console.log('🔍 Challenge ID type:', typeof challengeId)
+    console.log('🔍 Challenge ID value:', challengeId)
+    
+    if (!challengeId) {
+      console.error('❌ No challenge ID provided')
+      toast.error('Error', {
+        description: 'No challenge ID found. Please refresh the page.'
+      })
+      return
+    }
     
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -303,9 +313,15 @@ function DashboardContent() {
       // Future: Could fetch from challenge requirements if needed
       // For now, ₱100 Daily Challenge is the main one being used
 
-      console.log('📤 Sending check-in request to:', `/api/challenges/${challengeId}/progress`)
+      const apiUrl = `/api/challenges/${challengeId}/progress`
+      console.log('📤 Sending check-in request to:', apiUrl)
+      console.log('📤 Request body:', {
+        completed: true,
+        checkin_date: new Date().toISOString().split('T')[0],
+        value: checkInValue
+      })
       
-      const response = await fetch(`/api/challenges/${challengeId}/progress`, {
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -319,6 +335,7 @@ function DashboardContent() {
       })
 
       console.log('📥 Response status:', response.status)
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()))
       
       if (response.ok) {
         const result = await response.json()
@@ -327,22 +344,32 @@ function DashboardContent() {
         // Show success modal
         setCheckedInChallengeTitle(challengeTitle)
         setCheckInModalOpen(true)
+        toast.success('Check-in successful!', {
+          description: `You're one step closer to completing ${challengeTitle}`
+        })
       } else {
-        const error = await response.json()
-        console.error('❌ Check-in failed:', error)
+        const errorText = await response.text()
+        console.error('❌ Check-in failed - Response text:', errorText)
+        let error
+        try {
+          error = JSON.parse(errorText)
+        } catch (e) {
+          error = { error: errorText }
+        }
+        console.error('❌ Check-in failed - Parsed error:', error)
         // Check if already checked in
         if (error.error?.includes('Already checked in')) {
           setAlreadyCheckedInModalOpen(true)
         } else {
           toast.error('Failed to check in', {
-            description: error.error || 'Please try again'
+            description: error.error || error.details || 'Please try again'
           })
         }
       }
     } catch (error) {
       console.error('❌ Error checking in:', error)
       toast.error('Failed to check in', {
-        description: 'An unexpected error occurred'
+        description: error instanceof Error ? error.message : 'An unexpected error occurred'
       })
     }
   }
@@ -719,8 +746,16 @@ function DashboardContent() {
                       variant="outline" 
                       className="w-full text-xs md:text-sm"
                       onClick={() => {
+                        console.log('🔘 Check In Today button clicked')
+                        console.log('📊 Active challenges:', activeChallenges)
                         if (activeChallenges.length > 0) {
+                          console.log('✅ Checking in to challenge:', {
+                            id: activeChallenges[0].id,
+                            title: activeChallenges[0].title
+                          })
                           handleCheckIn(activeChallenges[0].id, activeChallenges[0].title)
+                        } else {
+                          console.log('❌ No active challenges found')
                         }
                       }}
                       disabled={activeChallenges.length === 0 || activeChallenges[0]?.progress_percent >= 100}
