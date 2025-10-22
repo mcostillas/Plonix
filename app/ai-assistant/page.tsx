@@ -1367,15 +1367,6 @@ function AIAssistantContent() {
                   <Plus className="w-4 h-4 mr-3" />
                   <span className="font-medium">New chat</span>
                 </Button>
-
-                {/* Search Chats Button */}
-                <Button 
-                  variant="ghost"
-                  className="w-full justify-start text-gray-700 dark:text-gray-300 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-700 dark:hover:text-green-400 hover:border-green-200 dark:hover:border-green-800 transition-all duration-200"
-                >
-                  <Search className="w-4 h-4 mr-3" />
-                  <span className="font-medium">Search chats</span>
-                </Button>
               </div>
             ) : (
               <div className="flex flex-col items-center space-y-2 w-full">
@@ -1393,23 +1384,6 @@ function AIAssistantContent() {
                     </TooltipTrigger>
                     <TooltipContent side="right">
                       <p>New chat</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost"
-                        size="icon"
-                        className="w-10 h-10 mx-auto"
-                      >
-                        <Search className="w-4 h-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">
-                      <p>Search chats</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
