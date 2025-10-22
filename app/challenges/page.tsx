@@ -68,16 +68,23 @@ function ChallengesContent() {
   }
 
   const fetchUserStats = async () => {
+    console.log('🔍 Fetching user stats...')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        const { data: userChallenges } = await supabase
+        console.log('✅ User authenticated:', user.id)
+        const { data: userChallenges, error: userChallengesError } = await supabase
           .from('user_challenges')
           .select('id, status, points_earned, challenge_id')
           .eq('user_id', user.id)
 
+        if (userChallengesError) {
+          console.error('❌ Error fetching user challenges:', userChallengesError)
+        }
+
         if (userChallenges) {
+          console.log('📊 User challenges found:', userChallenges.length)
           const completed = userChallenges.filter((uc: any) => uc.status === 'completed').length
           const totalSaved = userChallenges.reduce((sum: number, uc: any) => sum + (uc.points_earned || 0), 0) * 10 // Points to peso estimate
           
@@ -96,31 +103,59 @@ function ChallengesContent() {
           setJoinedChallenges(activeChallengeIds)
           setUserChallengeMap(challengeMapping)
           
-          // 🔧 FIX: Fetch real total members count from database
-          const { count } = await supabase
+          // 🔧 FIX: Fetch UNIQUE users count who have joined any challenge
+          // Use distinct on user_id to get unique users, not total participations
+          const { data: uniqueUsers, error: uniqueError } = await supabase
             .from('user_challenges')
-            .select('*', { count: 'exact', head: true })
+            .select('user_id')
           
-          console.log('📊 Real total members count:', count)
+          if (uniqueError) {
+            console.error('❌ Error fetching unique users:', uniqueError)
+          }
+          
+          // Count unique user IDs
+          const uniqueUserIds = new Set(uniqueUsers?.map((uc: any) => uc.user_id) || [])
+          const uniqueUserCount = uniqueUserIds.size
+          
+          console.log('📊 Total challenge participations:', uniqueUsers?.length || 0)
+          console.log('📊 Unique users who joined challenges:', uniqueUserCount)
+          console.log('📊 Sample user IDs:', Array.from(uniqueUserIds).slice(0, 5))
           
           setStats({
             completed,
             totalSaved,
-            totalMembers: count || 0 // Real count of all users who have joined any challenge
+            totalMembers: uniqueUserCount // Real count of UNIQUE users who have joined any challenge
           })
         }
       } else {
-        // If no user, just show total challenge participants
-        const totalParticipants = challenges.reduce((sum: number, c: Challenge) => sum + (c.total_participants || 0), 0)
-        console.log('📊 Not logged in, showing total participants:', totalParticipants)
+        console.log('⚠️ No user logged in, fetching global stats')
+        // If no user logged in, still fetch the unique users count
+        const { data: uniqueUsers, error: uniqueError } = await supabase
+          .from('user_challenges')
+          .select('user_id')
+        
+        if (uniqueError) {
+          console.error('❌ Error fetching unique users (not logged in):', uniqueError)
+        }
+        
+        const uniqueUserIds = new Set(uniqueUsers?.map((uc: any) => uc.user_id) || [])
+        const uniqueUserCount = uniqueUserIds.size
+        
+        console.log('📊 Not logged in - Unique users who joined challenges:', uniqueUserCount)
+        
         setStats({
           completed: 0,
           totalSaved: 0,
-          totalMembers: totalParticipants
+          totalMembers: uniqueUserCount
         })
       }
     } catch (error) {
-      console.error('Error fetching user stats:', error)
+      console.error('❌ Error in fetchUserStats:', error)
+      setStats({
+        completed: 0,
+        totalSaved: 0,
+        totalMembers: 0
+      })
     }
   }
 
