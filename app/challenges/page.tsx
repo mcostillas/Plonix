@@ -30,8 +30,7 @@ function ChallengesContent() {
   const [joiningId, setJoiningId] = useState<string | null>(null)
   const [stats, setStats] = useState({
     completed: 0,
-    totalSaved: 0,
-    totalMembers: 0
+    totalSaved: 0
   })
   const [successModalOpen, setSuccessModalOpen] = useState(false)
   const [successChallengeTitle, setSuccessChallengeTitle] = useState('')
@@ -72,96 +71,61 @@ function ChallengesContent() {
     try {
       const { data: { user } } = await supabase.auth.getUser()
       
-      // Fetch global stats from API endpoint (bypasses RLS)
-      console.log('🌐 Calling /api/challenges/stats for global statistics...')
-      try {
-        const response = await fetch('/api/challenges/stats')
-        if (response.ok) {
-          const globalStats = await response.json()
-          console.log('✅ Global stats received:', globalStats)
-          
-          // Use global stats for members count
-          const globalMembers = globalStats.totalMembers || 0
-          const globalCompleted = globalStats.completedChallenges || 0
-          
-          console.log('📊 Global members (bypassing RLS):', globalMembers)
-          console.log('📊 Global completed challenges:', globalCompleted)
-          
-          if (user) {
-            console.log('✅ User authenticated:', user.id)
-            const { data: userChallenges, error: userChallengesError } = await supabase
-              .from('user_challenges')
-              .select('id, status, points_earned, challenge_id')
-              .eq('user_id', user.id)
+      if (user) {
+        console.log('✅ User authenticated:', user.id)
+        const { data: userChallenges, error: userChallengesError } = await supabase
+          .from('user_challenges')
+          .select('id, status, points_earned, challenge_id')
+          .eq('user_id', user.id)
 
-            if (userChallengesError) {
-              console.error('❌ Error fetching user challenges:', userChallengesError)
-            }
-
-            if (userChallenges) {
-              console.log('📊 User challenges found:', userChallenges.length)
-              console.log('📊 User challenges data:', userChallenges)
-              
-              const completed = userChallenges.filter((uc: any) => uc.status === 'completed').length
-              const active = userChallenges.filter((uc: any) => uc.status === 'active').length
-              const totalSaved = userChallenges.reduce((sum: number, uc: any) => sum + (uc.points_earned || 0), 0) * 10 // Points to peso estimate
-              
-              console.log('✅ User\'s completed challenges:', completed)
-              console.log('🔄 User\'s active challenges:', active)
-              console.log('💰 Total saved estimate:', totalSaved)
-              
-              // Get all active challenge IDs and create mapping
-              const activeChallengeIds = userChallenges
-                .filter((uc: any) => uc.status === 'active')
-                .map((uc: any) => uc.challenge_id)
-              
-              const challengeMapping: {[key: string]: string} = {}
-              userChallenges
-                .filter((uc: any) => uc.status === 'active')
-                .forEach((uc: any) => {
-                  challengeMapping[uc.challenge_id] = uc.id
-                })
-              
-              setJoinedChallenges(activeChallengeIds)
-              setUserChallengeMap(challengeMapping)
-              
-              // Use global stats for accurate member count
-              setStats({
-                completed,
-                totalSaved,
-                totalMembers: globalMembers // From API (bypasses RLS)
-              })
-            }
-          } else {
-            console.log('⚠️ No user logged in, using global stats only')
-            setStats({
-              completed: 0,
-              totalSaved: 0,
-              totalMembers: globalMembers // From API
-            })
-          }
-        } else {
-          console.error('❌ Failed to fetch global stats from API:', response.status)
-          throw new Error('API returned error status')
+        if (userChallengesError) {
+          console.error('❌ Error fetching user challenges:', userChallengesError)
         }
-      } catch (apiError) {
-        console.error('❌ Error calling stats API, falling back to showing 0:', apiError)
-        console.warn('⚠️ WARNING: Could not fetch global stats from API')
-        console.warn('⚠️ This is likely due to RLS policies blocking client-side queries')
-        console.warn('⚠️ Check if SUPABASE_SERVICE_ROLE_KEY is configured in .env.local')
-        
+
+        if (userChallenges) {
+          console.log('📊 User challenges found:', userChallenges.length)
+          console.log('📊 User challenges data:', userChallenges)
+          
+          const completed = userChallenges.filter((uc: any) => uc.status === 'completed').length
+          const active = userChallenges.filter((uc: any) => uc.status === 'active').length
+          const totalSaved = userChallenges.reduce((sum: number, uc: any) => sum + (uc.points_earned || 0), 0) * 10 // Points to peso estimate
+          
+          console.log('✅ User\'s completed challenges:', completed)
+          console.log('🔄 User\'s active challenges:', active)
+          console.log('💰 Total saved estimate:', totalSaved)
+          
+          // Get all active challenge IDs and create mapping
+          const activeChallengeIds = userChallenges
+            .filter((uc: any) => uc.status === 'active')
+            .map((uc: any) => uc.challenge_id)
+          
+          const challengeMapping: {[key: string]: string} = {}
+          userChallenges
+            .filter((uc: any) => uc.status === 'active')
+            .forEach((uc: any) => {
+              challengeMapping[uc.challenge_id] = uc.id
+            })
+          
+          setJoinedChallenges(activeChallengeIds)
+          setUserChallengeMap(challengeMapping)
+          
+          setStats({
+            completed,
+            totalSaved
+          })
+        }
+      } else {
+        console.log('⚠️ No user logged in')
         setStats({
           completed: 0,
-          totalSaved: 0,
-          totalMembers: 0 // Will show 0 until API works
+          totalSaved: 0
         })
       }
     } catch (error) {
       console.error('❌ Error in fetchUserStats:', error)
       setStats({
         completed: 0,
-        totalSaved: 0,
-        totalMembers: 0
+        totalSaved: 0
       })
     }
   }
@@ -458,15 +422,6 @@ function ChallengesContent() {
                   </div>
                   <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.completed}</h3>
                   <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Completed</p>
-                </CardContent>
-              </Card>
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                <CardContent className="text-center pt-2 md:pt-6 pb-2 md:pb-6 px-1 md:px-6">
-                  <div className="p-1 md:p-3 bg-blue-500 rounded-full w-fit mx-auto mb-1 md:mb-3">
-                    <Users className="w-3 h-3 md:w-6 md:h-6 text-white" />
-                  </div>
-                  <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.totalMembers.toLocaleString()}</h3>
-                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Members</p>
                 </CardContent>
               </Card>
             </div>
