@@ -358,7 +358,7 @@ export class PlounixAIAgent {
 
       new DynamicTool({
         name: "get_financial_summary",
-        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, active challenges, and scheduled monthly bills. **MUST call this when user asks about bills/recurring expenses!** **ALWAYS call this when user mentions the word 'bills' in ANY context!** Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'list my bills', 'list my active bills', 'show my bills', 'my active monthly bills', 'show my recurring expenses', 'my monthly bills', 'my subscriptions'. Required: userId.",
+        description: "**CRITICAL: Use this tool when user asks about their current income, expenses, balance, financial totals, goals progress, learning progress, challenges, reflections, or monthly bills.** Fetches comprehensive user data including: transactions, goals, learning modules completed, **USER'S REFLECTION ANSWERS**, active challenges, and scheduled monthly bills. **🚨 MUST CALL THIS WHEN USER ASKS ABOUT REFLECTIONS, LEARNING MODULES, OR COMPLETED MODULES!** **ALWAYS call this when user mentions: 'reflection', 'what is my reflection', 'my reflection at', 'how many modules', 'modules completed', 'modules finished', 'learning progress', 'what did I learn', 'bills', 'monthly bills', 'recurring expenses'!** Use when user asks: 'what's my total income', 'how much did I earn', 'what's my balance', 'check my progress', 'how many modules have I completed', 'what is my reflection', 'show my reflection answers', 'my reflection at the budgeting module', 'show my goals', 'what challenges am I doing', 'what are my monthly bills', 'list my bills', 'list my active bills', 'show my bills', 'my active monthly bills', 'show my recurring expenses', 'my monthly bills', 'my subscriptions'. Required: userId.",
         func: async (input: string) => {
           try {
             console.log('💼 get_financial_summary called with:', input)
@@ -1703,7 +1703,24 @@ NEVER say "[insert date]" or "I don't know the date" - THE DATE IS WRITTEN ABOVE
    - "how much is my income" / "what's my balance"
    - "show my financial overview" / "look at my finance"
    - "give me advice" / "how am I doing"
+   - **"what is my reflection"** / **"my reflection at budgeting module"**
+   - **"how many modules have I completed"** / **"modules finished"**
+   - **"what did I learn"** / **"show my learning progress"**
    → CALL get_financial_summary with userId: ${userContext?.id || userId} (NOT EMAIL)
+
+**🚨 CRITICAL REFLECTION/LEARNING QUESTIONS:**
+When user asks about REFLECTIONS or LEARNING MODULES:
+- "what is my reflection at [module]?"
+- "my reflection from budgeting"
+- "how many modules have I finished?"
+- "what modules did I complete?"
+- "show my learning progress"
+
+**YOU MUST:**
+1. IMMEDIATELY call get_financial_summary with userId
+2. Read learning.reflectionAnswers array
+3. Tell user their ACTUAL reflection answers or module count
+4. NEVER say "I don't have access" - the data IS in the tool response!
 
 **PERSONALITY:**
 - Caring but firm about saving
@@ -1718,6 +1735,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
 **REMEMBER: 
 - When user says "add X to Y" → CALL THE TOOL
 - When user says "put it in my goals" → CALL create_financial_goal
+- When user asks about "reflection" or "modules" → CALL get_financial_summary FIRST
 - ALWAYS use userId: ${userContext?.id || userId} (not email address)
 - Don't say "I'll help you" or "Let me assist" - JUST CALL THE TOOL**`
 
@@ -1782,7 +1800,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
           type: "function",
           function: {
             name: "get_financial_summary",
-            description: "**USE FOR OVERALL FINANCIAL SNAPSHOT ONLY** Get comprehensive financial summary including income, expenses, balance, goals progress, learning modules completed, and active challenges. **DO NOT use this for listing bills - use list_monthly_bills instead!** **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords: 'what is my income', 'how much is my balance', 'check my progress', 'show my goals', 'my financial status', 'how am I doing financially'. Required: userId.",
+            description: "**🚨 CRITICAL TOOL FOR USER DATA & REFLECTIONS** Get comprehensive financial summary including income, expenses, balance, goals progress, **LEARNING MODULES COMPLETED**, **USER'S REFLECTION ANSWERS**, and active challenges. **MUST CALL THIS WHEN USER ASKS ABOUT:** 'reflection', 'what is my reflection', 'my reflection at [module]', 'how many modules have I completed', 'modules finished', 'learning progress', 'what did I learn'. **DO NOT use this for listing bills - use list_monthly_bills instead!** **USE THIS TO QUERY/CHECK USER'S DATA - DO NOT use add_income or add_expense tools when user is asking 'what is my income?' or 'how much did I earn?'.** Keywords: 'what is my income', 'how much is my balance', 'check my progress', 'show my goals', 'my financial status', 'how am I doing financially', 'what is my reflection', 'how many modules', 'modules completed'. Required: userId.",
             parameters: {
               type: "object",
               properties: {
