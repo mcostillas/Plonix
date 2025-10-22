@@ -44,8 +44,11 @@ function ChallengesContent() {
   const [isCanceling, setIsCanceling] = useState(false)
 
   useEffect(() => {
-    fetchChallenges()
-    fetchUserStats()
+    async function loadData() {
+      await fetchChallenges() // Wait for challenges first
+      await fetchUserStats()   // Then fetch stats (which needs challenges data)
+    }
+    loadData()
   }, [])
 
   const fetchChallenges = async () => {
@@ -53,6 +56,8 @@ function ChallengesContent() {
       const response = await fetch('/api/challenges')
       if (response.ok) {
         const data = await response.json()
+        console.log('📊 Challenges data from API:', data.challenges)
+        console.log('📊 Sample challenge participants:', data.challenges[0]?.total_participants)
         setChallenges(data.challenges || [])
       }
     } catch (error) {
@@ -91,12 +96,28 @@ function ChallengesContent() {
           setJoinedChallenges(activeChallengeIds)
           setUserChallengeMap(challengeMapping)
           
+          // 🔧 FIX: Fetch real total members count from database
+          const { count } = await supabase
+            .from('user_challenges')
+            .select('*', { count: 'exact', head: true })
+          
+          console.log('📊 Real total members count:', count)
+          
           setStats({
             completed,
             totalSaved,
-            totalMembers: challenges.reduce((sum: number, c: Challenge) => sum + (c.total_participants || 0), 0)
+            totalMembers: count || 0 // Real count of all users who have joined any challenge
           })
         }
+      } else {
+        // If no user, just show total challenge participants
+        const totalParticipants = challenges.reduce((sum: number, c: Challenge) => sum + (c.total_participants || 0), 0)
+        console.log('📊 Not logged in, showing total participants:', totalParticipants)
+        setStats({
+          completed: 0,
+          totalSaved: 0,
+          totalMembers: totalParticipants
+        })
       }
     } catch (error) {
       console.error('Error fetching user stats:', error)
