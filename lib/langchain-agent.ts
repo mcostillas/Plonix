@@ -1078,11 +1078,22 @@ Amazing work! You're almost at 100%! Just one more module to go. Keep learning t
 
 The get_financial_summary tool returns learning.reflectionAnswers and learning.reflectionsByModule containing:
 - Questions asked to the user during learning modules
-- User's actual answers and reflections
+- User's actual answers and reflections (IMPORTANT: may be empty if they haven't answered!)
 - Sentiment analysis of their responses
 - Extracted insights about their financial situation, goals, and concerns
 
-**How to use reflection data:**
+**🚨 CRITICAL: CHECK IF USER HAS ANSWERED REFLECTIONS FIRST**
+
+**BEFORE giving advice:**
+1. Check if reflectionsByModule[moduleId] exists
+2. If empty/null → User has NOT completed that module or answered reflections
+3. **TELL USER HONESTLY**: "I see you haven't completed the [module name] module yet. I can give you general advice, but for personalized guidance based on YOUR specific situation, try completing that module first!"
+
+**Example: User asks for savings advice but hasn't done savings module:**
+❌ WRONG: "Based on your reflection on savings..." (HALLUCINATION!)
+✅ CORRECT: "I don't see any reflections from you about savings yet. Would you like general savings tips, or would you prefer to complete the Savings module first for personalized advice based on your specific situation?"
+
+**How to use reflection data (ONLY IF IT EXISTS):**
 
 1. **When user asks for advice**, check their reflection answers first:
    - Look at their stated financial goals from reflections
@@ -1106,15 +1117,18 @@ The get_financial_summary tool returns learning.reflectionAnswers and learning.r
 5. **Use their own words**:
    Reference specific phrases or concerns they wrote in reflections to show you remember and understand them personally.
 
-Example with Reflections:
+**Example with Reflections (when they exist):**
 
 User: "Give me advice on saving money"
-Example:
+If user HAS savings reflections:
 Response: "Based on what you shared in your learning reflections, I remember you mentioned eating out is your biggest challenge. Let's tackle that specifically:
 
 1. You're currently spending ₱4,200 on food (based on your transactions)
 2. Your goal from the budgeting module was ₱3,000
 3. Here's a realistic plan that fits YOUR specific situation..."
+
+If user has NO savings reflections:
+Response: "I don't see that you've completed the Savings module yet, so I don't have your specific situation to reference. I can give you general savings advice, or you could complete the Savings module first which will help me give you more personalized guidance. Which would you prefer?"
 
 **When to use add_expense:**
 User mentions spending money, buying something, or paying for something:
@@ -2115,12 +2129,46 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
               const totalModules = 9 // Total modules: 3 core + 6 essential
               const learningPercentage = ((completedModules / totalModules) * 100).toFixed(0)
               
+              // 🚨 CRITICAL FIX: Extract user's reflection answers for personalized advice
+              const reflectionAnswers = learningProgress?.map((r: any) => ({
+                moduleId: r.module_id,
+                moduleTitle: r.module_title,
+                phase: r.phase,
+                question: r.question,
+                answer: r.answer,
+                sentiment: r.sentiment,
+                extractedInsights: r.extracted_insights,
+                completedAt: r.created_at
+              })) || []
+              
+              // Organize reflections by module for better understanding
+              const reflectionsByModule = reflectionAnswers.reduce((acc: any, r) => {
+                if (!acc[r.moduleId]) {
+                  acc[r.moduleId] = {
+                    moduleTitle: r.moduleTitle,
+                    reflections: []
+                  }
+                }
+                acc[r.moduleId].reflections.push({
+                  phase: r.phase,
+                  question: r.question,
+                  answer: r.answer,
+                  sentiment: r.sentiment
+                })
+                return acc
+              }, {})
+              
               // Calculate challenges stats
               const activeChallenges = challenges?.filter((c: any) => c.status === 'active' || c.status === 'in_progress')?.length || 0
               const completedChallenges = challenges?.filter((c: any) => c.status === 'completed')?.length || 0
               
               // Calculate monthly bills stats
               const totalMonthlyObligation = monthlyBills?.reduce((sum: number, b: any) => sum + (b.amount || 0), 0) || 0
+              
+              console.log('📚 REFLECTION DATA EXTRACTED:')
+              console.log('  - Total reflections:', reflectionAnswers.length)
+              console.log('  - Modules with reflections:', Object.keys(reflectionsByModule).length)
+              console.log('  - Sample reflection:', reflectionAnswers[0])
               
               functionResult = JSON.stringify({
                 success: true,
@@ -2141,7 +2189,9 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                 learning: {
                   completedModules,
                   totalModules,
-                  progressPercentage: learningPercentage + '%'
+                  progressPercentage: learningPercentage + '%',
+                  reflectionAnswers: reflectionAnswers.slice(0, 20), // Return up to 20 recent reflections
+                  reflectionsByModule // Organized by module for context
                 },
                 challenges: {
                   active: activeChallenges,
@@ -2152,7 +2202,7 @@ ${isNewUser ? '\n**FIRST MESSAGE:** Greet warmly: "Hi! I\'m Fili, your financial
                   total: monthlyBills?.length || 0,
                   totalMonthlyAmount: totalMonthlyObligation
                 },
-                message: `Financial: ₱${totalIncome.toLocaleString()} income, ₱${totalExpenses.toLocaleString()} expenses, ₱${balance.toLocaleString()} balance | Monthly Bills: ₱${totalMonthlyObligation.toLocaleString()}/month | Goals: ${completedGoals}/${totalGoals} completed | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
+                message: `Financial: ₱${totalIncome.toLocaleString()} income, ₱${totalExpenses.toLocaleString()} expenses, ₱${balance.toLocaleString()} balance | Monthly Bills: ₱${totalMonthlyObligation.toLocaleString()}/month | Goals: ${completedGoals}/${totalGoals} completed | Learning: ${completedModules}/${totalModules} modules (${learningPercentage}%) with ${reflectionAnswers.length} reflection answers | Challenges: ${activeChallenges} active, ${completedChallenges} completed`
               })
             } catch (error) {
               console.error('❌ Financial summary error:', error)
