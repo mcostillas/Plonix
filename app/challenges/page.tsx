@@ -85,8 +85,15 @@ function ChallengesContent() {
 
         if (userChallenges) {
           console.log('📊 User challenges found:', userChallenges.length)
+          console.log('📊 User challenges data:', userChallenges)
+          
           const completed = userChallenges.filter((uc: any) => uc.status === 'completed').length
+          const active = userChallenges.filter((uc: any) => uc.status === 'active').length
           const totalSaved = userChallenges.reduce((sum: number, uc: any) => sum + (uc.points_earned || 0), 0) * 10 // Points to peso estimate
+          
+          console.log('✅ Challenges completed:', completed)
+          console.log('🔄 Challenges active:', active)
+          console.log('💰 Total saved estimate:', totalSaved)
           
           // Get all active challenge IDs and create mapping
           const activeChallengeIds = userChallenges
@@ -450,7 +457,7 @@ function ChallengesContent() {
                     <Trophy className="w-3 h-3 md:w-6 md:h-6 text-white" />
                   </div>
                   <h3 className="text-sm md:text-2xl font-bold text-gray-900">{stats.completed}</h3>
-                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Challenges</p>
+                  <p className="text-gray-600 font-medium text-[8px] md:text-base leading-tight">Completed</p>
                 </CardContent>
               </Card>
               <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
