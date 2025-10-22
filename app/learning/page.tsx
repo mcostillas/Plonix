@@ -34,7 +34,7 @@ function LearningContent() {
       }
 
       try {
-        // Try to load from database first
+        // Try to load from database first (user-specific)
         const { data, error } = await supabase
           .from('user_profiles')
           .select('preferences')
@@ -46,28 +46,38 @@ function LearningContent() {
           const dbProgress = prefs.learning_progress?.completed_modules || []
           
           if (dbProgress.length > 0) {
-            console.log('📚 Loaded learning progress from database:', dbProgress)
+            console.log('📚 Loaded learning progress from database for user', user.id, ':', dbProgress)
             setCompletedModules(dbProgress)
-            // Also sync to localStorage for offline access
-            localStorage.setItem('plounix-learning-progress', JSON.stringify(dbProgress))
+            // Sync to user-specific localStorage for offline access
+            localStorage.setItem(`plounix-learning-progress-${user.id}`, JSON.stringify(dbProgress))
+            
+            // Clean up old non-user-specific localStorage key
+            if (localStorage.getItem('plounix-learning-progress')) {
+              console.log('🧹 Cleaning up old localStorage key')
+              localStorage.removeItem('plounix-learning-progress')
+            }
+            
             setLoading(false)
             setMounted(true)
             return
           }
         }
 
-        // Fallback to localStorage if database is empty
-        const savedProgress = localStorage.getItem('plounix-learning-progress')
+        // Fallback to user-specific localStorage if database is empty
+        const savedProgress = localStorage.getItem(`plounix-learning-progress-${user.id}`)
         if (savedProgress) {
           try {
             const parsed = JSON.parse(savedProgress)
-            console.log('📚 Loaded learning progress from localStorage:', parsed)
+            console.log('📚 Loaded learning progress from localStorage for user', user.id, ':', parsed)
             setCompletedModules(parsed)
             // Migrate to database
             await saveLearningProgress(parsed)
           } catch (error) {
             console.error('Failed to load learning progress from localStorage:', error)
           }
+        } else {
+          console.log('📚 No learning progress found for user', user.id)
+          setCompletedModules([])
         }
       } catch (error) {
         console.error('Failed to load learning progress:', error)
@@ -139,10 +149,13 @@ function LearningContent() {
   // Function to reset progress (for testing/debugging)
   const resetProgress = async () => {
     setCompletedModules([])
-    localStorage.removeItem('plounix-learning-progress')
+    // Remove user-specific localStorage
     if (user?.id) {
+      localStorage.removeItem(`plounix-learning-progress-${user.id}`)
       await saveLearningProgress([])
     }
+    // Also remove old non-user-specific key if it exists
+    localStorage.removeItem('plounix-learning-progress')
   }
 
   // Function to check if a module is accessible

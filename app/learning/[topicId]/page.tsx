@@ -895,8 +895,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
   const completeModule = async () => {
     if (canProceedToNext()) {
-      // Save module completion to localStorage
-      const savedProgress = localStorage.getItem('plounix-learning-progress')
+      // Save module completion to user-specific localStorage
+      const storageKey = user?.id ? `plounix-learning-progress-${user.id}` : 'plounix-learning-progress'
+      const savedProgress = localStorage.getItem(storageKey)
       let completedModules: string[] = []
       
       if (savedProgress) {
@@ -910,7 +911,12 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
       // Add current module to completed list if not already there
       if (!completedModules.includes(topicId)) {
         completedModules.push(topicId)
-        localStorage.setItem('plounix-learning-progress', JSON.stringify(completedModules))
+        localStorage.setItem(storageKey, JSON.stringify(completedModules))
+        
+        // Clean up old non-user-specific key if user is logged in
+        if (user?.id && localStorage.getItem('plounix-learning-progress')) {
+          localStorage.removeItem('plounix-learning-progress')
+        }
 
         // Save to database
         if (user?.id) {

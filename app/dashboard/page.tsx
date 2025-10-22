@@ -134,19 +134,46 @@ function DashboardContent() {
     checkTourStatus()
   }, [user, tourChecked])
 
-  // Load completed modules from localStorage
+  // Load completed modules from database (user-specific)
   useEffect(() => {
-    const savedProgress = localStorage.getItem('plounix-learning-progress')
-    if (savedProgress) {
+    const loadProgress = async () => {
+      if (!user?.id) {
+        // No user logged in - clear any old data
+        setCompletedModules([])
+        setMounted(true)
+        return
+      }
+
       try {
-        const parsed = JSON.parse(savedProgress)
-        setCompletedModules(parsed)
+        // Load from database first (user-specific data)
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('preferences')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (!error && data) {
+          const prefs = (data as any)?.preferences || {}
+          const dbProgress = prefs.learning_progress?.completed_modules || []
+          
+          console.log('📚 Dashboard: Loaded learning progress for user', user.id, ':', dbProgress)
+          setCompletedModules(dbProgress)
+          // Sync to localStorage for this user
+          localStorage.setItem(`plounix-learning-progress-${user.id}`, JSON.stringify(dbProgress))
+        } else {
+          console.log('📚 Dashboard: No learning progress found in database for user', user.id)
+          setCompletedModules([])
+        }
       } catch (error) {
-        console.error('Failed to load learning progress:', error)
+        console.error('Failed to load learning progress from database:', error)
+        setCompletedModules([])
+      } finally {
+        setMounted(true)
       }
     }
-    setMounted(true)
-  }, [])
+
+    loadProgress()
+  }, [user?.id])
 
   // Fetch financial data from Supabase
   useEffect(() => {
