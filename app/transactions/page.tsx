@@ -874,6 +874,7 @@ function TransactionsContent() {
                             captionLayout="dropdown"
                             month={startMonth}
                             onMonthChange={setStartMonth}
+                            disabled={(date) => date > new Date()}
                             onSelect={(date) => {
                               setSelectedStartDate(date)
                               setStartDateInputValue(formatDateDisplay(date))
@@ -930,6 +931,7 @@ function TransactionsContent() {
                             captionLayout="dropdown"
                             month={endMonth}
                             onMonthChange={setEndMonth}
+                            disabled={(date) => date > new Date()}
                             onSelect={(date) => {
                               setSelectedEndDate(date)
                               setEndDateInputValue(formatDateDisplay(date))

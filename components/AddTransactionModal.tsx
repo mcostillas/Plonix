@@ -426,6 +426,7 @@ export function AddTransactionModal({ isOpen, onClose, onSuccess }: AddTransacti
                       captionLayout="dropdown"
                       month={month}
                       onMonthChange={setMonth}
+                      disabled={(date) => date > new Date()}
                       onSelect={(date) => {
                         setSelectedDate(date)
                         setDateInputValue(formatDateDisplay(date))

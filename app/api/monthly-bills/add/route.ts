@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendBillReminder } from '@/lib/smart-notification-triggers'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -89,6 +90,43 @@ export async function POST(request: NextRequest) {
     }
 
     console.log('✅ Monthly bill added successfully:', data)
+
+    // Check if bill is due soon and create notification
+    try {
+      const today = new Date()
+      const currentDay = today.getDate()
+      const currentMonth = today.getMonth()
+      const currentYear = today.getFullYear()
+      
+      // Calculate days until due
+      let daysUntilDue: number
+      
+      if (parsedDueDay >= currentDay) {
+        // Due this month
+        const dueDate = new Date(currentYear, currentMonth, parsedDueDay)
+        daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      } else {
+        // Due next month
+        const dueDate = new Date(currentYear, currentMonth + 1, parsedDueDay)
+        daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+      }
+      
+      // Send notification if bill is due within 7 days
+      if (daysUntilDue >= 0 && daysUntilDue <= 7) {
+        await sendBillReminder(
+          userId,
+          name.trim(),
+          parsedAmount,
+          parsedDueDay,
+          daysUntilDue,
+          data.id
+        )
+        console.log(`📬 Bill reminder notification created for "${name}" (due in ${daysUntilDue} days)`)
+      }
+    } catch (notifError) {
+      // Don't fail the bill creation if notification fails
+      console.error('⚠️ Error creating bill reminder notification:', notifError)
+    }
 
     return NextResponse.json({ 
       success: true, 

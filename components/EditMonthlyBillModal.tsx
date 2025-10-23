@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/lib/auth-hooks'
 import { Loader2 } from 'lucide-react'
+import { sendBillReminder } from '@/lib/smart-notification-triggers'
 
 interface MonthlyBill {
   id: string
@@ -84,6 +85,44 @@ export function EditMonthlyBillModal({ bill, open, onOpenChange, onBillUpdated, 
         console.error('Error updating monthly bill:', error)
         onShowMessage?.('Failed to update monthly bill. Please try again.')
         return
+      }
+
+      // Check if updated bill is due soon and create notification
+      try {
+        const today = new Date()
+        const currentDay = today.getDate()
+        const currentMonth = today.getMonth()
+        const currentYear = today.getFullYear()
+        const updatedDueDay = parseInt(formData.due_day)
+        
+        // Calculate days until due
+        let daysUntilDue: number
+        
+        if (updatedDueDay >= currentDay) {
+          // Due this month
+          const dueDate = new Date(currentYear, currentMonth, updatedDueDay)
+          daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        } else {
+          // Due next month
+          const dueDate = new Date(currentYear, currentMonth + 1, updatedDueDay)
+          daysUntilDue = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+        }
+        
+        // Send notification if bill is due within 7 days
+        if (daysUntilDue >= 0 && daysUntilDue <= 7) {
+          await sendBillReminder(
+            user.id,
+            formData.name,
+            parseFloat(formData.amount),
+            updatedDueDay,
+            daysUntilDue,
+            bill.id
+          )
+          console.log(`📬 Bill reminder notification created for "${formData.name}" (due in ${daysUntilDue} days)`)
+        }
+      } catch (notifError) {
+        // Don't fail the bill update if notification fails
+        console.error('⚠️ Error creating bill reminder notification:', notifError)
       }
 
       onOpenChange(false)

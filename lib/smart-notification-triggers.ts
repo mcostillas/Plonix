@@ -408,17 +408,30 @@ export async function sendBillReminder(
       process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
-    const { data: existingNotif } = await supabase
+    const startOfMonth = new Date(new Date().setDate(1))
+    startOfMonth.setHours(0, 0, 0, 0)
+
+    const { data: existingNotifs, error: checkError } = await supabase
       .from('notifications')
-      .select('id')
+      .select('id, metadata')
       .eq('user_id', user_id)
       .eq('type', 'bill_reminder')
-      .contains('metadata', { bill_id })
-      .gte('created_at', new Date(new Date().setDate(1)).toISOString()) // This month only
-      .limit(1)
-      .maybeSingle()
+      .gte('created_at', startOfMonth.toISOString())
 
-    if (existingNotif) return
+    if (checkError) {
+      console.error('Error checking existing notifications:', checkError)
+    }
+
+    // Check if any existing notification is for this specific bill
+    const hasBillNotif = existingNotifs?.some((notif) => 
+      notif.metadata && typeof notif.metadata === 'object' && 
+      (notif.metadata as any).bill_id === bill_id
+    )
+
+    if (hasBillNotif) {
+      console.log(`Bill reminder already sent for ${bill_name} this month`)
+      return
+    }
 
     // Create notification message
     let message = `Your ${bill_name} bill of ₱${amount.toLocaleString()} is `

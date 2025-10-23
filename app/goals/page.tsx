@@ -516,6 +516,7 @@ function GoalsContent() {
                           captionLayout="dropdown"
                           month={deadlineMonth}
                           onMonthChange={setDeadlineMonth}
+                          disabled={(date) => date < new Date()}
                           onSelect={(date) => {
                             setSelectedDeadline(date)
                             setDeadlineInputValue(formatDateDisplay(date))
