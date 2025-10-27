@@ -22,6 +22,7 @@ export default function TopicLearningPage() {
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [showResult, setShowResult] = useState(false)
   const [reflectionInputs, setReflectionInputs] = useState<string[]>([])
+  const [reflectionValidation, setReflectionValidation] = useState<{[key: number]: 'validating' | 'valid' | 'invalid' | null}>({})
   const [stepCompleted, setStepCompleted] = useState<boolean[]>([]) // Track completion of each step
   
   // For calculator activity
@@ -834,6 +835,30 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
   const progress = ((currentStep + 1) / currentTopic.steps.length) * 100
   const IconComponent = currentTopic.icon
 
+  // Validate reflection content quality
+  const isValidReflection = (input: string, index?: number): boolean => {
+    if (!input || input.trim().length < 20) return false
+    
+    // If AI validation is available for this index, use it
+    if (index !== undefined && reflectionValidation[index]) {
+      return reflectionValidation[index] === 'valid'
+    }
+    
+    // Otherwise, use basic validation as fallback
+    const trimmed = input.trim()
+    const words = trimmed.split(/\s+/).filter(word => word.length > 0)
+    
+    if (words.length < 10) return false
+    
+    const hasRepeatedChars = /(.)\1{9,}/.test(trimmed)
+    if (hasRepeatedChars) return false
+    
+    const uniqueWords = new Set(words.map(w => w.toLowerCase()))
+    if (uniqueWords.size < words.length * 0.4) return false
+    
+    return true
+  }
+
   // Check if current step can proceed to next
   const canProceedToNext = () => {
     if (currentStepData.type === 'learn') {
@@ -869,10 +894,10 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
     
     if (currentStepData.type === 'reflect') {
-      // Reflect step: User must fill in at least 2 out of 3 reflection questions
-      const filledQuestions = reflectionInputs.filter(input => input && input.trim().length > 20).length
+      // Reflect step: User must fill in at least 2 out of 3 reflection questions with meaningful content
+      const validReflections = reflectionInputs.filter((input, index) => isValidReflection(input, index)).length
       const totalQuestions = currentStepData.content.questions?.length || 0
-      return filledQuestions >= Math.min(2, totalQuestions) // At least 2 questions or all if less than 2
+      return validReflections >= Math.min(2, totalQuestions) // At least 2 questions or all if less than 2
     }
     
     return false
@@ -1011,6 +1036,74 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
       }
     } catch (error) {
       console.error('Error saving reflection:', error)
+    }
+  }
+
+  // AI-powered validation for reflection quality
+  const validateReflectionWithAI = async (question: string, answer: string, questionIndex: number) => {
+    // Basic checks first
+    if (!answer || answer.trim().length < 20) {
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'invalid' }))
+      return false
+    }
+
+    const trimmed = answer.trim()
+    const words = trimmed.split(/\s+/).filter(word => word.length > 0)
+    
+    if (words.length < 10) {
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'invalid' }))
+      return false
+    }
+
+    // Check for obvious gibberish patterns
+    const hasRepeatedChars = /(.)\1{9,}/.test(trimmed)
+    const uniqueWords = new Set(words.map(w => w.toLowerCase()))
+    if (hasRepeatedChars || uniqueWords.size < words.length * 0.4) {
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'invalid' }))
+      return false
+    }
+
+    // Use AI to validate content quality
+    setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'validating' }))
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: [{
+            role: 'system',
+            content: `You are a learning assistant validator. Evaluate if the student's reflection answer is meaningful, thoughtful, and relevant to the question asked. 
+
+A valid reflection should:
+- Be relevant to the question
+- Show genuine thought or learning
+- Use proper language (not gibberish, spam, or repetitive nonsense)
+- Demonstrate understanding or personal insight
+
+Respond with ONLY "VALID" or "INVALID" followed by a brief reason.`
+          }, {
+            role: 'user',
+            content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nIs this a valid, meaningful reflection?`
+          }],
+          stream: false
+        })
+      })
+
+      const data = await response.json()
+      const aiResponse = data.message?.toLowerCase() || ''
+      
+      const isValid = aiResponse.includes('valid') && !aiResponse.startsWith('invalid')
+      
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: isValid ? 'valid' : 'invalid' }))
+      return isValid
+    } catch (error) {
+      console.error('AI validation error:', error)
+      // On error, fall back to basic validation
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'valid' }))
+      return true
     }
   }
 
@@ -1342,26 +1435,44 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             newInputs[index] = e.target.value
                             setReflectionInputs(newInputs)
                             
-                            // Save to database when user finishes typing (after 2 seconds of no typing)
-                            if (e.target.value.trim().length >= 20) {
-                              // Debounce the save
-                              setTimeout(() => {
-                                saveReflection(question, e.target.value, index)
-                              }, 2000)
-                            }
+                            // Reset validation state when user is typing
+                            setReflectionValidation(prev => ({ ...prev, [index]: null }))
                           }}
-                          onBlur={(e) => {
-                            // Also save when user leaves the field
-                            if (e.target.value.trim().length >= 20) {
-                              saveReflection(question, e.target.value, index)
+                          onBlur={async (e) => {
+                            // Validate with AI when user leaves the field
+                            const answer = e.target.value
+                            if (answer.trim().length >= 10) {
+                              const isValid = await validateReflectionWithAI(question, answer, index)
+                              if (isValid) {
+                                saveReflection(question, answer, index)
+                              }
                             }
                           }}
                         />
-                        {reflectionInputs[index] && reflectionInputs[index].trim().length >= 20 && (
-                          <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1">
-                            <CheckCircle className="w-3 h-3" />
-                            Saved
-                          </p>
+                        {reflectionInputs[index] && (
+                          <>
+                            {reflectionValidation[index] === 'validating' ? (
+                              <p className="text-[10px] md:text-xs text-blue-600 flex items-center gap-1">
+                                <div className="w-3 h-3 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                                Checking your response...
+                              </p>
+                            ) : reflectionValidation[index] === 'valid' ? (
+                              <p className="text-[10px] md:text-xs text-green-600 flex items-center gap-1">
+                                <CheckCircle className="w-3 h-3" />
+                                Great response! Saved
+                              </p>
+                            ) : reflectionValidation[index] === 'invalid' ? (
+                              <p className="text-[10px] md:text-xs text-red-600 flex items-center gap-1">
+                                <XCircle className="w-3 h-3" />
+                                Please provide a more thoughtful, relevant response
+                              </p>
+                            ) : reflectionInputs[index].trim().length > 0 && reflectionInputs[index].trim().length < 10 && (
+                              <p className="text-[10px] md:text-xs text-amber-600 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Keep writing... (at least 10 words needed)
+                              </p>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}
@@ -1397,14 +1508,14 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                     ) : (
                       <>
                         <Edit3 className="w-3 h-3 md:w-4 md:h-4" />
-                        <span className="hidden sm:inline">Please answer at least 2 questions with thoughtful responses (minimum 20 characters each) to continue.</span>
-                        <span className="sm:hidden">Answer at least 2 questions (20+ characters) to continue.</span>
+                        <span className="hidden sm:inline">Please answer at least 2 questions with thoughtful, meaningful responses to continue.</span>
+                        <span className="sm:hidden">Answer at least 2 questions meaningfully to continue.</span>
                       </>
                     )}
                   </p>
                   {!canProceedToNext() && (
                     <p className="text-[10px] md:text-xs text-blue-600 mt-2">
-                      Completed: {reflectionInputs.filter(input => input && input.trim().length > 20).length} / 
+                      Completed: {reflectionInputs.filter((input, index) => isValidReflection(input, index)).length} / 
                       {Math.min(2, currentStepData.content.questions?.length || 0)} required
                     </p>
                   )}
