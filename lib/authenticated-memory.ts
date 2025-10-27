@@ -214,6 +214,53 @@ export class AuthenticatedMemoryManager {
     }
   }
 
+  // Get user's learning reflections from learning_reflections table
+  async getUserLearningReflections(userId: string, limit: number = 10) {
+    try {
+      const { data, error } = await (supabase as any)
+        .from('learning_reflections')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(limit)
+
+      if (error) {
+        console.error('Error loading learning reflections:', error)
+        return []
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Failed to load learning reflections:', error)
+      return []
+    }
+  }
+
+  // Format learning reflections for AI context
+  formatLearningReflections(reflections: any[]): string {
+    if (!reflections || reflections.length === 0) return ''
+
+    const formatted = reflections.map((r, index) => {
+      const date = new Date(r.created_at).toLocaleDateString()
+      return `${index + 1}. [${r.module_title}] - ${date}
+   Q: ${r.question}
+   A: ${r.answer}
+   Sentiment: ${r.sentiment || 'neutral'}`
+    }).join('\n\n')
+
+    return `
+LEARNING REFLECTIONS (from completed modules):
+${formatted}
+
+These are the user's actual reflections from learning modules. Use them to:
+- Understand their financial knowledge level and concerns
+- Reference specific learnings when giving advice
+- Build on concepts they've already learned
+- Address challenges or concerns they mentioned
+- Encourage continued learning in areas they're interested in
+    `.trim()
+  }
+
   // Update user profile data in user_data table
   async updateUserProfile(userId: string, updates: {
     financial_data?: any,
@@ -284,6 +331,20 @@ export class AuthenticatedMemoryManager {
       // Get user profile for personalization
       const userProfile = await this.getUserProfile(userId, user)
       
+      // Get learning reflections for educational context
+      let learningContext = ''
+      if (user?.id) {
+        try {
+          const reflections = await this.getUserLearningReflections(user.id, 10)
+          if (reflections.length > 0) {
+            learningContext = this.formatLearningReflections(reflections)
+            console.log(`📚 Loaded ${reflections.length} learning reflections`)
+          }
+        } catch (error) {
+          console.log('Could not load learning reflections:', error)
+        }
+      }
+      
       // Format conversation history for better context
       const formattedHistory = Array.isArray(conversationHistory) 
         ? conversationHistory.map((msg: any) => `${msg.constructor.name}: ${msg.content}`).join('\n')
@@ -330,12 +391,17 @@ User Name: ${user?.name || 'User'}
 User Email: ${user?.email || 'Unknown'}
 
 ${crossSessionContext ? `${crossSessionContext}\n` : ''}
+${learningContext ? `${learningContext}\n\n` : ''}
 ${combinedHistory ? `Recent conversation (THIS SESSION):\n${combinedHistory}\n` : ''}
 ${profileContext ? `${profileContext}\n` : ''}
 Current message: ${userMessage}
 
 IMPORTANT INSTRUCTIONS: 
 - The user's name is "${userName}" - use it naturally in your greeting or response when appropriate
+- LEARNING REFLECTIONS: The user has completed learning modules - reference their reflections when relevant
+- When user asks about topics they've learned, remind them of their own insights and build on them
+- If they mention challenges from their reflections, offer specific solutions
+- Encourage them to apply what they've learned in modules to real situations
 - CROSS-SESSION MEMORY: Information in "REMEMBERED FROM PREVIOUS CONVERSATIONS" is from past chat sessions - use it naturally if the user asks about it
 - CURRENT SESSION: The "Recent conversation" shows the ongoing chat - use this for immediate context
 - If user asks "how much was that laptop?" or similar, check the remembered information first
