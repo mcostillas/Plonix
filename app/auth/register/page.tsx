@@ -36,7 +36,7 @@ const validatePassword = (password: string): PasswordRequirement[] => {
     { label: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
     { label: 'Contains lowercase letter', met: /[a-z]/.test(password) },
     { label: 'Contains number', met: /\d/.test(password) },
-    { label: 'Contains special character (e.g., @, #, $, !, ,)', met: /[!@#$%^&*(),.?":{}|<>]/.test(password) }
+    { label: 'Contains special character (e.g., @, #, $, !, -, _, +, =, etc.)', met: /[!@#$%^&*(),.?":{}|<>\-_+=\[\];'`~\\/]/.test(password) }
   ]
 }
 
