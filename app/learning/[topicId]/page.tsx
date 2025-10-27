@@ -18,6 +18,9 @@ export default function TopicLearningPage() {
   const topicId = params.topicId as string
   const { user } = useAuth()
   
+  // Dev mode check for specific user
+  const isDevMode = user?.email === 'costillasmarcmaurice@gmail.com'
+  
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState('')
   const [showResult, setShowResult] = useState(false)
@@ -919,6 +922,16 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
   }
 
+  // Dev skip function - only for specific user
+  const devSkipStep = () => {
+    if (isDevMode && !isLastStep) {
+      setCurrentStep(currentStep + 1)
+      setSelectedAnswer('')
+      setShowResult(false)
+      setReflectionInputs([])
+    }
+  }
+
   const completeModule = async () => {
     if (canProceedToNext()) {
       // Save module completion to user-specific localStorage
@@ -1545,7 +1558,19 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
             <span className="sm:hidden">Prev</span>
           </Button>
 
-          {isLastStep ? (
+          <div className="flex gap-2">
+            {/* Dev Skip Button - Only for specific user */}
+            {isDevMode && !isLastStep && (
+              <Button
+                onClick={devSkipStep}
+                variant="ghost"
+                className="h-8 md:h-10 text-xs md:text-sm px-2 md:px-4 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+              >
+                ⚡ Skip
+              </Button>
+            )}
+
+            {isLastStep ? (
             <div className="flex flex-col items-end">
               <Button 
                 onClick={completeModule}
@@ -1602,6 +1627,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
               )}
             </div>
           )}
+          </div>
         </div>
       </div>
     </div>
