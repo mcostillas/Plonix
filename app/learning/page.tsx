@@ -160,6 +160,11 @@ function LearningContent() {
 
   // Function to check if a module is accessible
   const isModuleAccessible = (moduleId: string, moduleType: 'core' | 'essential') => {
+    // Dev mode: unlock all modules for specific user
+    if (user?.email === 'costillasmarcmaurice@gmail.com') {
+      return true
+    }
+    
     if (moduleType === 'core') {
       // Sequential unlocking for core modules: budgeting -> saving -> investing
       if (moduleId === 'budgeting') return true
