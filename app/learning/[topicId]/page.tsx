@@ -23,6 +23,7 @@ export default function TopicLearningPage() {
   const [showResult, setShowResult] = useState(false)
   const [reflectionInputs, setReflectionInputs] = useState<string[]>([])
   const [reflectionValidation, setReflectionValidation] = useState<{[key: number]: 'validating' | 'valid' | 'invalid' | null}>({})
+  const [tutorHelp, setTutorHelp] = useState<{[key: number]: string | null}>({})
   const [stepCompleted, setStepCompleted] = useState<boolean[]>([]) // Track completion of each step
   
   // For calculator activity
@@ -1087,12 +1088,21 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
       const data = await response.json()
       
-      console.log('🤖 AI Validation Response:', data.reason)
+      console.log('🤖 AI Validation Response:', data)
       console.log('Question:', question)
       console.log('Answer:', answer)
       console.log('Is Valid?', data.isValid)
+      console.log('Tutor Help:', data.tutorHelp)
       
       setReflectionValidation(prev => ({ ...prev, [questionIndex]: data.isValid ? 'valid' : 'invalid' }))
+      
+      // Store tutor help if provided
+      if (data.tutorHelp) {
+        setTutorHelp(prev => ({ ...prev, [questionIndex]: data.tutorHelp }))
+      } else {
+        setTutorHelp(prev => ({ ...prev, [questionIndex]: null }))
+      }
+      
       return data.isValid
     } catch (error) {
       console.error('AI validation error:', error)
@@ -1430,8 +1440,9 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                             newInputs[index] = e.target.value
                             setReflectionInputs(newInputs)
                             
-                            // Reset validation state when user is typing
+                            // Reset validation state and tutor help when user is typing
                             setReflectionValidation(prev => ({ ...prev, [index]: null }))
+                            setTutorHelp(prev => ({ ...prev, [index]: null }))
                           }}
                           onBlur={async (e) => {
                             // Validate with AI when user leaves the field
@@ -1456,10 +1467,19 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                                 <CheckCircle className="w-3 h-3" />
                                 Great response! Saved
                               </p>
+                            ) : reflectionValidation[index] === 'invalid' && tutorHelp[index] ? (
+                              <div className="mt-2 p-2 md:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p className="text-[10px] md:text-xs text-blue-800 font-medium flex items-start gap-1.5">
+                                  <Lightbulb className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5" />
+                                  <span className="flex-1">
+                                    <strong>AI Tutor:</strong> {tutorHelp[index]}
+                                  </span>
+                                </p>
+                              </div>
                             ) : reflectionValidation[index] === 'invalid' ? (
-                              <p className="text-[10px] md:text-xs text-red-600 flex items-center gap-1">
-                                <XCircle className="w-3 h-3" />
-                                Please provide a more thoughtful, relevant response
+                              <p className="text-[10px] md:text-xs text-amber-600 flex items-center gap-1">
+                                <AlertCircle className="w-3 h-3" />
+                                Try adding more detail or specific examples
                               </p>
                             ) : reflectionInputs[index].trim().length > 0 && reflectionInputs[index].trim().length < 10 && (
                               <p className="text-[10px] md:text-xs text-amber-600 flex items-center gap-1">

@@ -41,7 +41,8 @@ export async function POST(request: NextRequest) {
       console.warn('⚠️ No OpenAI API key - using basic validation only')
       return NextResponse.json({ 
         isValid: true,
-        reason: 'Basic validation passed (AI validation unavailable)'
+        tutorHelp: null,
+        encouragement: 'Keep reflecting on what you learned!'
       })
     }
 
@@ -54,45 +55,50 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `You are a strict learning validator. Evaluate if the student's reflection is meaningful and relevant.
+          content: `You are a friendly learning tutor helping students with their reflections.
 
-REJECT responses that:
-- Say "I don't know" or show no effort
-- Are vague or generic with no specific insights
-- Don't answer the question asked
-- Are gibberish, spam, or copy-pasted text
-- Show no genuine thought or learning
+If the response is thoughtful and relevant:
+- Start with "VALID:" followed by brief encouragement
 
-ACCEPT responses that:
-- Directly address the question
-- Show personal insight or understanding
-- Demonstrate learning or reflection
-- Are specific and thoughtful
+If the response needs improvement (vague, "I don't know", too short, gibberish):
+- Start with "HELP:" followed by a helpful hint/question to guide them
+- Be encouraging and specific
+- Ask probing questions or give examples
+- Keep it under 40 words
 
-Respond with ONLY one word: "VALID" or "INVALID"`
+Examples:
+VALID: Great insight! You're thinking critically about this.
+HELP: Try thinking about a specific time this happened. What did you feel? What could you do differently?
+HELP: I see you're unsure. Let's break it down - what's one small thing you noticed about your spending this week?`
         },
         {
           role: 'user',
-          content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nEvaluate this reflection:`
+          content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nEvaluate and guide:`
         }
       ],
-      temperature: 0.3,
-      max_tokens: 10
+      temperature: 0.7,
+      max_tokens: 100
     })
 
-    const aiResponse = completion.choices[0]?.message?.content?.trim().toLowerCase() || ''
-    const isValid = aiResponse.startsWith('valid')
+    const aiResponse = completion.choices[0]?.message?.content?.trim() || ''
+    const isValid = aiResponse.toUpperCase().startsWith('VALID')
+    const isHelp = aiResponse.toUpperCase().startsWith('HELP')
+    
+    // Extract the message (remove VALID: or HELP: prefix)
+    const message = aiResponse.replace(/^(VALID|HELP):\s*/i, '').trim()
 
     console.log('🤖 AI Reflection Validation:', {
       question: question.substring(0, 50) + '...',
       answer: answer.substring(0, 50) + '...',
       aiResponse,
-      isValid
+      isValid,
+      isHelp
     })
 
     return NextResponse.json({ 
       isValid,
-      reason: isValid ? 'Thoughtful and relevant response' : 'Response needs more depth or relevance'
+      tutorHelp: isHelp ? message : null,
+      encouragement: isValid ? message : null
     })
 
   } catch (error) {
@@ -101,7 +107,8 @@ Respond with ONLY one word: "VALID" or "INVALID"`
     // Fallback to accepting on error (don't block students)
     return NextResponse.json({ 
       isValid: true,
-      reason: 'Validation service unavailable - defaulting to accept',
+      tutorHelp: null,
+      encouragement: 'Great effort! Keep thinking about what you learned.',
       error: error instanceof Error ? error.message : 'Unknown error'
     })
   }
