@@ -1067,52 +1067,33 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'validating' }))
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await fetch('/api/validate-reflection', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [{
-            role: 'system',
-            content: `You are a strict learning validator. Evaluate if the student's reflection is meaningful and relevant.
-
-REJECT responses that:
-- Say "I don't know" or show no effort
-- Are vague or generic with no specific insights
-- Don't answer the question asked
-- Are gibberish, spam, or copy-pasted text
-- Show no genuine thought or learning
-
-ACCEPT responses that:
-- Directly address the question
-- Show personal insight or understanding
-- Demonstrate learning or reflection
-- Are specific and thoughtful
-
-Respond with ONLY one word: "VALID" or "INVALID"`
-          }, {
-            role: 'user',
-            content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nEvaluate this reflection:`
-          }],
-          stream: false
+          question,
+          answer
         })
       })
 
+      if (!response.ok) {
+        console.error('Validation API error:', response.statusText)
+        // On error, accept to not block students
+        setReflectionValidation(prev => ({ ...prev, [questionIndex]: 'valid' }))
+        return true
+      }
+
       const data = await response.json()
-      const aiResponse = data.message?.toLowerCase() || ''
       
-      console.log('🤖 AI Validation Response:', data.message)
+      console.log('🤖 AI Validation Response:', data.reason)
       console.log('Question:', question)
       console.log('Answer:', answer)
+      console.log('Is Valid?', data.isValid)
       
-      // Check if response starts with "valid" (not "invalid")
-      const isValid = aiResponse.trim().startsWith('valid')
-      
-      console.log('Is Valid?', isValid)
-      
-      setReflectionValidation(prev => ({ ...prev, [questionIndex]: isValid ? 'valid' : 'invalid' }))
-      return isValid
+      setReflectionValidation(prev => ({ ...prev, [questionIndex]: data.isValid ? 'valid' : 'invalid' }))
+      return data.isValid
     } catch (error) {
       console.error('AI validation error:', error)
       // On error, fall back to basic validation
