@@ -4,6 +4,12 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/bill-reminders",
+      "schedule": "0 8 * * *"
+    }
+  ],
   "functions": {
     "app/api/**/*.ts": {
       "maxDuration": 30
