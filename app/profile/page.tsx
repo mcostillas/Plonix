@@ -132,6 +132,77 @@ function ProfileContent() {
     fetchProfile()
   }, [user])
 
+  // Real-time subscription for profile-related data
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('profile-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: any) => {
+          console.log('🔄 Profile change detected:', payload)
+          // Reload profile data
+          if (payload.new) {
+            const displayName = payload.new.name || user.name || user.email?.split('@')[0] || ''
+            setProfileData(prev => ({
+              ...prev,
+              name: displayName,
+              age: payload.new.age?.toString() || prev.age,
+              monthlyIncome: payload.new.monthly_income?.toString() || prev.monthlyIncome,
+              profilePicture: payload.new.profile_picture || prev.profilePicture
+            }))
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: `user_id=eq.${user.id}`
+        },
+        async (payload: any) => {
+          console.log('🔄 Goals change detected:', payload)
+          // Refetch goals
+          const { data: goalsData } = await supabase
+            .from('goals')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
+            .limit(3)
+          if (goalsData) {
+            setGoals(goalsData as any[])
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: any) => {
+          console.log('🔄 Transaction change detected:', payload)
+          calculateStats()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   // Calculate user stats
   const calculateStats = async () => {
     if (!user?.id) return

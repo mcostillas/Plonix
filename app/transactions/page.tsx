@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Navbar } from '@/components/ui/navbar'
 import { useAuth } from '@/lib/auth-hooks'
 import { AuthGuard } from '@/components/AuthGuard'
+import { supabase } from '@/lib/supabase'
 import { AddTransactionModal } from '@/components/AddTransactionModal'
 import { EditTransactionModal } from '@/components/EditTransactionModal'
 import { DeleteTransactionModal } from '@/components/DeleteTransactionModal'
@@ -240,6 +241,45 @@ function TransactionsContent() {
 
     fetchTransactions()
   }, [user, selectedPeriod, customStartDate, customEndDate, refreshTrigger])
+
+  // Real-time subscription for transactions and scheduled payments
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('transactions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'transactions',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 Transaction change detected:', payload)
+          setRefreshTrigger(prev => prev + 1)
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'scheduled_payments',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('🔄 Scheduled payment change detected:', payload)
+          setRefreshTrigger(prev => prev + 1)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
 
   // Export function to generate CSV
   const exportToCSV = () => {

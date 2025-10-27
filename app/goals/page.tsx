@@ -98,6 +98,32 @@ function GoalsContent() {
     fetchGoals()
   }, [user])
 
+  // Real-time subscription for goals
+  useEffect(() => {
+    if (!user?.id) return
+
+    const channel = supabase
+      .channel('goals-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'goals',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload: any) => {
+          console.log('🔄 Goal change detected:', payload)
+          fetchGoals()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   const fetchGoals = async () => {
     setLoading(true)
     try {
