@@ -43,6 +43,36 @@ export async function validateAuthentication() {
 
 // Auth helper functions
 export const auth = {
+  // Sign in with Google OAuth
+  async signInWithGoogle() {
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      })
+
+      if (error) {
+        throw error
+      }
+
+      return {
+        success: true,
+        data,
+      }
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+      }
+    }
+  },
+
   // Sign in with email and password
   async signIn(email: string, password: string) {
     try {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { signUp } from '@/lib/auth'
+import { signUp, auth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+
+// Google icon component - circular with logo only
+const GoogleIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 48 48">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    <path fill="none" d="M0 0h48v48H0z"/>
+  </svg>
+)
 
 interface PasswordRequirement {
   label: string
@@ -42,6 +53,7 @@ export default function RegisterPage() {
   const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [formData, setFormData] = useState({
@@ -78,6 +90,25 @@ export default function RegisterPage() {
       sessionStorage.setItem('registerFormData', JSON.stringify(formData))
     }
   }, [formData])
+
+  const handleGoogleSignUp = async () => {
+    setIsGoogleLoading(true)
+    setError('')
+    
+    try {
+      const result = await auth.signInWithGoogle()
+      
+      if (!result.success) {
+        setError(result.error || 'Google sign-up failed. Please try again.')
+        setIsGoogleLoading(false)
+      }
+      // If successful, the user will be redirected to Google's OAuth page
+      // and then back to /auth/callback
+    } catch (error) {
+      setError('An unexpected error occurred with Google sign-up.')
+      setIsGoogleLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -317,7 +348,7 @@ export default function RegisterPage() {
                         onChange={(e) => setFormData({...formData, firstName: e.target.value})}
                         className="h-9 md:h-11 text-[11px] md:text-base"
                         required
-                        disabled={isLoading}
+                        disabled={isLoading || isGoogleLoading}
                       />
                     </div>
                     <div>
@@ -326,11 +357,11 @@ export default function RegisterPage() {
                       </label>
                       <Input
                         placeholder="Dela Cruz"
-                        value={formData.lastName}
-                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        value={formData.age}
+                        onChange={(e) => setFormData({...formData, age: e.target.value})}
                         className="h-9 md:h-11 text-[11px] md:text-base"
                         required
-                        disabled={isLoading}
+                        disabled={isLoading || isGoogleLoading}
                       />
                     </div>
                   </div>
@@ -341,13 +372,13 @@ export default function RegisterPage() {
                     </label>
                     <Input
                       type="email"
-                      placeholder="juan@example.com"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="h-9 md:h-11 text-[11px] md:text-base"
-                      required
-                      disabled={isLoading}
-                    />
+                        placeholder="juan@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="h-9 md:h-11 text-[11px] md:text-base"
+                        required
+                        disabled={isLoading || isGoogleLoading}
+                      />
                   </div>
 
                   <div>
@@ -400,7 +431,7 @@ export default function RegisterPage() {
                             }}
                             className="h-9 md:h-11 pr-10 md:pr-12 text-[11px] md:text-base"
                             required
-                            disabled={isLoading}
+                            disabled={isLoading || isGoogleLoading}
                           />
                         </PopoverTrigger>
                         <PopoverContent 
@@ -465,7 +496,7 @@ export default function RegisterPage() {
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
-                        disabled={isLoading}
+                        disabled={isLoading || isGoogleLoading}
                       >
                         {showPassword ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
                       </button>
@@ -483,12 +514,12 @@ export default function RegisterPage() {
                       onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
                       className="h-9 md:h-11 text-[11px] md:text-base"
                       required
-                      disabled={isLoading}
+                      disabled={isLoading || isGoogleLoading}
                     />
                   </div>
 
                   <div className="flex items-start space-x-1.5 md:space-x-2">
-                    <input type="checkbox" className="mt-0.5 md:mt-1" required disabled={isLoading} />
+                    <input type="checkbox" className="mt-0.5 md:mt-1" required disabled={isLoading || isGoogleLoading} />
                     <span className="text-[11px] md:text-sm text-gray-600">
                       I agree to the{' '}
                       <Link href="/terms" target="_blank" className="text-primary hover:text-primary/80">
@@ -501,7 +532,7 @@ export default function RegisterPage() {
                     </span>
                   </div>
 
-                  <Button type="submit" className="w-full h-10 md:h-12 text-sm md:text-lg" disabled={isLoading}>
+                  <Button type="submit" className="w-full h-10 md:h-12 text-sm md:text-lg" disabled={isLoading || isGoogleLoading}>
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 md:w-5 md:h-5 mr-2 animate-spin" />
@@ -509,6 +540,39 @@ export default function RegisterPage() {
                       </>
                     ) : (
                       'Create Free Account'
+                    )}
+                  </Button>
+
+                  {/* Divider */}
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or sign up with</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign Up Button */}
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full h-10 md:h-12 text-sm md:text-base border-2 hover:bg-gray-50 flex items-center justify-center gap-3"
+                    onClick={handleGoogleSignUp}
+                    disabled={isLoading || isGoogleLoading}
+                  >
+                    {isGoogleLoading ? (
+                      <>
+                        <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin" />
+                        <span>Connecting to Google...</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white shadow-sm flex items-center justify-center flex-shrink-0">
+                          <GoogleIcon />
+                        </div>
+                        <span>Sign up with Google</span>
+                      </>
                     )}
                   </Button>
 

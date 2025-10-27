@@ -11,6 +11,17 @@ import { PiggyBank, Eye, EyeOff, ArrowLeft, Bot, Shield, Loader2, TrendingUp, Ta
 import { Spinner } from '@/components/ui/spinner'
 import { auth } from '@/lib/auth'
 
+// Google icon component - circular with logo only
+const GoogleIcon = () => (
+  <svg className="w-6 h-6" viewBox="0 0 48 48">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+    <path fill="none" d="M0 0h48v48H0z"/>
+  </svg>
+)
+
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -19,6 +30,7 @@ function LoginForm() {
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -37,10 +49,35 @@ function LoginForm() {
 
   useEffect(() => {
     const message = searchParams.get('message')
+    const errorParam = searchParams.get('error')
+    
     if (message === 'logged-out') {
       setSuccessMessage('You have been successfully logged out. All cached data cleared.')
     }
+    
+    if (errorParam) {
+      setError(errorParam)
+    }
   }, [searchParams])
+
+  const handleGoogleSignIn = async () => {
+    setIsGoogleLoading(true)
+    setError('')
+    
+    try {
+      const result = await auth.signInWithGoogle()
+      
+      if (!result.success) {
+        setError(result.error || 'Google sign-in failed. Please try again.')
+        setIsGoogleLoading(false)
+      }
+      // If successful, the user will be redirected to Google's OAuth page
+      // and then back to /auth/callback
+    } catch (error) {
+      setError('An unexpected error occurred with Google sign-in.')
+      setIsGoogleLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -182,7 +219,7 @@ function LoginForm() {
                         onChange={(e) => setEmail(e.target.value)}
                         className="h-9 md:h-12 text-[11px] md:text-base"
                         required
-                        disabled={isLoading}
+                        disabled={isLoading || isGoogleLoading}
                       />
                     </div>
                     
@@ -198,13 +235,13 @@ function LoginForm() {
                           onChange={(e) => setPassword(e.target.value)}
                           className="h-9 md:h-12 pr-10 md:pr-12 text-[11px] md:text-base"
                           required
-                          disabled={isLoading}
+                          disabled={isLoading || isGoogleLoading}
                         />
                         <button
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-2 md:right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                          disabled={isLoading}
+                          disabled={isLoading || isGoogleLoading}
                         >
                           {showPassword ? <EyeOff className="w-4 h-4 md:w-5 md:h-5" /> : <Eye className="w-4 h-4 md:w-5 md:h-5" />}
                         </button>
@@ -219,7 +256,7 @@ function LoginForm() {
                         className="mr-1.5 md:mr-2 cursor-pointer" 
                         checked={rememberMe}
                         onChange={(e) => setRememberMe(e.target.checked)}
-                        disabled={isLoading} 
+                        disabled={isLoading || isGoogleLoading} 
                       />
                       <span className="text-[11px] md:text-sm text-gray-600">Remember me</span>
                     </label>
@@ -231,7 +268,7 @@ function LoginForm() {
                   <Button 
                     type="submit" 
                     className="w-full h-10 md:h-12 text-sm md:text-lg"
-                    disabled={isLoading}
+                    disabled={isLoading || isGoogleLoading}
                   >
                     {isLoading ? (
                       <>
@@ -240,6 +277,31 @@ function LoginForm() {
                       </>
                     ) : (
                       'Log In to Plounix'
+                    )}
+                  </Button>
+
+                  {/* Divider */}
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or continue with</span>
+                    </div>
+                  </div>
+
+                  {/* Google Sign In Button */}
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-12 h-12 md:w-14 md:h-14 rounded-full border-2 hover:bg-gray-50 flex items-center justify-center mx-auto p-0"
+                    onClick={handleGoogleSignIn}
+                    disabled={isLoading || isGoogleLoading}
+                  >
+                    {isGoogleLoading ? (
+                      <Loader2 className="w-6 h-6 md:w-7 md:h-7 animate-spin" />
+                    ) : (
+                      <GoogleIcon />
                     )}
                   </Button>
                 </form>
