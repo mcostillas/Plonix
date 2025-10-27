@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { 
   Users, 
   Activity, 
@@ -12,7 +13,8 @@ import {
   Bug,
   Bell,
   BarChart3,
-  Shield
+  Shield,
+  BookOpen
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -237,6 +239,26 @@ export default function AdminDashboard() {
 
         {/* Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Learning Modules Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <BookOpen className="w-5 h-5" />
+                <span>Learning Modules</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Create, edit, and manage learning hub modules
+              </p>
+              <Link href="/admin/learning-modules">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                  Manage Learning Modules
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Users Section */}
           <Card>
             <CardHeader>

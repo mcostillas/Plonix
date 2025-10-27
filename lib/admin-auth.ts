@@ -6,6 +6,24 @@ export interface AdminSession {
   username: string
   email: string
   loginTime: string
+  sessionId: string // Add unique session ID
+  ipAddress?: string // Track IP for security
+}
+
+// Admin username whitelist from environment variable
+function getAdminUsernameWhitelist(): string[] {
+  const whitelist = process.env.ADMIN_USERNAME_WHITELIST
+  if (!whitelist) {
+    console.warn('⚠️ ADMIN_USERNAME_WHITELIST not configured - defaulting to "admin"')
+    return ['admin'] // Default to 'admin' username
+  }
+  return whitelist.split(',').map(username => username.trim().toLowerCase())
+}
+
+// Check if username is whitelisted
+export function isUsernameWhitelisted(username: string): boolean {
+  const whitelist = getAdminUsernameWhitelist()
+  return whitelist.includes(username.toLowerCase())
 }
 
 /**
@@ -66,10 +84,14 @@ export async function verifyAdminCredentials(
       .update({ last_login: new Date().toISOString() })
       .eq('username', username)
 
+    // Generate unique session ID
+    const sessionId = crypto.randomUUID()
+
     const session: AdminSession = {
       username: admin.username,
       email: admin.email,
       loginTime: new Date().toISOString(),
+      sessionId,
     }
 
     return { success: true, session }
@@ -111,12 +133,60 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 }
 
 /**
- * Check if current user is admin
+ * Check if current user is admin (legacy compatibility)
  */
 export async function isAdmin(): Promise<boolean> {
   const session = await getAdminSession()
   return session !== null
 }
+
+/**
+ * Comprehensive admin verification - Multi-layer security
+ * Use this for critical operations that need thorough validation
+ * Works with admin credentials (username/password), not user accounts
+ */
+export async function verifyAdminAccess(username: string): Promise<{
+  isAdmin: boolean
+  reasons: string[]
+}> {
+  const reasons: string[] = []
+
+  try {
+    // Layer 1: Username whitelist check
+    if (!isUsernameWhitelisted(username)) {
+      reasons.push(`Username '${username}' not in ADMIN_USERNAME_WHITELIST`)
+      return { isAdmin: false, reasons }
+    }
+
+    // Layer 2: Check admin credentials table exists and is active
+    const supabase = await createAdminClient()
+    
+    const { data: adminCred, error } = await supabase
+      .from('admin_credentials')
+      .select('username, email, is_active')
+      .eq('username', username)
+      .single()
+
+    if (error || !adminCred) {
+      reasons.push('Admin credentials not found in database')
+      return { isAdmin: false, reasons }
+    }
+
+    // Layer 3: Check if admin account is active
+    if (adminCred.is_active === false) {
+      reasons.push('Admin account is disabled')
+      return { isAdmin: false, reasons }
+    }
+
+    // All checks passed
+    return { isAdmin: true, reasons: ['All security checks passed'] }
+  } catch (error) {
+    console.error('Admin verification error:', error)
+    reasons.push('Verification error occurred')
+    return { isAdmin: false, reasons }
+  }
+}
+
 
 /**
  * Set admin session cookie

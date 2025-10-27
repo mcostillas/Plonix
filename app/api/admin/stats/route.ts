@@ -1,12 +1,20 @@
-import { NextResponse } from 'next/server'
-import { requireAdmin, createAdminClient } from '@/lib/admin-auth'
+import { NextRequest, NextResponse } from 'next/server'
+import { createAdminClient } from '@/lib/admin-auth'
+import { requireAdmin } from '@/lib/admin-middleware'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Check admin authentication
-    await requireAdmin()
+    // Multi-layer admin authentication check
+    const auth = await requireAdmin(request)
+    
+    if (!auth.authorized) {
+      return NextResponse.json(
+        { error: auth.error || 'Unauthorized' },
+        { status: 403 }
+      )
+    }
 
     const supabase = await createAdminClient()
 
