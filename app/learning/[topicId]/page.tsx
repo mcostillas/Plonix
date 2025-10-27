@@ -1075,18 +1075,25 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
         body: JSON.stringify({
           messages: [{
             role: 'system',
-            content: `You are a learning assistant validator. Evaluate if the student's reflection answer is meaningful, thoughtful, and relevant to the question asked. 
+            content: `You are a strict learning validator. Evaluate if the student's reflection is meaningful and relevant.
 
-A valid reflection should:
-- Be relevant to the question
-- Show genuine thought or learning
-- Use proper language (not gibberish, spam, or repetitive nonsense)
-- Demonstrate understanding or personal insight
+REJECT responses that:
+- Say "I don't know" or show no effort
+- Are vague or generic with no specific insights
+- Don't answer the question asked
+- Are gibberish, spam, or copy-pasted text
+- Show no genuine thought or learning
 
-Respond with ONLY "VALID" or "INVALID" followed by a brief reason.`
+ACCEPT responses that:
+- Directly address the question
+- Show personal insight or understanding
+- Demonstrate learning or reflection
+- Are specific and thoughtful
+
+Respond with ONLY one word: "VALID" or "INVALID"`
           }, {
             role: 'user',
-            content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nIs this a valid, meaningful reflection?`
+            content: `Question: ${question}\n\nStudent's Answer: ${answer}\n\nEvaluate this reflection:`
           }],
           stream: false
         })
@@ -1095,7 +1102,14 @@ Respond with ONLY "VALID" or "INVALID" followed by a brief reason.`
       const data = await response.json()
       const aiResponse = data.message?.toLowerCase() || ''
       
-      const isValid = aiResponse.includes('valid') && !aiResponse.startsWith('invalid')
+      console.log('🤖 AI Validation Response:', data.message)
+      console.log('Question:', question)
+      console.log('Answer:', answer)
+      
+      // Check if response starts with "valid" (not "invalid")
+      const isValid = aiResponse.trim().startsWith('valid')
+      
+      console.log('Is Valid?', isValid)
       
       setReflectionValidation(prev => ({ ...prev, [questionIndex]: isValid ? 'valid' : 'invalid' }))
       return isValid
