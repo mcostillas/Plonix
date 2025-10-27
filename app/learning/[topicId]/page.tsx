@@ -1472,7 +1472,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                                 <p className="text-[10px] md:text-xs text-blue-800 font-medium flex items-start gap-1.5">
                                   <Lightbulb className="w-3 h-3 md:w-4 md:h-4 flex-shrink-0 mt-0.5" />
                                   <span className="flex-1">
-                                    <strong>AI Tutor:</strong> {tutorHelp[index]}
+                                    <strong>Fili:</strong> {tutorHelp[index]}
                                   </span>
                                 </p>
                               </div>
@@ -1492,18 +1492,6 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                       </div>
                     ))}
                   </div>
-                </div>
-
-                <div className="bg-purple-50 p-3 md:p-4 rounded-lg">
-                  <h4 className="font-semibold text-purple-800 mb-2 md:mb-3 text-xs md:text-base">Action Items:</h4>
-                  <ul className="space-y-1.5 md:space-y-2">
-                    {currentStepData.content.actionItems?.map((item, index) => (
-                      <li key={index} className="text-purple-700 text-xs md:text-sm flex items-start space-x-2">
-                        <CheckCircle className="w-3 h-3 md:w-4 md:h-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                        <span>{item}</span>
-                      </li>
-                    ))}
-                  </ul>
                 </div>
 
                 {/* Reflection completion indicator */}
