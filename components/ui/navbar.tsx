@@ -133,6 +133,7 @@ export function Navbar({ currentPage }: NavbarProps) {
   // Main navigation items
   const mainNavItems: NavItem[] = [
     { name: 'Dashboard', href: '/dashboard', icon: Home, description: 'Your financial overview' },
+    { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' },
     { name: 'AI Assistant', href: '/ai-assistant', icon: MessageCircle, description: 'Get personalized help' }
   ]
 
@@ -145,14 +146,6 @@ export function Navbar({ currentPage }: NavbarProps) {
         { name: 'Learning Hub', href: '/learning', icon: BookOpen, description: 'Financial education' },
         { name: 'Challenges', href: '/challenges', icon: Trophy, description: 'Complete financial challenges & missions' },
         { name: 'Goals', href: '/goals', icon: Target, description: 'Set and track goals' }
-      ]
-    },
-    {
-      title: 'Finance',
-      icon: TrendingUp,
-      items: [
-        { name: 'Financial Overview', href: '/transactions', icon: TrendingUp, description: 'View all transactions' }
-        // { name: 'Pricing', href: '/pricing', icon: CreditCard, description: 'Subscription plans' }
       ]
     }
   ]
