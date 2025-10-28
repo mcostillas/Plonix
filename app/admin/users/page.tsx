@@ -47,6 +47,9 @@ interface User {
   email_confirmed_at: string
   monthly_income: number
   preferences: any
+  membership_tier: string
+  membership_status: string
+  active_today: boolean
 }
 
 export default function UsersManagementPage() {
@@ -56,6 +59,7 @@ export default function UsersManagementPage() {
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
+  const [membershipFilter, setMembershipFilter] = useState<'all' | 'freemium' | 'premium'>('all')
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'name'>('newest')
 
   useEffect(() => {
@@ -64,7 +68,7 @@ export default function UsersManagementPage() {
 
   useEffect(() => {
     filterAndSortUsers()
-  }, [users, searchQuery, statusFilter, sortBy])
+  }, [users, searchQuery, statusFilter, membershipFilter, sortBy])
 
   async function checkAuth() {
     try {
@@ -122,6 +126,14 @@ export default function UsersManagementPage() {
       })
     }
 
+    // Membership filter
+    if (membershipFilter !== 'all') {
+      filtered = filtered.filter(user => {
+        const tier = user.membership_tier || 'freemium'
+        return tier === membershipFilter
+      })
+    }
+
     // Sort
     filtered.sort((a, b) => {
       if (sortBy === 'newest') {
@@ -137,20 +149,23 @@ export default function UsersManagementPage() {
   }
 
   function exportToCSV() {
-    const headers = ['Email', 'Name', 'Created At', 'Last Sign In', 'Monthly Income', 'Status']
+    const headers = ['Email', 'Name', 'Membership', 'Created At', 'Last Sign In', 'Last Active', 'Monthly Income', 'Status']
     const rows = filteredUsers.map(user => {
       const thirtyDaysAgo = new Date()
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
       const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at) : null
       const isActive = lastSignIn && lastSignIn > thirtyDaysAgo
+      const membershipTier = user.membership_tier || 'freemium'
       
       return [
         user.email,
         user.full_name || 'N/A',
+        membershipTier.charAt(0).toUpperCase() + membershipTier.slice(1),
         new Date(user.created_at).toLocaleDateString(),
         lastSignIn ? lastSignIn.toLocaleDateString() : 'Never',
+        getRelativeTime(user.last_sign_in_at),
         user.monthly_income || 0,
-        isActive ? 'Active' : 'Inactive'
+        user.active_today ? 'Online' : (isActive ? 'Active' : 'Offline')
       ]
     })
 
@@ -171,6 +186,25 @@ export default function UsersManagementPage() {
     const lastSignIn = user.last_sign_in_at ? new Date(user.last_sign_in_at) : null
     
     return lastSignIn && lastSignIn > thirtyDaysAgo
+  }
+
+  function getRelativeTime(dateString: string | null) {
+    if (!dateString) return 'Never'
+    
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${Math.floor(diffDays / 7) > 1 ? 's' : ''} ago`
+    if (diffDays < 365) return `${Math.floor(diffDays / 30)} month${Math.floor(diffDays / 30) > 1 ? 's' : ''} ago`
+    return `${Math.floor(diffDays / 365)} year${Math.floor(diffDays / 365) > 1 ? 's' : ''} ago`
   }
 
   if (isLoading) {
@@ -210,7 +244,7 @@ export default function UsersManagementPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 mb-6">
           <Card>
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -227,7 +261,7 @@ export default function UsersManagementPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Active Users</p>
+                  <p className="text-sm font-medium text-gray-600">Active (30d)</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
                     {users.filter(u => getUserStatus(u)).length}
                   </p>
@@ -241,12 +275,40 @@ export default function UsersManagementPage() {
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Inactive Users</p>
+                  <p className="text-sm font-medium text-gray-600">Active Today</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {users.filter(u => !getUserStatus(u)).length}
+                    {users.filter(u => u.active_today).length}
                   </p>
                 </div>
-                <XCircle className="w-8 h-8 text-orange-600" />
+                <Activity className="w-8 h-8 text-green-500" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Freemium</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {users.filter(u => (u.membership_tier || 'freemium') === 'freemium').length}
+                  </p>
+                </div>
+                <Users className="w-8 h-8 text-gray-600" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">Premium</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">
+                    {users.filter(u => u.membership_tier === 'premium').length}
+                  </p>
+                </div>
+                <CheckCircle className="w-8 h-8 text-yellow-600" />
               </div>
             </CardContent>
           </Card>
@@ -289,9 +351,20 @@ export default function UsersManagementPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Users</SelectItem>
-                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="active">Active (30d)</SelectItem>
                     <SelectItem value="inactive">Inactive</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={membershipFilter} onValueChange={(value: any) => setMembershipFilter(value)}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Plans</SelectItem>
+                    <SelectItem value="freemium">Freemium</SelectItem>
+                    <SelectItem value="premium">Premium</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -322,11 +395,11 @@ export default function UsersManagementPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>User</TableHead>
+                  <TableHead>Membership</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Last Active</TableHead>
                   <TableHead>Income</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -339,6 +412,7 @@ export default function UsersManagementPage() {
                 ) : (
                   filteredUsers.map((user) => {
                     const isActive = getUserStatus(user)
+                    const membershipTier = user.membership_tier || 'freemium'
                     
                     return (
                       <TableRow key={user.id}>
@@ -351,12 +425,25 @@ export default function UsersManagementPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {isActive ? (
+                          {membershipTier === 'premium' ? (
+                            <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+                              Premium
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Freemium</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {user.active_today ? (
                             <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
+                              Online
+                            </Badge>
+                          ) : isActive ? (
+                            <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
                               Active
                             </Badge>
                           ) : (
-                            <Badge variant="secondary">Inactive</Badge>
+                            <Badge variant="secondary">Offline</Badge>
                           )}
                         </TableCell>
                         <TableCell>
@@ -368,21 +455,13 @@ export default function UsersManagementPage() {
                         <TableCell>
                           <div className="flex items-center text-sm text-gray-600">
                             <Activity className="w-4 h-4 mr-2" />
-                            {user.last_sign_in_at 
-                              ? new Date(user.last_sign_in_at).toLocaleDateString()
-                              : 'Never'
-                            }
+                            {getRelativeTime(user.last_sign_in_at)}
                           </div>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm font-medium">
                             ₱{(user.monthly_income || 0).toLocaleString()}
                           </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm">
-                            View Details
-                          </Button>
                         </TableCell>
                       </TableRow>
                     )
