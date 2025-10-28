@@ -10,8 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2, ArrowLeft, GraduationCap, Lightbulb, MessageSquare, Sparkles } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2, ArrowLeft, GraduationCap, Lightbulb, MessageSquare, Sparkles, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+
+interface Message {
+  role: 'user' | 'assistant'
+  content: string
+  timestamp: Date
+}
 
 interface LearningModule {
   id: string
@@ -41,6 +47,18 @@ export default function AdminLearningModulesPage() {
   const [selectedModule, setSelectedModule] = useState<LearningModule | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // AI Chat state
+  const [showAIChat, setShowAIChat] = useState(false)
+  const [aiMessages, setAiMessages] = useState<Message[]>([
+    {
+      role: 'assistant',
+      content: "Hi! Tell me what topic you'd like to create a module about, and I'll research credible sources and fill out the form for you.\n\nFor example: \"Create a module about NFTs\" or \"I want to teach cryptocurrency basics\"",
+      timestamp: new Date()
+    }
+  ])
+  const [aiInput, setAiInput] = useState('')
+  const [isResearching, setIsResearching] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -99,53 +117,92 @@ export default function AdminLearningModulesPage() {
   }
 
   const generateModuleWithAI = async () => {
-    if (!formData.module_title || !formData.module_description) {
-      toast.error('Please enter a module title and description first')
-      return
+    if (!aiInput.trim() || isResearching) return
+
+    const userMessage: Message = {
+      role: 'user',
+      content: aiInput.trim(),
+      timestamp: new Date()
     }
 
-    setIsGenerating(true)
+    setAiMessages(prev => [...prev, userMessage])
+    setAiInput('')
+    setIsResearching(true)
+
     try {
-      const response = await fetch('/api/admin/generate-module', {
+      const response = await fetch('/api/admin/ai-module-research', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: formData.module_title,
-          description: formData.module_description,
-          category: formData.category,
-          testType: formData.apply_test_type
+          topic: userMessage.content,
+          conversationHistory: aiMessages
         })
       })
 
-      if (!response.ok) throw new Error('Failed to generate module')
+      if (!response.ok) throw new Error('AI research failed')
 
-      const generated = await response.json()
+      const data = await response.json()
 
-      // Update form with AI-generated content
-      setFormData(prev => ({
-        ...prev,
-        learn_text: generated.learn_text || prev.learn_text,
-        learn_key_points: generated.learn_key_points || prev.learn_key_points,
-        apply_test_type: generated.apply_test_type || prev.apply_test_type,
-        apply_scenario: generated.apply_scenario || prev.apply_scenario,
-        apply_task: generated.apply_task || prev.apply_task,
-        apply_options: generated.apply_options || prev.apply_options,
-        apply_correct_answer: generated.apply_correct_answer || prev.apply_correct_answer,
-        apply_explanation: generated.apply_explanation || prev.apply_explanation,
-        reflect_questions: generated.reflect_questions || prev.reflect_questions,
-        reflect_action_items: generated.reflect_action_items || prev.reflect_action_items,
-        key_concepts: generated.key_concepts || prev.key_concepts,
-        key_takeaways: generated.key_takeaways || prev.key_takeaways,
-        practical_tips: generated.practical_tips || prev.practical_tips,
-        common_mistakes: generated.common_mistakes || prev.common_mistakes,
-      }))
+      // Add AI response to chat
+      const aiMessage: Message = {
+        role: 'assistant',
+        content: data.message,
+        timestamp: new Date()
+      }
+      setAiMessages(prev => [...prev, aiMessage])
 
-      toast.success('AI generated module content successfully! Review and edit as needed.')
+      // If module data is ready, auto-fill the form
+      if (data.moduleData) {
+        const generated = data.moduleData
+        
+        setFormData(prev => ({
+          ...prev,
+          module_id: generated.module_id || prev.module_id,
+          module_title: generated.module_title || prev.module_title,
+          module_description: generated.module_description || prev.module_description,
+          duration: generated.duration || prev.duration,
+          category: generated.category || prev.category,
+          icon: generated.icon || prev.icon,
+          color: generated.color || prev.color,
+          learn_title: generated.learn_title || prev.learn_title,
+          learn_text: generated.learn_text || prev.learn_text,
+          learn_key_points: generated.learn_key_points || prev.learn_key_points,
+          learn_sources: generated.learn_sources || prev.learn_sources,
+          apply_title: generated.apply_title || prev.apply_title,
+          apply_test_type: generated.test_type || prev.apply_test_type,
+          apply_scenario: generated.apply_scenario || prev.apply_scenario,
+          apply_task: generated.apply_task || prev.apply_task,
+          apply_options: generated.apply_options || prev.apply_options,
+          apply_correct_answer: generated.apply_correct_answer || prev.apply_correct_answer,
+          apply_explanation: generated.apply_explanation || prev.apply_explanation,
+          reflect_title: generated.reflect_title || prev.reflect_title,
+          reflect_questions: generated.reflect_questions || prev.reflect_questions,
+          reflect_action_items: generated.reflect_action_items || prev.reflect_action_items,
+          key_concepts: generated.key_concepts || prev.key_concepts,
+          key_takeaways: generated.key_takeaways || prev.key_takeaways,
+          practical_tips: generated.practical_tips || prev.practical_tips,
+          common_mistakes: generated.common_mistakes || prev.common_mistakes,
+        }))
+
+        // Store sources for later addition to Resource Hub
+        if (generated.sources) {
+          (window as any).moduleSourcesForResourceHub = generated.sources
+        }
+
+        toast.success('✅ AI filled out the form! Review the content in each tab.')
+      }
     } catch (error) {
-      console.error('Failed to generate module:', error)
+      console.error('AI research error:', error)
       toast.error('Failed to generate module content')
+      
+      const errorMessage: Message = {
+        role: 'assistant',
+        content: 'Sorry, I encountered an error. Please try again or rephrase your request.',
+        timestamp: new Date()
+      }
+      setAiMessages(prev => [...prev, errorMessage])
     } finally {
-      setIsGenerating(false)
+      setIsResearching(false)
     }
   }
 
@@ -272,6 +329,35 @@ export default function AdminLearningModulesPage() {
         }
 
         toast.success('Module created successfully!')
+        
+        // Add sources to Resource Hub if they exist
+        const sources = (window as any).moduleSourcesForResourceHub
+        if (sources && sources.length > 0) {
+          try {
+            await Promise.all(
+              sources.map((source: any) =>
+                fetch('/api/admin/resources', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    name: source.title,
+                    url: source.url,
+                    description: source.description,
+                    type: 'Article',
+                    category: 'Learning Resources',
+                    is_active: true
+                  })
+                })
+              )
+            )
+            toast.success(`✅ Added ${sources.length} sources to Resource Hub!`)
+            // Clear the stored sources
+            delete (window as any).moduleSourcesForResourceHub
+          } catch (error) {
+            console.error('Failed to add sources:', error)
+            // Don't fail the whole operation if sources fail
+          }
+        }
       } else if (isEditOpen && selectedModule) {
         // Update existing module
         const response = await fetch('/api/admin/learning-modules', {
@@ -480,30 +566,109 @@ export default function AdminLearningModulesPage() {
         if (!open) {
           setIsCreateOpen(false)
           setIsEditOpen(false)
+          setShowAIChat(false)
+          setAiMessages([
+            {
+              role: 'assistant',
+              content: "Hi! Tell me what topic you'd like to create a module about, and I'll research credible sources and fill out the form for you.\n\nFor example: \"Create a module about NFTs\" or \"I want to teach cryptocurrency basics\"",
+              timestamp: new Date()
+            }
+          ])
         }
       }}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle>{isCreateOpen ? 'Create New Module' : 'Edit Module'}</DialogTitle>
                 <DialogDescription>
-                  Create a comprehensive learning module with Learn, Apply, and Reflect stages.
+                  {showAIChat 
+                    ? 'Chat with AI to auto-fill the form, or fill it manually'
+                    : 'Create a comprehensive learning module with Learn, Apply, and Reflect stages'
+                  }
                 </DialogDescription>
               </div>
               <Button
-                onClick={generateModuleWithAI}
-                disabled={isGenerating || !formData.module_title || !formData.module_description}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+                onClick={() => setShowAIChat(!showAIChat)}
+                variant={showAIChat ? 'default' : 'outline'}
+                className={showAIChat ? 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700' : ''}
               >
-                {isGenerating ? (
-                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
-                ) : (
-                  <><Sparkles className="w-4 h-4 mr-2" /> AI Generate</>
-                )}
+                <Sparkles className="w-4 h-4 mr-2" />
+                {showAIChat ? 'Hide AI Chat' : 'AI Assistant'}
               </Button>
             </div>
           </DialogHeader>
+
+          <div className={`grid ${showAIChat ? 'grid-cols-2' : 'grid-cols-1'} gap-4 overflow-y-auto max-h-[calc(90vh-150px)]`}>
+            {/* AI Chat Panel */}
+            {showAIChat && (
+              <div className="border-r pr-4 flex flex-col h-full">
+                <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 mb-4">
+                  <h3 className="font-semibold text-purple-900 mb-2 flex items-center">
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Research Assistant
+                  </h3>
+                  <p className="text-xs text-gray-600">
+                    Tell me the topic and I'll research credible sources and auto-fill all the fields
+                  </p>
+                </div>
+
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-2">
+                  {aiMessages.map((msg, idx) => (
+                    <div
+                      key={idx}
+                      className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div
+                        className={`max-w-[85%] rounded-lg px-3 py-2 ${
+                          msg.role === 'user'
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
+                        <p className="text-[10px] mt-1 opacity-70">
+                          {msg.timestamp.toLocaleTimeString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {isResearching && (
+                    <div className="flex justify-start">
+                      <div className="bg-gray-100 rounded-lg px-3 py-2 flex items-center space-x-2">
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span className="text-xs text-gray-600">AI is researching credible sources...</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Input */}
+                <div className="flex space-x-2 pt-2 border-t">
+                  <Input
+                    value={aiInput}
+                    onChange={(e) => setAiInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && generateModuleWithAI()}
+                    placeholder="Type your topic or instructions..."
+                    disabled={isResearching}
+                    className="text-sm"
+                  />
+                  <Button
+                    onClick={generateModuleWithAI}
+                    disabled={!aiInput.trim() || isResearching}
+                    size="sm"
+                    className="bg-purple-600 hover:bg-purple-700"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Form Panel */}
+            <div className={showAIChat ? '' : 'col-span-1'}>
 
           <Tabs defaultValue="basic" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
@@ -915,6 +1080,8 @@ export default function AdminLearningModulesPage() {
               </div>
             </TabsContent>
           </Tabs>
+            </div>
+          </div>
 
           <DialogFooter>
             <Button
@@ -922,6 +1089,7 @@ export default function AdminLearningModulesPage() {
               onClick={() => {
                 setIsCreateOpen(false)
                 setIsEditOpen(false)
+                setShowAIChat(false)
               }}
               disabled={isSaving}
             >

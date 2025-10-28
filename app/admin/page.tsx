@@ -559,19 +559,12 @@ export default function AdminDashboard() {
                 <span>•</span>
                 <span>{((stats?.essential_modules || 0) + (stats?.core_modules || 0)) === 9 ? '✓' : '⚠'} Complete</span>
               </div>
-              <div className="space-y-2">
-                <Link href="/admin/ai-module-creator">
-                  <Button className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
-                    <Zap className="w-4 h-4 mr-2" />
-                    AI Module Creator
-                  </Button>
-                </Link>
-                <Link href="/admin/learning-modules">
-                  <Button className="w-full bg-green-600 hover:bg-green-700" variant="outline">
-                    Manage Modules Manually
-                  </Button>
-                </Link>
-              </div>
+              <Link href="/admin/learning-modules">
+                <Button className="w-full bg-green-600 hover:bg-green-700">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Manage Modules (AI Integrated)
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
