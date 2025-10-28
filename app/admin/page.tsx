@@ -379,9 +379,31 @@ export default function AdminDashboard() {
               <p className="text-sm text-gray-600 mb-4">
                 View and manage all registered users
               </p>
-              <Button className="w-full">
-                View All Users
-              </Button>
+              <Link href="/admin/users">
+                <Button className="w-full bg-green-600 hover:bg-green-700">
+                  View All Users
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          {/* Landing Page Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Eye className="w-5 h-5" />
+                <span>Landing Page</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Edit homepage content, features, and testimonials
+              </p>
+              <Link href="/admin/landing-page">
+                <Button className="w-full bg-green-600 hover:bg-green-700">
+                  Manage Landing Page
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
