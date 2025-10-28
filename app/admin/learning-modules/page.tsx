@@ -8,7 +8,6 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { createAdminClient } from '@/lib/admin-auth'
 import { toast } from 'sonner'
 import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
 
@@ -19,6 +18,8 @@ interface LearningModule {
   module_description: string
   duration: string
   category: 'core' | 'essential' | 'advanced'
+  icon: string
+  color: string
   key_concepts: string[]
   key_takeaways: string[]
   practical_tips: string[]
@@ -44,6 +45,8 @@ export default function AdminLearningModulesPage() {
     module_description: '',
     duration: '',
     category: 'core' as 'core' | 'essential' | 'advanced',
+    icon: 'Calculator',
+    color: 'blue',
     key_concepts: '',
     key_takeaways: '',
     practical_tips: '',
@@ -57,14 +60,13 @@ export default function AdminLearningModulesPage() {
 
   const loadModules = async () => {
     try {
-      const supabase = await createAdminClient()
-      const { data, error } = await supabase
-        .from('learning_module_content')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('module_id', { ascending: true })
-
-      if (error) throw error
+      const response = await fetch('/api/admin/learning-modules')
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch modules')
+      }
+      
+      const data = await response.json()
       setModules(data || [])
     } catch (error) {
       console.error('Failed to load modules:', error)
@@ -81,6 +83,8 @@ export default function AdminLearningModulesPage() {
       module_description: '',
       duration: '15 min',
       category: 'core',
+      icon: 'Calculator',
+      color: 'blue',
       key_concepts: '',
       key_takeaways: '',
       practical_tips: '',
@@ -98,6 +102,8 @@ export default function AdminLearningModulesPage() {
       module_description: module.module_description,
       duration: module.duration,
       category: module.category,
+      icon: module.icon || 'Calculator',
+      color: module.color || 'blue',
       key_concepts: (module.key_concepts || []).join(', '),
       key_takeaways: (module.key_takeaways || []).join('\n'),
       practical_tips: (module.practical_tips || []).join('\n'),
@@ -115,8 +121,6 @@ export default function AdminLearningModulesPage() {
   const saveModule = async () => {
     setIsSaving(true)
     try {
-      const supabase = await createAdminClient()
-
       // Parse arrays from strings
       const moduleData = {
         module_id: formData.module_id.toLowerCase().replace(/\s+/g, '-'),
@@ -124,6 +128,8 @@ export default function AdminLearningModulesPage() {
         module_description: formData.module_description,
         duration: formData.duration,
         category: formData.category,
+        icon: formData.icon,
+        color: formData.color,
         key_concepts: formData.key_concepts
           .split(',')
           .map(s => s.trim())
@@ -140,26 +146,36 @@ export default function AdminLearningModulesPage() {
           .split('\n')
           .map(s => s.trim())
           .filter(Boolean),
-        total_steps: formData.total_steps,
-        updated_at: new Date().toISOString()
+        total_steps: formData.total_steps
       }
 
       if (isCreateOpen) {
         // Create new module
-        const { error } = await supabase
-          .from('learning_module_content')
-          .insert([moduleData])
+        const response = await fetch('/api/admin/learning-modules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(moduleData)
+        })
 
-        if (error) throw error
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to create module')
+        }
+
         toast.success('Module created successfully!')
       } else if (isEditOpen && selectedModule) {
         // Update existing module
-        const { error } = await supabase
-          .from('learning_module_content')
-          .update(moduleData)
-          .eq('id', selectedModule.id)
+        const response = await fetch('/api/admin/learning-modules', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...moduleData, id: selectedModule.id })
+        })
 
-        if (error) throw error
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || 'Failed to update module')
+        }
+
         toast.success('Module updated successfully!')
       }
 
@@ -179,13 +195,15 @@ export default function AdminLearningModulesPage() {
 
     setIsSaving(true)
     try {
-      const supabase = await createAdminClient()
-      const { error } = await supabase
-        .from('learning_module_content')
-        .delete()
-        .eq('id', selectedModule.id)
+      const response = await fetch(`/api/admin/learning-modules?id=${selectedModule.id}`, {
+        method: 'DELETE'
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to delete module')
+      }
+
       toast.success('Module deleted successfully!')
       setIsDeleteOpen(false)
       loadModules()
@@ -383,6 +401,53 @@ export default function AdminLearningModulesPage() {
                     <SelectItem value="advanced">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="icon">Icon *</Label>
+                <Select
+                  value={formData.icon}
+                  onValueChange={(value) => setFormData({ ...formData, icon: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Calculator">Calculator</SelectItem>
+                    <SelectItem value="PiggyBank">PiggyBank</SelectItem>
+                    <SelectItem value="TrendingUp">TrendingUp</SelectItem>
+                    <SelectItem value="Shield">Shield</SelectItem>
+                    <SelectItem value="CreditCard">CreditCard</SelectItem>
+                    <SelectItem value="Globe">Globe</SelectItem>
+                    <SelectItem value="Target">Target</SelectItem>
+                    <SelectItem value="Brain">Brain</SelectItem>
+                    <SelectItem value="BookOpen">BookOpen</SelectItem>
+                    <SelectItem value="Award">Award</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">Icon shown in module card</p>
+              </div>
+              <div>
+                <Label htmlFor="color">Color *</Label>
+                <Select
+                  value={formData.color}
+                  onValueChange={(value) => setFormData({ ...formData, color: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="blue">Blue</SelectItem>
+                    <SelectItem value="green">Green</SelectItem>
+                    <SelectItem value="purple">Purple</SelectItem>
+                    <SelectItem value="orange">Orange</SelectItem>
+                    <SelectItem value="red">Red</SelectItem>
+                    <SelectItem value="yellow">Yellow</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">Theme color for the module</p>
               </div>
             </div>
 
