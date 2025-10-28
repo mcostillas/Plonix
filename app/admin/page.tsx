@@ -20,6 +20,21 @@ import {
   Trophy,
   Zap
 } from 'lucide-react'
+import { 
+  LineChart, 
+  Line, 
+  BarChart, 
+  Bar, 
+  PieChart, 
+  Pie, 
+  Cell,
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  Legend, 
+  ResponsiveContainer 
+} from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -50,11 +65,22 @@ interface DashboardStats {
   active_challenges_count: number
 }
 
+interface ChartData {
+  signups: Array<{ date: string; signups: number }>
+  transactions: Array<{ date: string; income: number; expense: number }>
+  membership: Array<{ name: string; value: number }>
+  goals: Array<{ name: string; value: number }>
+  modules: Array<{ name: string; completion: number }>
+}
+
 export default function AdminDashboard() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [chartData, setChartData] = useState<ChartData | null>(null)
   const [adminUsername, setAdminUsername] = useState('')
+
+  const COLORS = ['#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6']
 
   useEffect(() => {
     checkAuth()
@@ -71,7 +97,7 @@ export default function AdminDashboard() {
       }
 
       setAdminUsername(data.username)
-      await loadStats()
+      await Promise.all([loadStats(), loadChartData()])
     } catch (error) {
       console.error('Auth check failed:', error)
       router.push('/auth/login')
@@ -85,6 +111,16 @@ export default function AdminDashboard() {
       setStats(data)
     } catch (error) {
       console.error('Failed to load stats:', error)
+    }
+  }
+
+  async function loadChartData() {
+    try {
+      const response = await fetch('/api/admin/charts')
+      const data = await response.json()
+      setChartData(data)
+    } catch (error) {
+      console.error('Failed to load chart data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -332,6 +368,147 @@ export default function AdminDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* Analytics Charts */}
+        {chartData && (
+          <div className="mb-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Analytics Overview</h2>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* User Signups Trend */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <TrendingUp className="w-5 h-5 text-green-600" />
+                    <span>User Signups (Last 7 Days)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <LineChart data={chartData.signups}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line 
+                        type="monotone" 
+                        dataKey="signups" 
+                        stroke="#10B981" 
+                        strokeWidth={2}
+                        dot={{ fill: '#10B981' }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Transactions Trend */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <CreditCard className="w-5 h-5 text-blue-600" />
+                    <span>Transactions (Last 7 Days)</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={chartData.transactions}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="income" fill="#10B981" name="Income" />
+                      <Bar dataKey="expense" fill="#EF4444" name="Expense" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Membership Distribution */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="w-5 h-5 text-purple-600" />
+                    <span>Membership Distribution</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={chartData.membership}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {chartData.membership.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Goals Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Target className="w-5 h-5 text-orange-600" />
+                    <span>Goals Status Distribution</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={chartData.goals}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {chartData.goals.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Module Completion */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <BookOpen className="w-5 h-5 text-blue-600" />
+                    <span>Learning Module Completion Rates</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={chartData.modules}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="completion" fill="#3B82F6" name="Completion %" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
 
         {/* Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
