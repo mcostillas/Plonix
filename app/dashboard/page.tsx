@@ -96,14 +96,11 @@ function DashboardContent() {
             return
           }
           
-          // Check if this is an existing user (created account more than 1 hour ago)
-          // Existing users should NOT see the tour even if tour_completed is not set
-          const userCreatedAt = new Date(user!.created_at || 0)
-          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
-          
-          if (userCreatedAt < oneHourAgo) {
-            // This is an existing user - mark tour as completed to prevent future shows
-            console.log('✅ Existing user detected (created', userCreatedAt.toISOString(), ') - skipping tour')
+          // Check localStorage to see if tour was shown on this browser before
+          const tourShownBefore = localStorage.getItem('plounix_tour_shown')
+          if (tourShownBefore === 'true') {
+            console.log('✅ Tour shown before on this browser - marking as completed in database')
+            // Update database to sync across devices
             await (supabase as any)
               .from('user_profiles')
               .update({ 
@@ -114,12 +111,11 @@ function DashboardContent() {
             
             setShowTour(false)
             setTourChecked(true)
-            localStorage.setItem('plounix_tour_shown', 'true')
             return
           }
           
-          // Tour NOT completed in database AND user is new - show tour
-          console.log('🆕 New user detected - showing tour')
+          // Tour NOT completed - this is a first-time visitor
+          console.log('🆕 First-time user - showing tour')
           setIsNewUser(true)
           setShowTour(true)
           setTourChecked(true)
