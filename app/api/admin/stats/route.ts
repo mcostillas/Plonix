@@ -24,10 +24,57 @@ export async function GET(request: NextRequest) {
       .select('*')
       .single()
 
+    // Fetch additional learning modules stats
+    const { data: learningStats } = await supabase
+      .from('learning_module_content')
+      .select('module_id, category')
+
+    const totalModules = learningStats?.length || 0
+    const coreModules = learningStats?.filter(m => m.category === 'core').length || 0
+    const essentialModules = learningStats?.filter(m => m.category === 'essential').length || 0
+
+    // Fetch transactions stats
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+    const { count: totalTransactions } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+
+    const { count: transactionsThisMonth } = await supabase
+      .from('transactions')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', thirtyDaysAgo.toISOString())
+
+    // Fetch goals stats
+    const { count: totalGoals } = await supabase
+      .from('goals')
+      .select('*', { count: 'exact', head: true })
+
+    const { count: activeGoals } = await supabase
+      .from('goals')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+
+    const { count: completedGoals } = await supabase
+      .from('goals')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'completed')
+
+    // Fetch challenges stats
+    const { count: totalChallenges } = await supabase
+      .from('user_challenges')
+      .select('*', { count: 'exact', head: true })
+
+    const { count: activeChallenges } = await supabase
+      .from('user_challenges')
+      .select('*', { count: 'exact', head: true })
+      .eq('status', 'active')
+
     if (error) {
       console.error('Stats query error:', error)
       
-      // If view doesn't exist yet, return default values
+      // If view doesn't exist yet, return default values with new stats
       return NextResponse.json({
         total_users: 0,
         active_users: 0,
@@ -38,10 +85,40 @@ export async function GET(request: NextRequest) {
         visits_this_month: 0,
         new_bug_reports: 0,
         active_bug_reports: 0,
+        // Learning modules
+        total_modules: totalModules,
+        core_modules: coreModules,
+        essential_modules: essentialModules,
+        // Transactions
+        total_transactions: totalTransactions || 0,
+        transactions_this_month: transactionsThisMonth || 0,
+        // Goals
+        total_goals: totalGoals || 0,
+        active_goals: activeGoals || 0,
+        completed_goals: completedGoals || 0,
+        // Challenges
+        total_challenges: totalChallenges || 0,
+        active_challenges_count: activeChallenges || 0,
       })
     }
 
-    return NextResponse.json(stats)
+    return NextResponse.json({
+      ...stats,
+      // Learning modules
+      total_modules: totalModules,
+      core_modules: coreModules,
+      essential_modules: essentialModules,
+      // Transactions
+      total_transactions: totalTransactions || 0,
+      transactions_this_month: transactionsThisMonth || 0,
+      // Goals
+      total_goals: totalGoals || 0,
+      active_goals: activeGoals || 0,
+      completed_goals: completedGoals || 0,
+      // Challenges
+      total_challenges: totalChallenges || 0,
+      active_challenges_count: activeChallenges || 0,
+    })
   } catch (error: any) {
     console.error('Admin stats error:', error)
     

@@ -14,7 +14,11 @@ import {
   Bell,
   BarChart3,
   Shield,
-  BookOpen
+  BookOpen,
+  Target,
+  CreditCard,
+  Trophy,
+  Zap
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,6 +34,20 @@ interface DashboardStats {
   visits_this_month: number
   new_bug_reports: number
   active_bug_reports: number
+  // Learning modules
+  total_modules: number
+  core_modules: number
+  essential_modules: number
+  // Transactions
+  total_transactions: number
+  transactions_this_month: number
+  // Goals
+  total_goals: number
+  active_goals: number
+  completed_goals: number
+  // Challenges
+  total_challenges: number
+  active_challenges_count: number
 }
 
 export default function AdminDashboard() {
@@ -237,22 +255,112 @@ export default function AdminDashboard() {
           </Card>
         </div>
 
+        {/* Platform Activity Stats */}
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Activity</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Learning Modules */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Learning Modules
+                </CardTitle>
+                <BookOpen className="w-5 h-5 text-blue-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900">
+                  {stats?.total_modules || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {stats?.core_modules || 0} core, {stats?.essential_modules || 0} essential
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Transactions */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Total Transactions
+                </CardTitle>
+                <CreditCard className="w-5 h-5 text-green-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900">
+                  {stats?.total_transactions || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  +{stats?.transactions_this_month || 0} this month
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Financial Goals */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Financial Goals
+                </CardTitle>
+                <Target className="w-5 h-5 text-purple-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900">
+                  {stats?.total_goals || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {stats?.active_goals || 0} active, {stats?.completed_goals || 0} completed
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Challenges */}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium text-gray-600">
+                  Active Challenges
+                </CardTitle>
+                <Trophy className="w-5 h-5 text-orange-600" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-3xl font-bold text-gray-900">
+                  {stats?.active_challenges_count || 0}
+                </div>
+                <p className="text-xs text-gray-500 mt-1">
+                  {stats?.total_challenges || 0} total participations
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Main Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Learning Modules Section */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <BookOpen className="w-5 h-5" />
-                <span>Learning Modules</span>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <BookOpen className="w-5 h-5" />
+                  <span>Learning Modules</span>
+                </div>
+                <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
+                  {stats?.total_modules || 0} modules
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-gray-600 mb-4">
                 Create, edit, and manage learning hub modules
               </p>
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
+                <span>{stats?.core_modules || 0} Core</span>
+                <span>•</span>
+                <span>{stats?.essential_modules || 0} Essential</span>
+                <span>•</span>
+                <span>{((stats?.essential_modules || 0) + (stats?.core_modules || 0)) === 9 ? '✓' : '⚠'} Complete</span>
+              </div>
               <Link href="/admin/learning-modules">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                <Button className="w-full bg-green-600 hover:bg-green-700">
                   Manage Learning Modules
                 </Button>
               </Link>
