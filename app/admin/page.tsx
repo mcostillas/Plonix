@@ -26,19 +26,20 @@ import {
   Line, 
   BarChart, 
   Bar, 
-  PieChart, 
-  Pie, 
-  Cell,
   XAxis, 
   YAxis, 
   CartesianGrid, 
   Tooltip, 
-  Legend, 
-  ResponsiveContainer 
+  Legend 
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart'
 
 interface DashboardStats {
   total_users: number
@@ -146,561 +147,333 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50">
+      {/* Simplified Header */}
+      <header className="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <Shield className="w-8 h-8 text-primary" />
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-green-600 to-blue-600 flex items-center justify-center">
+                <Shield className="w-6 h-6 text-white" />
+              </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">Plounix Admin</h1>
-                <p className="text-xs text-gray-500">Welcome, {adminUsername}</p>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">
+                  Plounix Admin
+                </h1>
+                <p className="text-xs text-gray-500">Dashboard Overview</p>
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
               onClick={handleLogout}
-              className="flex items-center space-x-2"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
             >
-              <LogOut className="w-4 h-4" />
-              <span>Logout</span>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
             </Button>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {/* Total Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Total Users
-              </CardTitle>
-              <Users className="w-5 h-5 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.total_users || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                +{stats?.signups_this_week || 0} this week
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Active Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Active Users
-              </CardTitle>
-              <Activity className="w-5 h-5 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.active_users || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                Logged in last 30 days
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Inactive Users */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Inactive Users
-              </CardTitle>
-              <AlertCircle className="w-5 h-5 text-orange-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.inactive_users || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                No activity &gt;30 days
-              </p>
-            </CardContent>
-          </Card>
-
-          {/* Site Visits */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Site Visits
-              </CardTitle>
-              <Eye className="w-5 h-5 text-purple-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-gray-900">
-                {stats?.visits_this_month || 0}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">
-                This month
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Stats Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <Card className="border-l-4 border-l-blue-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">New Bug Reports</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats?.new_bug_reports || 0}
-                  </p>
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Key Metrics */}
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Key Metrics</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border-l-4 border-l-green-500 hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Total Users</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_users || 0}</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats?.active_users || 0} active</p>
+                  </div>
+                  <Users className="w-10 h-10 text-green-600 opacity-80" />
                 </div>
-                <Bug className="w-8 h-8 text-red-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-green-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Signups Today</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats?.signups_today || 0}
-                  </p>
-                </div>
-                <TrendingUp className="w-8 h-8 text-green-500" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-l-4 border-l-purple-500">
-            <CardContent className="pt-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Active Bug Reports</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">
-                    {stats?.active_bug_reports || 0}
-                  </p>
-                </div>
-                <BarChart3 className="w-8 h-8 text-purple-500" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Platform Activity Stats */}
-        <div className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Platform Activity</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Learning Modules */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Learning Modules
-                </CardTitle>
-                <BookOpen className="w-5 h-5 text-blue-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.total_modules || 0}
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stats?.core_modules || 0} core, {stats?.essential_modules || 0} essential
-                </p>
               </CardContent>
             </Card>
 
-            {/* Transactions */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Total Transactions
-                </CardTitle>
-                <CreditCard className="w-5 h-5 text-green-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.total_transactions || 0}
+            <Card className="border-l-4 border-l-blue-500 hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Modules</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_modules || 0}</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats?.core_modules || 0} core • {stats?.essential_modules || 0} essential</p>
+                  </div>
+                  <BookOpen className="w-10 h-10 text-blue-600 opacity-80" />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  +{stats?.transactions_this_month || 0} this month
-                </p>
               </CardContent>
             </Card>
 
-            {/* Financial Goals */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Financial Goals
-                </CardTitle>
-                <Target className="w-5 h-5 text-purple-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.total_goals || 0}
+            <Card className="border-l-4 border-l-purple-500 hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Goals</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_goals || 0}</p>
+                    <p className="text-xs text-gray-500 mt-1">{stats?.active_goals || 0} active • {stats?.completed_goals || 0} done</p>
+                  </div>
+                  <Target className="w-10 h-10 text-purple-600 opacity-80" />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stats?.active_goals || 0} active, {stats?.completed_goals || 0} completed
-                </p>
               </CardContent>
             </Card>
 
-            {/* Challenges */}
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-gray-600">
-                  Active Challenges
-                </CardTitle>
-                <Trophy className="w-5 h-5 text-orange-600" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-gray-900">
-                  {stats?.active_challenges_count || 0}
+            <Card className="border-l-4 border-l-orange-500 hover:shadow-md transition-shadow">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Transactions</p>
+                    <p className="text-3xl font-bold text-gray-900 mt-1">{stats?.total_transactions || 0}</p>
+                    <p className="text-xs text-gray-500 mt-1">All time</p>
+                  </div>
+                  <CreditCard className="w-10 h-10 text-orange-600 opacity-80" />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  {stats?.total_challenges || 0} total participations
-                </p>
               </CardContent>
             </Card>
           </div>
-        </div>
+        </section>
+
+        {/* Quick Actions */}
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-green-600 transition-colors">
+                  <BookOpen className="w-5 h-5 mr-2" />
+                  Learning Modules
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">Create and manage educational content with AI</p>
+                <Link href="/admin/learning-modules">
+                  <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+                    <Zap className="w-4 h-4 mr-2" />
+                    Manage Modules
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-blue-600 transition-colors">
+                  <Users className="w-5 h-5 mr-2" />
+                  User Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">View and manage registered users</p>
+                <Link href="/admin/users">
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700">
+                    View Users
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-purple-600 transition-colors">
+                  <Globe className="w-5 h-5 mr-2" />
+                  Resource Hub
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">Manage educational resources and links</p>
+                <Link href="/admin/resources">
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                    Manage Resources
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-green-600 transition-colors">
+                  <Eye className="w-5 h-5 mr-2" />
+                  Landing Page
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">Edit homepage content and features</p>
+                <Link href="/admin/landing-page">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    Edit Landing
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-red-600 transition-colors">
+                  <Bug className="w-5 h-5 mr-2" />
+                  Bug Reports
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">Review user-reported issues</p>
+                <Button className="w-full" variant="outline">
+                  View Reports
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
+              <CardHeader>
+                <CardTitle className="text-base flex items-center text-gray-800 group-hover:text-orange-600 transition-colors">
+                  <Bell className="w-5 h-5 mr-2" />
+                  Announcements
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-600 mb-4">Send platform-wide messages</p>
+                <Button className="w-full" variant="outline">
+                  Create Announcement
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
 
         {/* Analytics Charts */}
         {chartData && (
-          <div className="mb-6">
+          <section>
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Analytics Overview</h2>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* User Signups Trend */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <TrendingUp className="w-5 h-5 text-green-600" />
-                    <span>User Signups (Last 7 Days)</span>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center">
+                    <TrendingUp className="w-5 h-5 mr-2 text-green-600" />
+                    User Signups
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ChartContainer
+                    config={{
+                      signups: {
+                        label: "Signups",
+                        color: "#10B981",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
                     <LineChart data={chartData.signups}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
                       <Line 
                         type="monotone" 
                         dataKey="signups" 
-                        stroke="#10B981" 
+                        stroke="var(--color-signups)" 
                         strokeWidth={2}
-                        dot={{ fill: '#10B981' }}
+                        dot={{ fill: "var(--color-signups)", r: 4 }}
                       />
                     </LineChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
 
-              {/* Transactions Trend */}
+              {/* Transactions */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <CreditCard className="w-5 h-5 text-blue-600" />
-                    <span>Transactions (Last 7 Days)</span>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center">
+                    <CreditCard className="w-5 h-5 mr-2 text-blue-600" />
+                    Transactions
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ChartContainer
+                    config={{
+                      income: {
+                        label: "Income",
+                        color: "#10B981",
+                      },
+                      expense: {
+                        label: "Expense",
+                        color: "#EF4444",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
                     <BarChart data={chartData.transactions}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip />
-                      <Legend />
-                      <Bar dataKey="income" fill="#10B981" name="Income" />
-                      <Bar dataKey="expense" fill="#EF4444" name="Expense" />
+                      <XAxis dataKey="date" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="income" fill="var(--color-income)" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expense" fill="var(--color-expense)" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Membership Distribution */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-purple-600" />
-                    <span>Membership Distribution</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={chartData.membership}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {chartData.membership.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Goals Status */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Target className="w-5 h-5 text-orange-600" />
-                    <span>Goals Status Distribution</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-center">
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={chartData.goals}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {chartData.goals.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
 
               {/* Module Completion */}
               <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <BookOpen className="w-5 h-5 text-blue-600" />
-                    <span>Learning Module Completion Rates</span>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center">
+                    <BookOpen className="w-5 h-5 mr-2 text-blue-600" />
+                    Learning Module Completion
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ChartContainer
+                    config={{
+                      completion: {
+                        label: "Completion %",
+                        color: "#3B82F6",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
                     <BarChart data={chartData.modules}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="completion" fill="#3B82F6" name="Completion %" />
+                      <XAxis dataKey="name" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="completion" fill="var(--color-completion)" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
 
               {/* Age Distribution */}
               <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Users className="w-5 h-5 text-cyan-600" />
-                    <span>User Age Distribution</span>
+                <CardHeader className="pb-4">
+                  <CardTitle className="text-base flex items-center">
+                    <Users className="w-5 h-5 mr-2 text-cyan-600" />
+                    User Age Distribution
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ChartContainer
+                    config={{
+                      users: {
+                        label: "Users",
+                        color: "#06b6d4",
+                      },
+                    }}
+                    className="h-[200px] w-full"
+                  >
                     <BarChart data={chartData.ages}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="age" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="users" fill="#06b6d4" name="Users" />
+                      <XAxis dataKey="age" fontSize={12} />
+                      <YAxis fontSize={12} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="users" fill="var(--color-users)" radius={[4, 4, 0, 0]} />
                     </BarChart>
-                  </ResponsiveContainer>
+                  </ChartContainer>
                 </CardContent>
               </Card>
             </div>
-          </div>
+          </section>
         )}
-
-        {/* Main Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Learning Modules Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <BookOpen className="w-5 h-5" />
-                  <span>Learning Modules</span>
-                </div>
-                <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-                  {stats?.total_modules || 0} modules
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Create, edit, and manage learning hub modules
-              </p>
-              <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                <span>{stats?.core_modules || 0} Core</span>
-                <span>•</span>
-                <span>{stats?.essential_modules || 0} Essential</span>
-                <span>•</span>
-                <span>{((stats?.essential_modules || 0) + (stats?.core_modules || 0)) === 9 ? '✓' : '⚠'} Complete</span>
-              </div>
-              <Link href="/admin/learning-modules">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  <Zap className="w-4 h-4 mr-2" />
-                  Manage Modules (AI Integrated)
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Users Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Users className="w-5 h-5" />
-                <span>Users Management</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                View and manage all registered users
-              </p>
-              <Link href="/admin/users">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  View All Users
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Landing Page Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Eye className="w-5 h-5" />
-                <span>Landing Page</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Edit homepage content, features, and testimonials
-              </p>
-              <Link href="/admin/landing-page">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Manage Landing Page
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Resources Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Globe className="w-5 h-5" />
-                <span>Resource Hub</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Manage resources, links, and educational content
-              </p>
-              <Link href="/admin/resources">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Manage Resources
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          {/* Bug Reports Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Bug className="w-5 h-5" />
-                <span>Bug Reports</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Review and manage bug reports from users
-              </p>
-              <Button className="w-full">
-                View Bug Reports
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Activity Feed Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Activity className="w-5 h-5" />
-                <span>Recent Activity</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                See what users are doing right now
-              </p>
-              <Button className="w-full" variant="outline">
-                View Activity Feed
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Announcements Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Bell className="w-5 h-5" />
-                <span>Announcements</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-gray-600 mb-4">
-                Send platform-wide announcements to users
-              </p>
-              <Button className="w-full" variant="outline">
-                Create Announcement
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Coming Soon Notice */}
-        <Card className="mt-8 bg-blue-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start space-x-3">
-              <Shield className="w-6 h-6 text-blue-600 flex-shrink-0 mt-1" />
-              <div>
-                <h3 className="font-semibold text-blue-900 mb-1">
-                  Admin Dashboard Under Development
-                </h3>
-                <p className="text-sm text-blue-700">
-                  This admin dashboard is currently being built. More features (user management, 
-                  bug reports viewer, activity feed, announcements, and analytics) will be added soon.
-                  For now, you can access the database directly through Supabase.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   )
