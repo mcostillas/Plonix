@@ -23,7 +23,7 @@ INSERT INTO learning_module_content (
   'essential',
   'Shield',
   'blue',
-  ARRAY['Health insurance basics', 'Government benefits', 'PhilHealth coverage', 'SSS contributions', 'Life insurance'],
+  '["Health insurance basics", "Government benefits", "PhilHealth coverage", "SSS contributions", "Life insurance"]'::jsonb,
   ARRAY[
     'Health insurance protects you from medical emergencies',
     'PhilHealth and SSS provide essential government benefits',
@@ -68,7 +68,7 @@ INSERT INTO learning_module_content (
   'essential',
   'Target',
   'purple',
-  ARRAY['SMART goals', 'Goal tracking', 'Milestone planning', 'Savings timeline', 'Priority setting'],
+  '["SMART goals", "Goal tracking", "Milestone planning", "Savings timeline", "Priority setting"]'::jsonb,
   ARRAY[
     'SMART goals are Specific, Measurable, Achievable, Relevant, Time-bound',
     'Breaking big goals into milestones makes them achievable',
@@ -114,7 +114,7 @@ INSERT INTO learning_module_content (
   'essential',
   'Brain',
   'yellow',
-  ARRAY['Money beliefs', 'Abundance mindset', 'Financial psychology', 'Money scripts', 'Wealth consciousness'],
+  '["Money beliefs", "Abundance mindset", "Financial psychology", "Money scripts", "Wealth consciousness"]'::jsonb,
   ARRAY[
     'Your beliefs about money shape your financial behaviors',
     'Scarcity mindset limits financial growth',
