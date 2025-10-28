@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { toast } from 'sonner'
-import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2, ArrowLeft } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface LearningModule {
   id: string
@@ -30,6 +31,7 @@ interface LearningModule {
 }
 
 export default function AdminLearningModulesPage() {
+  const router = useRouter()
   const [modules, setModules] = useState<LearningModule[]>([])
   const [loading, setLoading] = useState(true)
   const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -217,7 +219,7 @@ export default function AdminLearningModulesPage() {
 
   const getCategoryBadge = (category: string) => {
     const colors = {
-      core: 'bg-blue-100 text-blue-800 border-blue-200',
+      core: 'bg-green-100 text-green-800 border-green-200',
       essential: 'bg-purple-100 text-purple-800 border-purple-200',
       advanced: 'bg-orange-100 text-orange-800 border-orange-200'
     }
@@ -227,7 +229,7 @@ export default function AdminLearningModulesPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <Loader2 className="w-8 h-8 animate-spin text-green-600" />
       </div>
     )
   }
@@ -235,28 +237,38 @@ export default function AdminLearningModulesPage() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Learning Modules</h1>
-          <p className="text-gray-600 mt-1">Create, edit, and manage learning hub modules</p>
-        </div>
-        <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Module
+      <div className="mb-8">
+        <Button 
+          onClick={() => router.push('/admin')} 
+          variant="ghost" 
+          className="mb-4 text-gray-600 hover:text-gray-900"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Dashboard
         </Button>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Learning Modules</h1>
+            <p className="text-gray-600 mt-1">Create, edit, and manage learning hub modules</p>
+          </div>
+          <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Module
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">{modules.length}</div>
+            <div className="text-2xl font-bold text-green-600">{modules.length}</div>
             <div className="text-sm text-gray-600">Total Modules</div>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-green-600">
               {modules.filter(m => m.category === 'core').length}
             </div>
             <div className="text-sm text-gray-600">Core Modules</div>
@@ -288,7 +300,7 @@ export default function AdminLearningModulesPage() {
               <BookOpen className="w-12 h-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 mb-2">No modules yet</h3>
               <p className="text-gray-600 mb-4">Create your first learning module to get started</p>
-              <Button onClick={handleCreate} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleCreate} className="bg-green-600 hover:bg-green-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Module
               </Button>
@@ -316,7 +328,7 @@ export default function AdminLearningModulesPage() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(module)}
-                      className="hover:bg-blue-50"
+                      className="hover:bg-green-50"
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -550,7 +562,7 @@ export default function AdminLearningModulesPage() {
               <X className="w-4 h-4 mr-2" />
               Cancel
             </Button>
-            <Button onClick={saveModule} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={saveModule} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
               {isSaving ? (
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               ) : (
