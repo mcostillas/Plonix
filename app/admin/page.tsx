@@ -584,6 +584,26 @@ export default function AdminDashboard() {
             </CardContent>
           </Card>
 
+          {/* Resources Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center space-x-2">
+                <Globe className="w-5 h-5" />
+                <span>Resource Hub</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-gray-600 mb-4">
+                Manage resources, links, and educational content
+              </p>
+              <Link href="/admin/resources">
+                <Button className="w-full bg-green-600 hover:bg-green-700">
+                  Manage Resources
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
           {/* Bug Reports Section */}
           <Card>
             <CardHeader>
