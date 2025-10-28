@@ -65,6 +65,8 @@ export async function POST(request: NextRequest) {
       username: admin.username,
       email: admin.email || '',
       loginTime: new Date().toISOString(),
+      sessionId: `${admin.username}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`,
+      ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
     }
 
     await setAdminSession(session)
