@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { toast } from 'sonner'
-import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2, ArrowLeft, GraduationCap, Lightbulb, MessageSquare } from 'lucide-react'
+import { BookOpen, Plus, Pencil, Trash2, Save, X, Eye, AlertCircle, CheckCircle2, Loader2, ArrowLeft, GraduationCap, Lightbulb, MessageSquare, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 interface LearningModule {
@@ -40,6 +40,7 @@ export default function AdminLearningModulesPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [selectedModule, setSelectedModule] = useState<LearningModule | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
@@ -93,6 +94,55 @@ export default function AdminLearningModulesPage() {
       toast.error('Failed to load learning modules')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const generateModuleWithAI = async () => {
+    if (!formData.module_title || !formData.module_description) {
+      toast.error('Please enter a module title and description first')
+      return
+    }
+
+    setIsGenerating(true)
+    try {
+      const response = await fetch('/api/admin/generate-module', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: formData.module_title,
+          description: formData.module_description,
+          category: formData.category
+        })
+      })
+
+      if (!response.ok) throw new Error('Failed to generate module')
+
+      const generated = await response.json()
+
+      // Update form with AI-generated content
+      setFormData(prev => ({
+        ...prev,
+        learn_text: generated.learn_text || prev.learn_text,
+        learn_key_points: generated.learn_key_points || prev.learn_key_points,
+        apply_scenario: generated.apply_scenario || prev.apply_scenario,
+        apply_task: generated.apply_task || prev.apply_task,
+        apply_options: generated.apply_options || prev.apply_options,
+        apply_correct_answer: generated.apply_correct_answer || prev.apply_correct_answer,
+        apply_explanation: generated.apply_explanation || prev.apply_explanation,
+        reflect_questions: generated.reflect_questions || prev.reflect_questions,
+        reflect_action_items: generated.reflect_action_items || prev.reflect_action_items,
+        key_concepts: generated.key_concepts || prev.key_concepts,
+        key_takeaways: generated.key_takeaways || prev.key_takeaways,
+        practical_tips: generated.practical_tips || prev.practical_tips,
+        common_mistakes: generated.common_mistakes || prev.common_mistakes,
+      }))
+
+      toast.success('AI generated module content successfully! Review and edit as needed.')
+    } catch (error) {
+      console.error('Failed to generate module:', error)
+      toast.error('Failed to generate module content')
+    } finally {
+      setIsGenerating(false)
     }
   }
 
@@ -429,10 +479,25 @@ export default function AdminLearningModulesPage() {
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{isCreateOpen ? 'Create New Module' : 'Edit Module'}</DialogTitle>
-            <DialogDescription>
-              Create a comprehensive learning module with Learn, Apply, and Reflect stages.
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle>{isCreateOpen ? 'Create New Module' : 'Edit Module'}</DialogTitle>
+                <DialogDescription>
+                  Create a comprehensive learning module with Learn, Apply, and Reflect stages.
+                </DialogDescription>
+              </div>
+              <Button
+                onClick={generateModuleWithAI}
+                disabled={isGenerating || !formData.module_title || !formData.module_description}
+                className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
+              >
+                {isGenerating ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</>
+                ) : (
+                  <><Sparkles className="w-4 h-4 mr-2" /> AI Generate</>
+                )}
+              </Button>
+            </div>
           </DialogHeader>
 
           <Tabs defaultValue="basic" className="w-full">
