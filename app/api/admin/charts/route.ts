@@ -111,12 +111,44 @@ export async function GET(request: NextRequest) {
       })
     )
 
+    // Get age distribution
+    const { data: userAges } = await supabase
+      .from('user_profiles')
+      .select('age')
+      .not('age', 'is', null)
+
+    // Group ages into ranges
+    const ageRanges = {
+      '18-20': 0,
+      '21-25': 0,
+      '26-30': 0,
+      '31-35': 0,
+      '36-40': 0,
+      '40+': 0
+    }
+
+    userAges?.forEach(user => {
+      const age = user.age
+      if (age >= 18 && age <= 20) ageRanges['18-20']++
+      else if (age >= 21 && age <= 25) ageRanges['21-25']++
+      else if (age >= 26 && age <= 30) ageRanges['26-30']++
+      else if (age >= 31 && age <= 35) ageRanges['31-35']++
+      else if (age >= 36 && age <= 40) ageRanges['36-40']++
+      else if (age > 40) ageRanges['40+']++
+    })
+
+    const ageData = Object.entries(ageRanges).map(([range, count]) => ({
+      age: range,
+      users: count
+    }))
+
     return NextResponse.json({
       signups: signupsData,
       transactions: transactionsData,
       membership: membershipData,
       goals: goalsData,
-      modules: moduleData
+      modules: moduleData,
+      ages: ageData
     })
   } catch (error: any) {
     console.error('Admin charts API error:', error)

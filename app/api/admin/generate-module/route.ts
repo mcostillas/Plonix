@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { title, description, category } = await request.json()
+    const { title, description, category, testType } = await request.json()
 
     if (!title || !description) {
       return NextResponse.json(
@@ -24,6 +24,25 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    // Determine test format based on test type
+    const testTypeDescription = testType === 'true_false' 
+      ? 'True/False question - generate a statement and indicate if it\'s true or false'
+      : testType === 'fill_blank'
+      ? 'Fill in the blank - create a sentence with a missing word/number'
+      : testType === 'calculation'
+      ? 'Calculation problem - create a math problem requiring calculation'
+      : testType === 'scenario_based'
+      ? 'Scenario-based question with 4 choices based on a realistic situation'
+      : 'Multiple choice question with 4 options (A, B, C, D)'
+
+    const testFormatExample = testType === 'true_false'
+      ? '"apply_options": "True\\nFalse",\n  "apply_correct_answer": "True"'
+      : testType === 'fill_blank'
+      ? '"apply_options": "",\n  "apply_correct_answer": "20"'
+      : testType === 'calculation'
+      ? '"apply_options": "",\n  "apply_correct_answer": "₱3,000"'
+      : '"apply_options": "A. ...\\nB. ...\\nC. ...\\nD. ...",\n  "apply_correct_answer": "A"'
 
     // Initialize OpenAI
     const llm = new ChatOpenAI({
@@ -45,11 +64,14 @@ Generate the following sections:
    - Main educational content (300-500 words) explaining the concept clearly with Filipino context
    - 3-5 key points (bullet points)
    
-2. APPLY SECTION:
+2. APPLY SECTION (${testTypeDescription}):
    - A realistic scenario relevant to Filipino youth (100-150 words)
    - A practical task/question
-   - 4 multiple choice options (A, B, C, D)
-   - Correct answer (letter only: A, B, C, or D)
+   ${testType === 'true_false' ? '- True or False statement' :
+     testType === 'fill_blank' ? '- Question with a blank to fill (use ___ for the blank)' :
+     testType === 'calculation' ? '- Math/calculation problem with clear numbers' :
+     '- 4 answer options (A, B, C, D)'}
+   - Correct answer ${testType === 'fill_blank' || testType === 'calculation' ? '(exact word/number)' : testType === 'true_false' ? '(True or False)' : '(letter only: A, B, C, or D)'}
    - Explanation of the correct answer (50-100 words)
    
 3. REFLECT SECTION:
@@ -73,10 +95,10 @@ Format your response as a valid JSON object with these exact keys:
 {
   "learn_text": "...",
   "learn_key_points": "...",
+  "apply_test_type": "${testType}",
   "apply_scenario": "...",
   "apply_task": "...",
-  "apply_options": "A. ...\\nB. ...\\nC. ...\\nD. ...",
-  "apply_correct_answer": "A",
+  ${testFormatExample},
   "apply_explanation": "...",
   "reflect_questions": "...",
   "reflect_action_items": "...",

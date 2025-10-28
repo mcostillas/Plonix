@@ -58,6 +58,7 @@ export default function AdminLearningModulesPage() {
     learn_sources: '',
     // Apply Stage
     apply_title: '',
+    apply_test_type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'fill_blank' | 'scenario_based' | 'calculation',
     apply_scenario: '',
     apply_task: '',
     apply_options: '',
@@ -111,7 +112,8 @@ export default function AdminLearningModulesPage() {
         body: JSON.stringify({
           title: formData.module_title,
           description: formData.module_description,
-          category: formData.category
+          category: formData.category,
+          testType: formData.apply_test_type
         })
       })
 
@@ -124,6 +126,7 @@ export default function AdminLearningModulesPage() {
         ...prev,
         learn_text: generated.learn_text || prev.learn_text,
         learn_key_points: generated.learn_key_points || prev.learn_key_points,
+        apply_test_type: generated.apply_test_type || prev.apply_test_type,
         apply_scenario: generated.apply_scenario || prev.apply_scenario,
         apply_task: generated.apply_task || prev.apply_task,
         apply_options: generated.apply_options || prev.apply_options,
@@ -161,7 +164,8 @@ export default function AdminLearningModulesPage() {
       learn_key_points: '',
       learn_sources: '',
       // Apply Stage
-      apply_title: 'Apply: ',
+      apply_title: '',
+      apply_test_type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'fill_blank' | 'scenario_based' | 'calculation',
       apply_scenario: '',
       apply_task: '',
       apply_options: '',
@@ -197,7 +201,8 @@ export default function AdminLearningModulesPage() {
       learn_key_points: '',
       learn_sources: '',
       // Apply Stage
-      apply_title: 'Apply: ',
+      apply_title: '',
+      apply_test_type: 'multiple_choice' as 'multiple_choice' | 'true_false' | 'fill_blank' | 'scenario_based' | 'calculation',
       apply_scenario: '',
       apply_task: '',
       apply_options: '',
@@ -708,6 +713,34 @@ export default function AdminLearningModulesPage() {
               </div>
 
               <div>
+                <Label htmlFor="apply_test_type">Test Type *</Label>
+                <Select 
+                  value={formData.apply_test_type} 
+                  onValueChange={(value: 'multiple_choice' | 'true_false' | 'fill_blank' | 'scenario_based' | 'calculation') => 
+                    setFormData({ ...formData, apply_test_type: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select test type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="multiple_choice">Multiple Choice (4 options)</SelectItem>
+                    <SelectItem value="true_false">True or False</SelectItem>
+                    <SelectItem value="fill_blank">Fill in the Blank</SelectItem>
+                    <SelectItem value="scenario_based">Scenario-Based Question</SelectItem>
+                    <SelectItem value="calculation">Calculation/Math Problem</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.apply_test_type === 'multiple_choice' && 'Quiz with 4 answer options - students pick the correct one'}
+                  {formData.apply_test_type === 'true_false' && 'Simple True/False statement - great for concepts and facts'}
+                  {formData.apply_test_type === 'fill_blank' && 'Students type in the missing word or number'}
+                  {formData.apply_test_type === 'scenario_based' && 'Real-world situation requiring decision making'}
+                  {formData.apply_test_type === 'calculation' && 'Math problem requiring students to calculate the answer'}
+                </p>
+              </div>
+
+              <div>
                 <Label htmlFor="apply_scenario">Scenario *</Label>
                 <Textarea
                   id="apply_scenario"
@@ -716,29 +749,53 @@ export default function AdminLearningModulesPage() {
                   placeholder="Meet Jana, a 3rd year college student. Her parents give her ₱12,000 monthly allowance..."
                   rows={4}
                 />
-                <p className="text-xs text-gray-500 mt-1">Real-world scenario for students to apply knowledge</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.apply_test_type === 'scenario_based' 
+                    ? 'Real-world scenario for context and decision making' 
+                    : 'Optional context or setup for the question'
+                  }
+                </p>
               </div>
 
               <div>
-                <Label htmlFor="apply_task">Task/Question *</Label>
+                <Label htmlFor="apply_task">Question/Task *</Label>
                 <Input
                   id="apply_task"
                   value={formData.apply_task}
                   onChange={(e) => setFormData({ ...formData, apply_task: e.target.value })}
-                  placeholder="What should Jana allocate for savings?"
+                  placeholder={
+                    formData.apply_test_type === 'multiple_choice' ? 'What should Jana allocate for savings?' :
+                    formData.apply_test_type === 'true_false' ? 'The 50-30-20 rule means 50% for needs, 30% for wants, 20% for savings' :
+                    formData.apply_test_type === 'fill_blank' ? 'You should save ___ percent of your income according to the 50-30-20 rule' :
+                    formData.apply_test_type === 'calculation' ? 'If you earn ₱15,000, how much should you save (20%)?' :
+                    'What is the best financial decision in this situation?'
+                  }
                 />
               </div>
 
-              <div>
-                <Label htmlFor="apply_options">Answer Options (one per line) *</Label>
-                <Textarea
-                  id="apply_options"
-                  value={formData.apply_options}
-                  onChange={(e) => setFormData({ ...formData, apply_options: e.target.value })}
-                  placeholder="₱2,400 (20% of allowance)&#10;₱4,800 (40% of allowance)&#10;₱1,200 (10% of allowance)&#10;₱6,000 (50% of allowance)"
-                  rows={4}
-                />
-              </div>
+              {formData.apply_test_type !== 'fill_blank' && formData.apply_test_type !== 'calculation' && (
+                <div>
+                  <Label htmlFor="apply_options">
+                    {formData.apply_test_type === 'true_false' ? 'Options (True/False)' : 'Answer Options (one per line) *'}
+                  </Label>
+                  <Textarea
+                    id="apply_options"
+                    value={formData.apply_options}
+                    onChange={(e) => setFormData({ ...formData, apply_options: e.target.value })}
+                    placeholder={
+                      formData.apply_test_type === 'true_false' 
+                        ? 'True\nFalse'
+                        : '₱2,400 (20% of allowance)\n₱4,800 (40% of allowance)\n₱1,200 (10% of allowance)\n₱6,000 (50% of allowance)'
+                    }
+                    rows={formData.apply_test_type === 'true_false' ? 2 : 4}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formData.apply_test_type === 'true_false' 
+                      ? 'Keep as True and False' 
+                      : 'Each option on a new line (4 options recommended)'}
+                  </p>
+                </div>
+              )}
 
               <div>
                 <Label htmlFor="apply_correct_answer">Correct Answer *</Label>
@@ -746,9 +803,20 @@ export default function AdminLearningModulesPage() {
                   id="apply_correct_answer"
                   value={formData.apply_correct_answer}
                   onChange={(e) => setFormData({ ...formData, apply_correct_answer: e.target.value })}
-                  placeholder="₱2,400 (20% of allowance)"
+                  placeholder={
+                    formData.apply_test_type === 'multiple_choice' ? '₱2,400 (20% of allowance)' :
+                    formData.apply_test_type === 'true_false' ? 'True' :
+                    formData.apply_test_type === 'fill_blank' ? '20' :
+                    formData.apply_test_type === 'calculation' ? '₱3,000' :
+                    'The best answer from your options'
+                  }
                 />
-                <p className="text-xs text-gray-500 mt-1">Must match one of the options exactly</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  {formData.apply_test_type === 'fill_blank' && 'The exact word/number that completes the sentence'}
+                  {formData.apply_test_type === 'calculation' && 'The calculated result (include currency if needed)'}
+                  {formData.apply_test_type === 'true_false' && 'Either "True" or "False"'}
+                  {(formData.apply_test_type === 'multiple_choice' || formData.apply_test_type === 'scenario_based') && 'Must match exactly one of the options above'}
+                </p>
               </div>
 
               <div>

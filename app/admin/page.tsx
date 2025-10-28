@@ -18,7 +18,8 @@ import {
   Target,
   CreditCard,
   Trophy,
-  Zap
+  Zap,
+  Globe
 } from 'lucide-react'
 import { 
   LineChart, 
@@ -66,11 +67,12 @@ interface DashboardStats {
 }
 
 interface ChartData {
-  signups: Array<{ date: string; signups: number }>
+  signups: Array<{ date: string; users: number }>
   transactions: Array<{ date: string; income: number; expense: number }>
   membership: Array<{ name: string; value: number }>
   goals: Array<{ name: string; value: number }>
   modules: Array<{ name: string; completion: number }>
+  ages: Array<{ age: string; users: number }>
 }
 
 export default function AdminDashboard() {
@@ -502,6 +504,27 @@ export default function AdminDashboard() {
                       <YAxis />
                       <Tooltip />
                       <Bar dataKey="completion" fill="#3B82F6" name="Completion %" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+
+              {/* Age Distribution */}
+              <Card className="lg:col-span-2">
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Users className="w-5 h-5 text-cyan-600" />
+                    <span>User Age Distribution</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={chartData.ages}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="age" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="users" fill="#06b6d4" name="Users" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
