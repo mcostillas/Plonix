@@ -287,7 +287,7 @@ export default function AdminLearningModulesPage() {
   const saveModule = async () => {
     setIsSaving(true)
     try {
-      // Parse arrays from strings
+      // Parse arrays from strings and include ALL form fields
       const moduleData = {
         module_id: formData.module_id.toLowerCase().replace(/\s+/g, '-'),
         module_title: formData.module_title,
@@ -296,6 +296,39 @@ export default function AdminLearningModulesPage() {
         category: formData.category,
         icon: formData.icon,
         color: formData.color,
+        // Learn Stage
+        learn_title: formData.learn_title,
+        learn_text: formData.learn_text,
+        learn_key_points: formData.learn_key_points
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean),
+        learn_sources: formData.learn_sources
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean),
+        // Apply Stage
+        apply_title: formData.apply_title,
+        apply_test_type: formData.apply_test_type,
+        apply_scenario: formData.apply_scenario,
+        apply_task: formData.apply_task,
+        apply_options: formData.apply_options
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean),
+        apply_correct_answer: formData.apply_correct_answer,
+        apply_explanation: formData.apply_explanation,
+        // Reflect Stage
+        reflect_title: formData.reflect_title,
+        reflect_questions: formData.reflect_questions
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean),
+        reflect_action_items: formData.reflect_action_items
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean),
+        // Metadata
         key_concepts: formData.key_concepts
           .split(',')
           .map(s => s.trim())
