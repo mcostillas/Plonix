@@ -149,6 +149,9 @@ function GoalsContent() {
   }
 
   const handleCreateGoal = async () => {
+    console.log('🎯 Creating goal with formData:', formData)
+    console.log('🎯 selectedDeadline:', selectedDeadline)
+    
     if (!formData.title || !formData.targetAmount) {
       toast.error('Missing required fields', {
         description: 'Please fill in Title and Target Amount'
@@ -158,9 +161,15 @@ function GoalsContent() {
 
     // Validate deadline - must not be in the past
     if (formData.deadline && formData.deadline.trim() !== '') {
+      console.log('🎯 Validating deadline:', formData.deadline)
       const deadlineDate = new Date(formData.deadline)
       const today = new Date()
       today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
+      
+      console.log('🎯 Deadline date:', deadlineDate)
+      console.log('🎯 Today:', today)
+      console.log('🎯 Is valid:', isValidDate(deadlineDate))
+      console.log('🎯 Is past:', deadlineDate < today)
       
       if (!isValidDate(deadlineDate)) {
         toast.error('Invalid deadline format', {
@@ -175,6 +184,8 @@ function GoalsContent() {
         })
         return
       }
+    } else {
+      console.log('🎯 No deadline provided or empty string')
     }
 
     setLoading(true)
@@ -536,16 +547,25 @@ function GoalsContent() {
                         
                         // Try to parse the date
                         const date = new Date(inputValue)
+                        console.log('📅 Input value:', inputValue)
+                        console.log('📅 Parsed date:', date)
+                        console.log('📅 Is valid date:', isValidDate(date))
+                        
                         if (isValidDate(date)) {
                           // Check if date is not in the past
                           const today = new Date()
                           today.setHours(0, 0, 0, 0)
                           
+                          console.log('📅 Today:', today)
+                          console.log('📅 Date >= Today:', date >= today)
+                          
                           if (date >= today) {
                             setSelectedDeadline(date)
                             setDeadlineMonth(date)
+                            console.log('✅ Valid future date, setting deadline')
                           } else {
                             // Clear the deadline if past date is entered
+                            console.log('❌ Past date detected, clearing deadline')
                             setSelectedDeadline(undefined)
                             setFormData(prev => ({ ...prev, deadline: '' }))
                             toast.error('Invalid deadline', {
@@ -554,6 +574,7 @@ function GoalsContent() {
                           }
                         } else {
                           // Invalid date format - clear deadline
+                          console.log('❌ Invalid date format, clearing deadline')
                           setSelectedDeadline(undefined)
                           setFormData(prev => ({ ...prev, deadline: '' }))
                         }
