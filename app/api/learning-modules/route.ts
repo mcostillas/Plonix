@@ -18,6 +18,8 @@ interface LearningModule {
 // GET all published learning modules (public endpoint)
 export async function GET(request: NextRequest) {
   try {
+    console.log('🔍 Fetching learning modules from database...')
+    
     // Try to fetch with new columns first, fall back to basic columns if they don't exist
     let { data, error } = await supabase
       .from('learning_module_content')
@@ -25,16 +27,22 @@ export async function GET(request: NextRequest) {
       .order('category', { ascending: true })
       .order('module_id', { ascending: true })
 
+    console.log('📊 Supabase response:', { 
+      dataLength: data?.length, 
+      error: error?.message,
+      data: data 
+    })
+
     if (error) {
-      console.error('Failed to fetch learning modules:', error)
+      console.error('❌ Failed to fetch learning modules:', error)
       return NextResponse.json(
-        { error: 'Failed to fetch modules' },
+        { error: 'Failed to fetch modules', details: error.message },
         { status: 500 }
       )
     }
 
     if (!data || data.length === 0) {
-      console.warn('No modules found in database')
+      console.warn('⚠️ No modules found in database - returning empty array')
       return NextResponse.json([])
     }
 
