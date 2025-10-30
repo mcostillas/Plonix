@@ -62,6 +62,7 @@ function GoalsContent() {
   const [deadlinePickerOpen, setDeadlinePickerOpen] = useState(false)
   const [deadlineMonth, setDeadlineMonth] = useState<Date | undefined>(new Date())
   const [deadlineInputValue, setDeadlineInputValue] = useState('')
+  const [hasInvalidDeadline, setHasInvalidDeadline] = useState(false)
 
   // Helper functions for date formatting
   const formatDateDisplay = (date: Date | undefined) => {
@@ -151,10 +152,20 @@ function GoalsContent() {
   const handleCreateGoal = async () => {
     console.log('🎯 Creating goal with formData:', formData)
     console.log('🎯 selectedDeadline:', selectedDeadline)
+    console.log('🎯 hasInvalidDeadline:', hasInvalidDeadline)
+    console.log('🎯 deadlineInputValue:', deadlineInputValue)
     
     if (!formData.title || !formData.targetAmount) {
       toast.error('Missing required fields', {
         description: 'Please fill in Title and Target Amount'
+      })
+      return
+    }
+
+    // Block if user has entered text in deadline field but it's invalid
+    if (hasInvalidDeadline || (deadlineInputValue && !selectedDeadline)) {
+      toast.error('Invalid deadline', {
+        description: 'Please clear the deadline field or enter a valid future date.'
       })
       return
     }
@@ -227,6 +238,7 @@ function GoalsContent() {
         })
         setSelectedDeadline(undefined)
         setDeadlineInputValue('')
+        setHasInvalidDeadline(false)
         setShowCreateForm(false)
         fetchGoals()
       }
@@ -545,6 +557,14 @@ function GoalsContent() {
                         const inputValue = e.target.value
                         setDeadlineInputValue(inputValue)
                         
+                        // If input is empty, clear everything
+                        if (!inputValue || inputValue.trim() === '') {
+                          setSelectedDeadline(undefined)
+                          setFormData(prev => ({ ...prev, deadline: '' }))
+                          setHasInvalidDeadline(false)
+                          return
+                        }
+                        
                         // Try to parse the date
                         const date = new Date(inputValue)
                         console.log('📅 Input value:', inputValue)
@@ -562,12 +582,14 @@ function GoalsContent() {
                           if (date >= today) {
                             setSelectedDeadline(date)
                             setDeadlineMonth(date)
+                            setHasInvalidDeadline(false)
                             console.log('✅ Valid future date, setting deadline')
                           } else {
                             // Clear the deadline if past date is entered
                             console.log('❌ Past date detected, clearing deadline')
                             setSelectedDeadline(undefined)
                             setFormData(prev => ({ ...prev, deadline: '' }))
+                            setHasInvalidDeadline(true)
                             toast.error('Invalid deadline', {
                               description: 'Deadline cannot be in the past'
                             })
@@ -577,6 +599,7 @@ function GoalsContent() {
                           console.log('❌ Invalid date format, clearing deadline')
                           setSelectedDeadline(undefined)
                           setFormData(prev => ({ ...prev, deadline: '' }))
+                          setHasInvalidDeadline(true)
                         }
                       }}
                       onKeyDown={(e) => {
@@ -616,6 +639,7 @@ function GoalsContent() {
                           onSelect={(date) => {
                             setSelectedDeadline(date)
                             setDeadlineInputValue(formatDateDisplay(date))
+                            setHasInvalidDeadline(false)
                             setDeadlinePickerOpen(false)
                           }}
                         />
@@ -652,6 +676,7 @@ function GoalsContent() {
                   setShowCreateForm(false)
                   setSelectedDeadline(undefined)
                   setDeadlineInputValue('')
+                  setHasInvalidDeadline(false)
                   setFormData({
                     title: '',
                     description: '',
