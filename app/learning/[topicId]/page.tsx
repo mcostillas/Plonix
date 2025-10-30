@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
+import { PageLoader } from '@/components/ui/page-loader'
 import { ArrowLeft, ArrowRight, BookOpen, Target, Lightbulb, ExternalLink, Calculator, PiggyBank, TrendingUp, Shield, Globe, BarChart3, CheckCircle, Lock, Edit3, AlertCircle, XCircle } from 'lucide-react'
 import { useAuth } from '@/lib/auth-hooks'
 import { supabase } from '@/lib/supabase'
@@ -28,6 +29,8 @@ export default function TopicLearningPage() {
   const [reflectionValidation, setReflectionValidation] = useState<{[key: number]: 'validating' | 'valid' | 'invalid' | null}>({})
   const [tutorHelp, setTutorHelp] = useState<{[key: number]: string | null}>({})
   const [stepCompleted, setStepCompleted] = useState<boolean[]>([]) // Track completion of each step
+  const [loadingModule, setLoadingModule] = useState(true)
+  const [dbModule, setDbModule] = useState<any>(null)
   
   // For calculator activity
   const [calculatorInputs, setCalculatorInputs] = useState<{[key: string]: string}>({})
@@ -35,6 +38,35 @@ export default function TopicLearningPage() {
   // For categorization activity
   const [categorizedItems, setCategorizedItems] = useState<{[key: string]: string[]}>({})
   const [draggedItem, setDraggedItem] = useState<string | null>(null)
+
+  // Fetch module content from database
+  useEffect(() => {
+    const fetchModuleContent = async () => {
+      try {
+        setLoadingModule(true)
+        const response = await fetch(`/api/learning-modules/${topicId}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setDbModule(data)
+          console.log(`✅ Loaded module from database: ${data.module_title}`)
+        } else {
+          console.log(`ℹ️ Module not in database, using hardcoded version`)
+          setDbModule(null)
+        }
+      } catch (error) {
+        console.error('Error fetching module:', error)
+        setDbModule(null)
+      } finally {
+        setLoadingModule(false)
+      }
+    }
+
+    fetchModuleContent()
+  }, [topicId])
 
   const topicModules = {
     budgeting: {
@@ -816,9 +848,81 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
     }
   }
 
-  const currentTopic = topicModules[topicId as keyof typeof topicModules]
+  // Convert database module to the format expected by the component
+  const convertDbModuleToFormat = (dbData: any) => {
+    const iconMap: Record<string, any> = {
+      Calculator, PiggyBank, TrendingUp, Shield, Globe, BookOpen, Target, BarChart3
+    }
+    
+    const steps: any[] = []
+    
+    // Learn step
+    if (dbData.learn_title) {
+      steps.push({
+        type: 'learn',
+        title: dbData.learn_title,
+        content: {
+          text: dbData.learn_text || '',
+          keyPoints: dbData.learn_key_points || [],
+          sources: dbData.learn_sources?.map((source: string) => ({
+            title: source,
+            url: '#',
+            type: 'Reference'
+          })) || []
+        }
+      })
+    }
+    
+    // Apply step
+    if (dbData.apply_title) {
+      steps.push({
+        type: 'apply',
+        title: dbData.apply_title,
+        content: {
+          scenario: dbData.apply_scenario || '',
+          task: dbData.apply_task || '',
+          options: dbData.apply_options || [],
+          correctAnswer: dbData.apply_correct_answer || '',
+          explanation: dbData.apply_explanation || ''
+        }
+      })
+    }
+    
+    // Reflect step
+    if (dbData.reflect_title) {
+      steps.push({
+        type: 'reflect',
+        title: dbData.reflect_title,
+        content: {
+          questions: dbData.reflect_questions || [],
+          actionItems: dbData.reflect_action_items || []
+        }
+      })
+    }
+    
+    return {
+      title: dbData.module_title,
+      description: dbData.module_description,
+      icon: iconMap[dbData.icon] || BookOpen,
+      color: dbData.color || 'blue',
+      steps
+    }
+  }
 
-  if (!currentTopic) {
+  // Use database module if available, otherwise fall back to hardcoded
+  let currentTopic
+  if (dbModule) {
+    currentTopic = convertDbModuleToFormat(dbModule)
+  } else {
+    currentTopic = topicModules[topicId as keyof typeof topicModules]
+  }
+
+  // Show loading state while fetching module
+  if (loadingModule) {
+    return <PageLoader message="Loading module..." />
+  }
+
+  if (!currentTopic || (currentTopic.steps && currentTopic.steps.length === 0)) {
     return (
       <div className="min-h-screen bg-background text-foreground flex items-center justify-center">
         <Card className="max-w-md text-center">
