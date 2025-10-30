@@ -24,11 +24,18 @@ ADD COLUMN IF NOT EXISTS reflect_title TEXT,
 ADD COLUMN IF NOT EXISTS reflect_questions TEXT[],
 ADD COLUMN IF NOT EXISTS reflect_action_items TEXT[];
 
--- Add constraint for test types
-ALTER TABLE learning_module_content
-ADD CONSTRAINT test_type_check 
-CHECK (apply_test_type IN ('multiple_choice', 'true_false', 'fill_blank', 'scenario_based', 'calculation'))
-ON CONFLICT DO NOTHING;
+-- Add constraint for test types (only add if it doesn't exist)
+DO $$ 
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'test_type_check'
+  ) THEN
+    ALTER TABLE learning_module_content
+    ADD CONSTRAINT test_type_check 
+    CHECK (apply_test_type IN ('multiple_choice', 'true_false', 'fill_blank', 'scenario_based', 'calculation'));
+  END IF;
+END $$;
 
 -- Add icon and color columns for UI
 ALTER TABLE learning_module_content
