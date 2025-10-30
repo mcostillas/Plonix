@@ -24,6 +24,9 @@ function LearningContent() {
   const [completedModules, setCompletedModules] = useState<string[]>([])
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [coreTopics, setCoreTopics] = useState<any[]>([])
+  const [essentialModules, setEssentialModules] = useState<any[]>([])
+  const [loadingModules, setLoadingModules] = useState(true)
 
   // Load completed modules from database (with localStorage fallback)
   useEffect(() => {
@@ -139,6 +142,59 @@ function LearningContent() {
     }
   }, [completedModules, mounted, user?.id])
 
+  // Fetch learning modules from database
+  useEffect(() => {
+    const fetchModules = async () => {
+      try {
+        setLoadingModules(true)
+        const response = await fetch('/api/learning-modules')
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch modules')
+        }
+
+        const modules = await response.json()
+        
+        // Separate modules by category
+        const core = modules.filter((m: any) => m.category === 'core')
+        const essential = modules.filter((m: any) => m.category === 'essential')
+        
+        // Map icon names to actual icon components
+        const iconMap: Record<string, any> = {
+          Calculator,
+          PiggyBank,
+          TrendingUp,
+          Shield,
+          CreditCard,
+          Globe,
+          Target,
+          Brain,
+          BookOpen
+        }
+        
+        // Add icon components to modules
+        const mapModules = (mods: any[]) => mods.map(m => ({
+          ...m,
+          icon: iconMap[m.icon] || BookOpen
+        }))
+        
+        setCoreTopics(mapModules(core))
+        setEssentialModules(mapModules(essential))
+        
+        console.log('📚 Loaded modules from database:', { core: core.length, essential: essential.length })
+      } catch (error) {
+        console.error('Failed to fetch learning modules:', error)
+        // Fallback to empty arrays if fetch fails
+        setCoreTopics([])
+        setEssentialModules([])
+      } finally {
+        setLoadingModules(false)
+      }
+    }
+
+    fetchModules()
+  }, [])
+
   // Function to mark module as completed
   const markModuleCompleted = (moduleId: string) => {
     if (!completedModules.includes(moduleId)) {
@@ -196,90 +252,13 @@ function LearningContent() {
     return false
   }
 
-  // Core learning topics
-  const coreTopics = [
-    {
-      id: 'budgeting',
-      title: 'Budgeting',
-      icon: Calculator,
-      color: 'blue',
-      description: 'Master the 50-30-20 rule and create budgets that work with Filipino lifestyle and income levels.',
-    },
-    {
-      id: 'saving', 
-      title: 'Saving',
-      icon: PiggyBank,
-      color: 'green',
-      description: 'Discover where to save money for maximum growth with digital banks and high-interest accounts.',
-    },
-    {
-      id: 'investing',
-      title: 'Investing',
-      icon: TrendingUp,
-      color: 'purple',
-      description: 'Start building wealth with beginner-friendly Philippine investments like mutual funds and stocks.',
-    }
-  ]
-
-  // Essential modules that unlock after core modules
-  const essentialModules = [
-    {
-      id: 'emergency-fund',
-      title: 'Emergency Fund',
-      icon: Shield,
-      color: 'orange',
-      description: 'Build your financial safety net with emergency funds designed for Filipino youth.',
-      features: ['Students: ₱10,000-15,000 target', 'Workers: 3-6 months expenses']
-    },
-    {
-      id: 'credit-debt',
-      title: 'Credit & Debt', 
-      icon: CreditCard,
-      color: 'red',
-      description: 'Master credit cards, loans, and debt management to avoid common traps.',
-      features: ['Credit card best practices', 'Understanding interest rates']
-    },
-    {
-      id: 'digital-money',
-      title: 'Digital Money',
-      icon: Globe,
-      color: 'green', 
-      description: 'Navigate GCash, PayMaya, and online banking like a pro.',
-      features: ['GCash & PayMaya mastery', 'Online banking security']
-    },
-    {
-      id: 'insurance',
-      title: 'Insurance Basics',
-      icon: Shield,
-      color: 'blue',
-      description: 'Protection strategies for Filipino families - PhilHealth, SSS, and life insurance.',
-      features: ['Health insurance basics', 'Government benefits']
-    },
-    {
-      id: 'financial-goals', 
-      title: 'Financial Goals',
-      icon: Target,
-      color: 'purple',
-      description: 'SMART goal setting for laptops, travel, and major life purchases.',
-      features: ['SMART goal framework', 'Progress tracking']
-    },
-    {
-      id: 'money-mindset',
-      title: 'Money Mindset',
-      icon: Brain,
-      color: 'yellow',
-      description: 'Transform your relationship with money and overcome limiting beliefs.',
-      features: ['Mindset transformation', 'Overcoming money blocks']
-    }
-  ]
-
   if (!mounted) {
     return <PageLoader message="Loading learning modules..." />
   }
 
   // TODO: Dark mode under works
-  // Show loading state while fetching progress
-  if (loading) {
+  // Show loading state while fetching progress or modules
+  if (loading || loadingModules) {
     return <PageLoader />
   }
 
@@ -659,9 +638,9 @@ function LearningContent() {
                       }
                     </CardDescription>
 
-                    {isAccessible && (
+                    {isAccessible && module.features && (
                       <div className="space-y-1.5 md:space-y-2 mb-3 md:mb-4">
-                        {module.features.map((feature, idx) => (
+                        {module.features.map((feature: string, idx: number) => (
                           <div key={idx} className="flex items-center text-[10px] md:text-xs">
                             <CheckCircle className="w-2.5 h-2.5 md:w-3 md:h-3 text-gray-500 mr-1.5 md:mr-2 flex-shrink-0" />
                             <span>{feature}</span>
