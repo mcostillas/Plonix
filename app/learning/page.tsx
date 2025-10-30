@@ -147,7 +147,12 @@ function LearningContent() {
     const fetchModules = async () => {
       try {
         setLoadingModules(true)
-        const response = await fetch('/api/learning-modules')
+        const response = await fetch('/api/learning-modules', {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
         
         if (!response.ok) {
           throw new Error('Failed to fetch modules')

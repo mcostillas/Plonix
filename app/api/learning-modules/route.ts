@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+export const revalidate = 0 // Disable caching
 
 interface LearningModule {
   id: string
@@ -98,7 +99,13 @@ export async function GET(request: NextRequest) {
     }))
 
     console.log(`✅ Successfully fetched ${modules.length} modules from database`)
-    return NextResponse.json(modules)
+    return NextResponse.json(modules, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    })
   } catch (error: any) {
     console.error('Learning modules API error:', error)
     return NextResponse.json(
