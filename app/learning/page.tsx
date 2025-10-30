@@ -178,10 +178,32 @@ function LearningContent() {
           icon: iconMap[m.icon] || BookOpen
         }))
         
-        setCoreTopics(mapModules(core))
-        setEssentialModules(mapModules(essential))
-        
-        console.log('📚 Loaded modules from database:', { core: core.length, essential: essential.length })
+        // If database is empty, use hardcoded fallback (until migrations are run)
+        if (modules.length === 0) {
+          console.warn('⚠️ No modules in database - using hardcoded fallback. Please run migrations 004 and 005!')
+          
+          const fallbackCore = [
+            { id: 'budgeting', title: 'Budgeting', icon: Calculator, color: 'blue', description: 'Master the 50-30-20 rule and create budgets that work with Filipino lifestyle and income levels.' },
+            { id: 'saving', title: 'Saving', icon: PiggyBank, color: 'green', description: 'Discover where to save money for maximum growth with digital banks and high-interest accounts.' },
+            { id: 'investing', title: 'Investing', icon: TrendingUp, color: 'purple', description: 'Start building wealth with beginner-friendly Philippine investments like mutual funds and stocks.' }
+          ]
+          
+          const fallbackEssential = [
+            { id: 'emergency-fund', title: 'Emergency Fund', icon: Shield, color: 'orange', description: 'Build your financial safety net with emergency funds designed for Filipino youth.', features: ['Students: ₱10,000-15,000 target', 'Workers: 3-6 months expenses'] },
+            { id: 'credit-debt', title: 'Credit & Debt', icon: CreditCard, color: 'red', description: 'Master credit cards, loans, and debt management to avoid common traps.', features: ['Credit card best practices', 'Understanding interest rates'] },
+            { id: 'digital-money', title: 'Digital Money', icon: Globe, color: 'green', description: 'Navigate GCash, PayMaya, and online banking like a pro.', features: ['GCash & PayMaya mastery', 'Online banking security'] },
+            { id: 'insurance', title: 'Insurance Basics', icon: Shield, color: 'blue', description: 'Protection strategies for Filipino families - PhilHealth, SSS, and life insurance.', features: ['Health insurance basics', 'Government benefits'] },
+            { id: 'financial-goals', title: 'Financial Goals', icon: Target, color: 'purple', description: 'SMART goal setting for laptops, travel, and major life purchases.', features: ['SMART goal framework', 'Progress tracking'] },
+            { id: 'money-mindset', title: 'Money Mindset', icon: Brain, color: 'yellow', description: 'Transform your relationship with money and overcome limiting beliefs.', features: ['Mindset transformation', 'Overcoming money blocks'] }
+          ]
+          
+          setCoreTopics(fallbackCore)
+          setEssentialModules(fallbackEssential)
+        } else {
+          setCoreTopics(mapModules(core))
+          setEssentialModules(mapModules(essential))
+          console.log('📚 Loaded modules from database:', { core: core.length, essential: essential.length })
+        }
       } catch (error) {
         console.error('Failed to fetch learning modules:', error)
         // Fallback to empty arrays if fetch fails
