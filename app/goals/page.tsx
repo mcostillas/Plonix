@@ -150,6 +150,20 @@ function GoalsContent() {
       return
     }
 
+    // Validate deadline - must not be in the past
+    if (formData.deadline) {
+      const deadlineDate = new Date(formData.deadline)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
+      
+      if (deadlineDate < today) {
+        toast.error('Invalid deadline', {
+          description: 'Deadline cannot be in the past. Please choose today or a future date.'
+        })
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const { error } = await (supabase as any)
@@ -504,11 +518,26 @@ function GoalsContent() {
                       placeholder={formatDateDisplay(new Date())}
                       className="pr-10 border-2 focus:border-primary h-8 md:h-10 text-xs md:text-base"
                       onChange={(e) => {
-                        const date = new Date(e.target.value)
-                        setDeadlineInputValue(e.target.value)
+                        const inputValue = e.target.value
+                        setDeadlineInputValue(inputValue)
+                        
+                        // Try to parse the date
+                        const date = new Date(inputValue)
                         if (isValidDate(date)) {
-                          setSelectedDeadline(date)
-                          setDeadlineMonth(date)
+                          // Check if date is not in the past
+                          const today = new Date()
+                          today.setHours(0, 0, 0, 0)
+                          
+                          if (date >= today) {
+                            setSelectedDeadline(date)
+                            setDeadlineMonth(date)
+                          } else {
+                            // Clear the deadline if past date is entered
+                            setSelectedDeadline(undefined)
+                            toast.error('Invalid deadline', {
+                              description: 'Deadline cannot be in the past'
+                            })
+                          }
                         }
                       }}
                       onKeyDown={(e) => {
