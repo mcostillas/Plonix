@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,6 +19,17 @@ interface LearningModule {
 export async function GET(request: NextRequest) {
   try {
     console.log('🔍 Fetching learning modules from database...')
+    
+    // Use service role to bypass RLS for public data
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    })
     
     // Try to fetch with new columns first, fall back to basic columns if they don't exist
     let { data, error } = await supabase
