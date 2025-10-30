@@ -534,10 +534,15 @@ function GoalsContent() {
                           } else {
                             // Clear the deadline if past date is entered
                             setSelectedDeadline(undefined)
+                            setFormData(prev => ({ ...prev, deadline: '' }))
                             toast.error('Invalid deadline', {
                               description: 'Deadline cannot be in the past'
                             })
                           }
+                        } else {
+                          // Invalid date format - clear deadline
+                          setSelectedDeadline(undefined)
+                          setFormData(prev => ({ ...prev, deadline: '' }))
                         }
                       }}
                       onKeyDown={(e) => {
