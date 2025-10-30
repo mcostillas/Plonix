@@ -85,6 +85,12 @@ function GoalsContent() {
         ...prev,
         deadline: selectedDeadline.toISOString().split('T')[0]
       }))
+    } else {
+      // Clear deadline from formData when selectedDeadline is cleared
+      setFormData(prev => ({
+        ...prev,
+        deadline: ''
+      }))
     }
   }, [selectedDeadline])
 
@@ -151,10 +157,17 @@ function GoalsContent() {
     }
 
     // Validate deadline - must not be in the past
-    if (formData.deadline) {
+    if (formData.deadline && formData.deadline.trim() !== '') {
       const deadlineDate = new Date(formData.deadline)
       const today = new Date()
       today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
+      
+      if (!isValidDate(deadlineDate)) {
+        toast.error('Invalid deadline format', {
+          description: 'Please enter a valid date'
+        })
+        return
+      }
       
       if (deadlineDate < today) {
         toast.error('Invalid deadline', {
