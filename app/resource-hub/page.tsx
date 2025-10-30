@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Navbar } from '@/components/ui/navbar'
 import { PageHeader } from '@/components/ui/page-header'
+import { PageLoader } from '@/components/ui/page-loader'
 import { AuthGuard } from '@/components/AuthGuard'
 import { ExternalLink, Globe, Youtube, BookOpen, Building2, Shield, MessageCircle, Target, FileText } from 'lucide-react'
 import { resourcesDatabase } from '@/lib/resources-data'
@@ -19,6 +20,53 @@ export default function ResourceHubPage() {
 }
 
 function ResourceHubContent() {
+  const [loadingResources, setLoadingResources] = useState(true)
+  const [dbResources, setDbResources] = useState<any[]>([])
+
+  // Fetch resources from database
+  useEffect(() => {
+    const fetchResources = async () => {
+      try {
+        setLoadingResources(true)
+        const response = await fetch('/api/resources', {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache' }
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          setDbResources(data)
+          console.log(`✅ Loaded ${data.length} resources from database`)
+        } else {
+          console.log(`ℹ️ Resources not in database, using hardcoded version`)
+          setDbResources([])
+        }
+      } catch (error) {
+        console.error('Error fetching resources:', error)
+        setDbResources([])
+      } finally {
+        setLoadingResources(false)
+      }
+    }
+
+    fetchResources()
+  }, [])
+
+  // Group resources by category from database
+  const groupedResources = {
+    filipinoEducators: dbResources.filter(r => r.category === 'Financial Education' || r.category === 'Financial Motivation'),
+    philippineBanks: dbResources.filter(r => r.category === 'Traditional Banking'),
+    digitalPlatforms: dbResources.filter(r => r.category === 'Fintech'),
+    governmentAgencies: dbResources.filter(r => r.category === 'Government Regulatory'),
+    internationalResources: dbResources.filter(r => r.category === 'International Resources')
+  }
+
+  // Use database resources if available, otherwise fall back to hardcoded
+  const filipinoEducators = dbResources.length > 0 ? groupedResources.filipinoEducators : resourcesDatabase.filipinoEducators
+  const philippineBanks = dbResources.length > 0 ? groupedResources.philippineBanks : resourcesDatabase.philippineBanks
+  const digitalPlatforms = dbResources.length > 0 ? groupedResources.digitalPlatforms : resourcesDatabase.digitalPlatforms
+  const governmentAgencies = dbResources.length > 0 ? groupedResources.governmentAgencies : resourcesDatabase.governmentAgencies
+  const internationalResources = dbResources.length > 0 ? groupedResources.internationalResources : resourcesDatabase.internationalResources
 
 const getCategoryIcon = (category: string) => {
 switch (category) {
@@ -55,6 +103,10 @@ return 'bg-gray-100 text-gray-800'
 
 const openExternalLink = (url: string, linkName: string) => {
 window.open(url, '_blank', 'noopener,noreferrer')
+}
+
+if (loadingResources) {
+  return <PageLoader message="Loading resources..." />
 }
 
 return (
@@ -265,7 +317,7 @@ return (
     <div className="mb-4 md:mb-8">
       <h2 className="text-base md:text-2xl font-bold mb-3 md:mb-6">Filipino Financial Educators</h2>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
-        {resourcesDatabase.filipinoEducators.map((educator, index) => {
+        {filipinoEducators.map((educator: any, index: number) => {
           const IconComponent = getCategoryIcon(educator.category)
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -283,7 +335,7 @@ return (
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-0.5 md:gap-2 mt-1 md:mt-3">
-                  {educator.topics.slice(0, 3).map((topic, topicIndex) => (
+                  {(educator.topics || []).slice(0, 3).map((topic: string, topicIndex: number) => (
                     <span key={topicIndex} className="px-1 md:px-2 py-0.5 md:py-1 bg-gray-100 text-gray-700 text-[6px] md:text-xs rounded whitespace-nowrap">
                       {topic}
                     </span>
@@ -324,7 +376,7 @@ return (
     <div className="mb-4 md:mb-8">
       <h2 className="text-base md:text-2xl font-bold mb-3 md:mb-6">Philippine Banks & Financial Institutions</h2>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
-        {resourcesDatabase.philippineBanks.map((bank, index) => {
+        {philippineBanks.map((bank: any, index: number) => {
           const IconComponent = getCategoryIcon(bank.category)
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -342,7 +394,7 @@ return (
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-0.5 md:gap-2 mt-1.5 md:mt-3">
-                  {bank.services.map((service, serviceIndex) => (
+                  {(bank.services || []).map((service: string, serviceIndex: number) => (
                     <span key={serviceIndex} className="px-1 md:px-2 py-0.5 md:py-1 bg-blue-50 text-blue-700 text-[7px] md:text-xs rounded">
                       {service}
                     </span>
@@ -370,7 +422,7 @@ return (
     <div className="mb-4 md:mb-8">
       <h2 className="text-base md:text-2xl font-bold mb-3 md:mb-6">Digital Financial Platforms</h2>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
-        {resourcesDatabase.digitalPlatforms.map((platform, index) => {
+        {digitalPlatforms.map((platform: any, index: number) => {
           const IconComponent = getCategoryIcon(platform.category)
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -388,7 +440,7 @@ return (
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-0.5 md:gap-2 mt-1.5 md:mt-3">
-                  {platform.services.map((service, serviceIndex) => (
+                  {(platform.services || []).map((service: string, serviceIndex: number) => (
                     <span key={serviceIndex} className="px-1 md:px-2 py-0.5 md:py-1 bg-green-50 text-green-700 text-[7px] md:text-xs rounded">
                       {service}
                     </span>
@@ -416,7 +468,7 @@ return (
     <div className="mb-4 md:mb-8">
       <h2 className="text-base md:text-2xl font-bold mb-3 md:mb-6">Government & Regulatory Bodies</h2>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
-        {resourcesDatabase.governmentAgencies.map((agency, index) => {
+        {governmentAgencies.map((agency: any, index: number) => {
           const IconComponent = getCategoryIcon(agency.category)
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -434,7 +486,7 @@ return (
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-0.5 md:gap-2 mt-1.5 md:mt-3">
-                  {agency.services.map((service, serviceIndex) => (
+                  {(agency.services || []).map((service: string, serviceIndex: number) => (
                     <span key={serviceIndex} className="px-1 md:px-2 py-0.5 md:py-1 bg-purple-50 text-purple-700 text-[7px] md:text-xs rounded">
                       {service}
                     </span>
@@ -462,7 +514,7 @@ return (
     <div className="mb-4 md:mb-8">
       <h2 className="text-base md:text-2xl font-bold mb-3 md:mb-6">International Financial Education</h2>
       <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-6">
-        {resourcesDatabase.internationalResources.map((resource, index) => {
+        {internationalResources.map((resource: any, index: number) => {
           const IconComponent = getCategoryIcon(resource.category)
           return (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -480,7 +532,7 @@ return (
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-0.5 md:gap-2 mt-1.5 md:mt-3">
-                  {resource.topics.map((topic, topicIndex) => (
+                  {(resource.topics || []).map((topic: string, topicIndex: number) => (
                     <span key={topicIndex} className="px-1 md:px-2 py-0.5 md:py-1 bg-orange-50 text-orange-700 text-[7px] md:text-xs rounded">
                       {topic}
                     </span>
