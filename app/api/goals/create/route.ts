@@ -68,6 +68,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate deadline - must not be in the past
+    if (deadline) {
+      const deadlineDate = new Date(deadline)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0) // Reset time to start of day for fair comparison
+      
+      if (deadlineDate < today) {
+        console.log('❌ Validation failed: deadline is in the past')
+        return NextResponse.json(
+          { error: 'Deadline cannot be in the past. Please choose today or a future date.' }, 
+          { status: 400 }
+        )
+      }
+    }
+
     // Auto-detect category if not provided
     const finalCategory = category || detectCategory(title, description || '')
 
