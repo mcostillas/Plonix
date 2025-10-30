@@ -357,8 +357,8 @@ export default function RegisterPage() {
                       </label>
                       <Input
                         placeholder="Dela Cruz"
-                        value={formData.age}
-                        onChange={(e) => setFormData({...formData, age: e.target.value})}
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
                         className="h-9 md:h-11 text-[11px] md:text-base"
                         required
                         disabled={isLoading || isGoogleLoading}
