@@ -1284,7 +1284,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                 <div className="bg-blue-50 p-3 md:p-4 rounded-lg">
                   <h4 className="font-semibold text-blue-800 mb-2 md:mb-3 text-xs md:text-base">Key Takeaways:</h4>
                   <ul className="space-y-1.5 md:space-y-2">
-                    {currentStepData.content.keyPoints?.map((point, index) => (
+                    {currentStepData.content.keyPoints?.map((point: string, index: number) => (
                       <li key={index} className="text-blue-700 text-xs md:text-sm flex items-start space-x-2">
                         <span className="text-blue-500 mt-1 font-bold">•</span>
                         <span>{point}</span>
@@ -1295,7 +1295,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
 
                 <div className="border-t pt-3 md:pt-4">
                   <h4 className="font-semibold mb-2 md:mb-3 text-xs md:text-base">Sources:</h4>
-                  {currentStepData.content.sources?.map((source, index) => (
+                  {currentStepData.content.sources?.map((source: any, index: number) => (
                     <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded mb-2">
                       <span className="text-xs md:text-sm">{source.title}</span>
                       <Button variant="outline" size="sm" className="h-7 md:h-8 text-xs" onClick={() => window.open(source.url, '_blank')}>
@@ -1544,7 +1544,7 @@ Start with ₱1,000 monthly in a balanced mutual fund. Learn for 6 months, then 
                 <div>
                   <h4 className="font-semibold mb-3 md:mb-4 text-xs md:text-base">Reflection Questions:</h4>
                   <div className="space-y-3 md:space-y-4">
-                    {currentStepData.content.questions?.map((question, index) => (
+                    {currentStepData.content.questions?.map((question: string, index: number) => (
                       <div key={index} className="space-y-2">
                         <label className="text-xs md:text-sm font-medium text-purple-700">{question}</label>
                         <textarea
